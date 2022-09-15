@@ -1,0 +1,256 @@
+import AppError from '../lib/AppError.js';
+import { asyncWrapper } from '../lib/asyncWrapper.js';
+import Post from '../models/Post.js';
+import User from '../models/User.js';
+
+export const searchUsers = asyncWrapper(async function (req, res, next) {
+  const { key } = req.query;
+
+  const users = await User.find({ userName: { $regex: key } }).select('userName profileImg');
+
+  res.status(200).json(users);
+});
+
+export const getUserProfile = asyncWrapper(async function (req, res, next) {
+  const { userId } = req.params;
+
+  const user = await User.findById(userId)
+    .select('-sentRequests -pendingRequests')
+    .populate({
+      path: 'friends.friend',
+      select: 'userName profileImg',
+      options: { limit: 9 },
+    });
+
+  const userProfile = {
+    ...user._doc,
+    education: user._doc.education[0],
+    workplace: user._doc.workplace[0],
+    friends: user._doc.friends.slice(0, 9).map((fr) => fr.friend),
+  };
+
+  res.status(200).json(userProfile);
+});
+
+export const getUserFeed = asyncWrapper(async function (req, reqs, next) {
+  const { userId } = req.params;
+
+  const user = await User.findById(userId);
+
+  const userFriends = user.friends;
+
+  const userPosts = await Post.find({ author: userId });
+
+  const friendsPosts = await Promise.all(
+    userFriends.map(async (friend) => await Post.find({ author: friend.friend }))
+  );
+
+  const feed = [...friendsPosts, ...userPosts].sort((post) => post.createdAt);
+
+  reqs.status(200).json(feed);
+});
+
+export const getUser = asyncWrapper(async function (req, res, next) {
+  const user = await User.findById(currUser.id);
+  await user.populate('sentRequests.adressat pendingRequests.adressat friends.friend');
+
+  res.status(200).json();
+});
+
+export const getAllUsers = asyncWrapper(async function (req, res, next) {
+  const users = await User.find({ userName: { $regex: key } });
+
+  res.status(200).json();
+});
+
+export const getUserInfo = asyncWrapper(async function (req, res, next) {
+  const user = await User.findById(userId).select(
+    'birthDate from currentLivingPlace workplace education gender email'
+  );
+
+  res.status(200).json();
+});
+
+export const updateUserInfo = asyncWrapper(async function (req, res, next) {
+  const user = await User.findById(currUser.id).select(
+    'birthDate from currentLivingPlace workplace education gender'
+  );
+
+  if (!user) throw new Error('user does not exists');
+
+  const nestedFields = ['workplace', 'education'];
+  const fieldToUpdate = Object.keys(updateUserInfoInput)[0];
+
+  if (nestedFields.includes(fieldToUpdate)) {
+    user[fieldToUpdate].push(updateUserInfoInput[fieldToUpdate]);
+    await user.save();
+  } else {
+    user[fieldToUpdate] = updateUserInfoInput[fieldToUpdate];
+    await user.save();
+  }
+
+  res.status(200).json();
+});
+
+export const deleteUserInfo = asyncWrapper(async function (req, res, next) {
+  const updatedUser = await User.findByIdAndUpdate(
+    currUser.id,
+    {
+      $unset: { [fieldName]: '' },
+    },
+    { new: true }
+  );
+
+  if (!updatedUser) throw new Error('user does not exist');
+
+  res.status(200).json();
+});
+
+export const updateProfileImage = asyncWrapper(async function (req, res, next) {
+  const user = await User.findById(currUser.id);
+
+  async function deleteExistingImage() {
+    try {
+      const existingProfileImg = user.profileImg;
+      const originalFileName = existingProfileImg.split('/')?.slice(4)[0];
+      const deletion = promisify(fs.unlink);
+      await deletion(`public/images/${originalFileName}`);
+    } catch (error) {
+      throw new Error(error.message);
+    }
+  }
+
+  let mediaUrl;
+  try {
+    mediaUrl = await fileUpload(file, currUser.id);
+    await deleteExistingImage();
+  } catch (error) {
+    throw new Error(error.message);
+  }
+
+  user.profileImg = mediaUrl;
+
+  await user.save();
+
+  res.status(200).json();
+});
+
+export const updateCoverImage = asyncWrapper(async function (req, res, next) {
+  res.status(200).json();
+});
+
+export const sendFriendRequest = asyncWrapper(async function (req, res, next) {
+  if (adressat === currUser.id) throw new Error("you can't send friend request to yourself");
+
+  const user = await User.findById(currUser.id);
+  const adressatUser = await User.findById(adressat);
+
+  if (!adressatUser) throw new Error('user does not exists');
+
+  adressatUser.pendingRequests.push({ adressat: currUser.id });
+  user.sentRequests.push({ adressat: adressatUser._id });
+
+  await user.save();
+  await adressatUser.save();
+
+  await user.populate({ path: 'sentRequests.adressat' });
+
+  res.status(200).json();
+});
+
+export const cancelFriendRequest = asyncWrapper(async function (req, res, next) {
+  if (adressat === currUser.id) throw new Error('please provide us valid user id');
+
+  const user = await User.findById(currUser.id);
+  const adressatUser = await User.findById(adressat);
+
+  adressatUser.pendingRequests = adressatUser.pendingRequests.filter(
+    (request) => request.adressat.toString() !== currUser.id
+  );
+
+  user.sentRequests = user.sentRequests.filter(
+    (request) => request.adressat.toString() !== adressatUser._id.toString()
+  );
+
+  await user.save();
+  await adressatUser.save();
+
+  await user.populate({ path: 'sentRequests.adressat' });
+
+  res.status(200).json();
+});
+
+export const deleteFriendRequest = asyncWrapper(async function (req, res, next) {
+  res.status(200).json();
+
+  if (adressat === currUser.id) throw new Error('please provide us valid user id');
+
+  const user = await User.findById(currUser.id);
+  const adressatUser = await User.findById(adressat);
+
+  adressatUser.sentRequests = adressatUser.sentRequests.filter(
+    (request) => request.adressat.toString() !== currUser.id
+  );
+
+  user.pendingRequests = user.pendingRequests.filter(
+    (request) => request.adressat.toString() !== adressatUser._id.toString()
+  );
+
+  await user.save();
+  await adressatUser.save();
+
+  await user.populate({ path: 'pendingRequests.adressat' });
+
+  res.status(200).json();
+});
+
+export const confirmFriendRequest = asyncWrapper(async function (req, res, next) {
+  res.status(200).json();
+
+  if (adressat === currUser.id) throw new Error('please provide us valid user id');
+
+  const user = await User.findById(currUser.id);
+  const adressatUser = await User.findById(adressat);
+
+  if (!adressatUser) throw new Error('user does not exists');
+
+  adressatUser.sentRequests = adressatUser.sentRequests.filter(
+    (request) => request.adressat.toString() !== currUser.id
+  );
+
+  user.pendingRequests = user.pendingRequests.filter(
+    (request) => request.adressat.toString() !== adressatUser._id.toString()
+  );
+
+  user.friends.push({ friend: adressatUser._id });
+  adressatUser.friends.push({ friend: currUser.id });
+
+  await user.save();
+  await adressatUser.save();
+
+  await user.populate({ path: 'pendingRequests.adressat' });
+
+  res.status(200).json();
+});
+
+export const deleteFriend = asyncWrapper(async function (req, res, next) {
+  if (adressat === currUser.id) throw new Error('please provide us valid user id');
+
+  const user = await User.findById(currUser.id);
+  const adressatUser = await User.findById(adressat);
+
+  if (!adressatUser) throw new Error('user does not exists');
+
+  adressatUser.friends = adressatUser.friends.filter((fr) => fr.friend.toString() !== currUser.id);
+
+  user.friends = user.friends.filter((fr) => fr.friend.toString() !== adressatUser._id.toString());
+
+  await user.save();
+  await adressatUser.save();
+
+  await user.populate({ path: 'friends.friend' });
+
+  res.status(200).json();
+});
+
+export const fnName = asyncWrapper(async function (req, res, next) {});
