@@ -118,6 +118,8 @@ const UserSchema = new Schema(
   { timestamps: true }
 );
 
+UserSchema.index({ userName: 1 });
+
 UserSchema.pre('save', function (next) {
   if (this.isModified('friends')) this.friendsAmount = this.friends.length;
   next();

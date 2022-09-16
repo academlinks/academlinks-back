@@ -3,25 +3,86 @@ import { asyncWrapper } from '../lib/asyncWrapper.js';
 import User from '../models/User.js';
 import Post from '../models/Post.js';
 import Comment from '../models/Comment.js';
+import fs from 'fs';
+import { promisify } from 'util';
 
-export const getProfilePosts = asyncWrapper(async function (req, res, next) {
-  const { userId } = req.params;
+import { uploadMedia, editMedia } from '../lib/multer.js';
 
-  const posts = await Post.find({ author: userId })
-    .populate({
-      path: 'author',
-      select: 'userName profileImg',
-    })
-    .populate({
-      path: 'authenticAuthor',
-      select: 'userName profileImg',
-    })
-    .populate({
-      path: 'reactions.author',
-      select: 'userName',
-    });
+export const uploadImages = uploadMedia({
+  storage: 'memoryStorage',
+  upload: 'any',
+  filename: 'images',
+});
 
-  res.status(200).json(posts);
+export const resizeAndOptimiseMedia = editMedia({
+  multy: true,
+  resize: false,
+});
+
+export const createPost = asyncWrapper(async function (req, res, next) {
+  const { type, description } = req.body;
+  const currUser = req.user;
+
+  const newPost = new Post({
+    type,
+    author: currUser.id,
+    description,
+  });
+
+  if (req.files) {
+    // If multer storage is diskStorage use this
+    // req?.files?.map((file) => file.filename);
+    newPost.media = req.xOriginal.map(
+      (fileName) => `${req.protocol}://${'localhost:4000'}/${fileName}`
+      // `${req.protocol}://${req.host === '127.0.0.1' ? 'localhost:4000' : req.host}/${fileName}`
+    );
+  }
+
+  newPost.populate({
+    path: 'author',
+    select: 'userName profileImg',
+  });
+
+  await newPost.save();
+
+  res.status(200).json(newPost);
+});
+
+export const deletePost = asyncWrapper(async function (req, res, next) {
+  const { postId } = req.params;
+  const currUser = req.user;
+
+  const postToDelete = await Post.findById(postId);
+
+  if (postToDelete.author.toString() !== currUser.id)
+    return next(new AppError(403, 'you are not authorised for this operation'));
+
+  const postMedia = postToDelete.media;
+
+  if (postMedia && postMedia.length > 0) {
+    const deletion = promisify(fs.unlink);
+
+    Promise.all(
+      postMedia.map(async (media) => {
+        try {
+          const originalFileName = media.split('/')?.slice(3)[0];
+          console.log(originalFileName);
+          await deletion(`public/images/${originalFileName}`);
+        } catch (error) {
+          return next(
+            new AppError(
+              403,
+              "something went wrong, cant't delete post media files please try again"
+            )
+          );
+        }
+      })
+    );
+  }
+
+  await postToDelete.delete();
+
+  res.status(204).json({ deleted: true });
 });
 
 export const reactOnPost = asyncWrapper(async function (req, res, next) {
@@ -97,6 +158,7 @@ export const getPost = asyncWrapper(async function (req, res, next) {
 
   res.status(200).json();
 });
+
 export const getAllPosts = asyncWrapper(async function (req, res, next) {
   const posts = await Post.find()
     .populate('author')
@@ -111,47 +173,7 @@ export const getAllPosts = asyncWrapper(async function (req, res, next) {
 
   res.status(200).json();
 });
-export const createPost = asyncWrapper(async function (req, res, next) {
-  const newPost = new Post({
-    type,
-    author: currUser.id,
-    description,
-  });
 
-  let mediaUrls;
-  try {
-    if (await media) mediaUrls = await filesUpload(media, currUser.id, newPost._id);
-  } catch (error) {
-    throw new Error(error.message);
-  }
-
-  newPost.media = mediaUrls;
-
-  await newPost.save();
-
-  res.status(200).json();
-});
-export const deletePost = asyncWrapper(async function (req, res, next) {
-  const postToDelete = await Post.findById(postId);
-
-  if (postToDelete.author.toString() === currUser.id) {
-    const postMedia = postToDelete.media;
-
-    if (postMedia && postMedia.length > 0) {
-      const deletion = promisify(fs.unlink);
-      Promise.all(
-        postMedia.map(async (media) => {
-          const originalFileName = media.split('/')?.slice(4)[0];
-          await deletion(`public/images/${originalFileName}`);
-        })
-      );
-    }
-
-    await postToDelete.delete();
-  } else throw new Error('you are not authorised for this operation');
-
-  res.status(200).json();
-});
 export const sharePost = asyncWrapper(async function (req, res, next) {
   const postToShare = await Post.findById(postId);
 
@@ -171,6 +193,7 @@ export const sharePost = asyncWrapper(async function (req, res, next) {
 
   res.status(200).json();
 });
+
 export const updatePost = asyncWrapper(async function (req, res, next) {});
 //////////////////////////////////////////////////////////////////////
 export const fnName = asyncWrapper(async function (req, res, next) {});

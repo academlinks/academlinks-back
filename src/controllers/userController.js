@@ -32,6 +32,27 @@ export const getUserProfile = asyncWrapper(async function (req, res, next) {
   res.status(200).json(userProfile);
 });
 
+export const getProfilePosts = asyncWrapper(async function (req, res, next) {
+  const { userId } = req.params;
+
+  const posts = await Post.find({ author: userId })
+    .populate({
+      path: 'author',
+      select: 'userName profileImg',
+    })
+    .populate({
+      path: 'authenticAuthor',
+      select: 'userName profileImg',
+    })
+    .populate({
+      path: 'reactions.author',
+      select: 'userName',
+    })
+    .sort('-createdAt');
+
+  res.status(200).json(posts);
+});
+
 export const getUserFeed = asyncWrapper(async function (req, reqs, next) {
   const { userId } = req.params;
 
@@ -39,13 +60,28 @@ export const getUserFeed = asyncWrapper(async function (req, reqs, next) {
 
   const userFriends = user.friends;
 
-  const userPosts = await Post.find({ author: userId });
+  const userPosts = await Post.find({ author: userId })
+    .populate({
+      path: 'author',
+      select: 'userName profileImg',
+    })
+    .populate({ path: 'authenticAuthor', select: 'userName profileImg' });
 
-  const friendsPosts = await Promise.all(
-    userFriends.map(async (friend) => await Post.find({ author: friend.friend }))
+  const [friendsPosts] = await Promise.all(
+    userFriends.map(
+      async (friend) =>
+        await Post.find({ author: friend.friend })
+          .populate({
+            path: 'author',
+            select: 'userName profileImg',
+          })
+          .populate({ path: 'authenticAuthor', select: 'userName profileImg' })
+    )
   );
 
-  const feed = [...friendsPosts, ...userPosts].sort((post) => post.createdAt);
+  const feed = [...friendsPosts, ...userPosts].sort(
+    (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+  );
 
   reqs.status(200).json(feed);
 });

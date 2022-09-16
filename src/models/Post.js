@@ -67,6 +67,8 @@ const PostSchema = new Schema(
   { timestamps: true }
 );
 
+PostSchema.index({ author: 1 });
+
 PostSchema.virtual('comments', {
   ref: 'Comment',
   foreignField: 'post',

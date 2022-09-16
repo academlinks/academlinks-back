@@ -7,7 +7,9 @@ import { verifyToken } from '../lib/verifyToken.js';
 export const loginUser = asyncWrapper(async function (req, res, next) {
   const { email, password } = req.body;
 
-  const candidateUser = await User.findOne({ email }).select('+password');
+  const candidateUser = await User.findOne({ email }).select(
+    '+password email firstName lastName userName profileImg createdAt'
+  );
 
   const validPassword = await candidateUser.checkPassword(password, candidateUser.password);
 

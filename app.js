@@ -10,7 +10,6 @@ import { errorController } from './src/lib/errorController.js';
 import AppError from './src/lib/AppError.js';
 
 import authenticationRoutes from './src/routes/authenticationRoutes.js';
-import profileRoutes from './src/routes/profileRoutes.js';
 import postRoutes from './src/routes/postRoutes.js';
 import commentRoutes from './src/routes/commentRoutes.js';
 import userRoutes from './src/routes/userRoutes.js';
@@ -27,7 +26,6 @@ const __dirname = path.dirname(__filename);
 App.use(express.static(path.join(__dirname, 'public/images')));
 
 App.use('/api/v1/authentication', authenticationRoutes);
-App.use('/api/v1/profile', profileRoutes);
 App.use('/api/v1/posts', postRoutes);
 App.use('/api/v1/comments', commentRoutes);
 App.use('/api/v1/user', userRoutes);

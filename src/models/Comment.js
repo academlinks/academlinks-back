@@ -4,7 +4,7 @@ const { Schema, model } = mongoose;
 const CommentSchema = new Schema(
   {
     post: {
-      type: Schema.ObjectId,
+      type: String,
     },
 
     author: {
@@ -93,6 +93,8 @@ const CommentSchema = new Schema(
   },
   { timestamps: true }
 );
+
+// CommentSchema.index({ post: 1 });
 
 CommentSchema.pre('^find', async function (next) {
   await this.populate('author');
