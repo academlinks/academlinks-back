@@ -66,7 +66,6 @@ export const deletePost = asyncWrapper(async function (req, res, next) {
       postMedia.map(async (media) => {
         try {
           const originalFileName = media.split('/')?.slice(3)[0];
-          console.log(originalFileName);
           await deletion(`public/images/${originalFileName}`);
         } catch (error) {
           return next(
@@ -83,6 +82,33 @@ export const deletePost = asyncWrapper(async function (req, res, next) {
   await postToDelete.delete();
 
   res.status(204).json({ deleted: true });
+});
+
+// export const checkFileExistence = asyncWrapper(async function (req, res, next) {
+//   console.log(req.files);
+//   if (!req.files) return next();
+
+//   const originalFileNames = req.files.map((file) => file.split('/')?.slice(3)[0]);
+
+//   const checkFileExistence = promisify(fs.existsSync);
+
+//   const newFiles = originalFileNames.filter(file=>)
+
+// });
+
+export const updatePost = asyncWrapper(async function (req, res, next) {
+  const { postId } = req.params;
+  const { description } = req.body;
+  const currUser = req.user;
+
+  const post = await Post.findById(postId);
+
+  if (!post || postId.author.toString() !== currUser.id)
+    return next(new AppError(404, 'post does not exists'));
+
+  //
+
+  rs.status(200).json('testing');
 });
 
 export const reactOnPost = asyncWrapper(async function (req, res, next) {
@@ -194,6 +220,5 @@ export const sharePost = asyncWrapper(async function (req, res, next) {
   res.status(200).json();
 });
 
-export const updatePost = asyncWrapper(async function (req, res, next) {});
 //////////////////////////////////////////////////////////////////////
 export const fnName = asyncWrapper(async function (req, res, next) {});

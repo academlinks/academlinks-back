@@ -11,10 +11,10 @@ const router = express.Router();
 
 router.route('/search').get(checkAuth, searchUsers);
 
-router.route('/:userId/profile').get(checkAuth, getUserProfile);
+router.route('/:userId/feed').get(checkAuth, getUserFeed);
 
 router.route('/:userId/profile/posts').get(checkAuth, getProfilePosts);
 
-router.route('/:userId/feed').get(checkAuth, getUserFeed);
+router.route('/:userId/profile').get(checkAuth, getUserProfile);
 
 export default router;
