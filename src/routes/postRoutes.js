@@ -4,6 +4,7 @@ import {
   deletePost,
   uploadImages,
   resizeAndOptimiseMedia,
+  updatePost,
   reactOnPost,
   getPostComments,
 } from '../controllers/postController.js';
@@ -16,7 +17,10 @@ router.route('/:postId/reaction').post(checkAuth, reactOnPost);
 
 router.route('/:postId/comments').get(checkAuth, getPostComments).post(checkAuth, addComment);
 
-router.route('/:postId').delete(checkAuth, deletePost);
+router
+  .route('/:postId')
+  .delete(checkAuth, deletePost)
+  .patch(checkAuth, uploadImages, resizeAndOptimiseMedia, updatePost);
 
 router.route('/').post(checkAuth, uploadImages, resizeAndOptimiseMedia, createPost);
 

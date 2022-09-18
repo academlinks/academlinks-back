@@ -84,31 +84,69 @@ export const deletePost = asyncWrapper(async function (req, res, next) {
   res.status(204).json({ deleted: true });
 });
 
-// export const checkFileExistence = asyncWrapper(async function (req, res, next) {
-//   console.log(req.files);
-//   if (!req.files) return next();
-
-//   const originalFileNames = req.files.map((file) => file.split('/')?.slice(3)[0]);
-
-//   const checkFileExistence = promisify(fs.existsSync);
-
-//   const newFiles = originalFileNames.filter(file=>)
-
-// });
-
 export const updatePost = asyncWrapper(async function (req, res, next) {
   const { postId } = req.params;
-  const { description } = req.body;
+  const { description, media } = req.body;
   const currUser = req.user;
 
-  const post = await Post.findById(postId);
+  const post = await Post.findById(postId)
+    .populate({
+      path: 'author',
+      select: 'userName profileImg',
+    })
+    .populate({
+      path: 'authenticAuthor',
+      select: 'userName profileImg',
+    })
+    .populate({
+      path: 'reactions.author',
+      select: 'userName profileImg',
+    });
 
-  if (!post || postId.author.toString() !== currUser.id)
+  if (!post || post.author._id.toString() !== currUser.id)
     return next(new AppError(404, 'post does not exists'));
 
-  //
+  const deletion = promisify(fs.unlink);
 
-  rs.status(200).json('testing');
+  const existingFiles = post.media;
+  const filteredMedia = [];
+  if (existingFiles?.[0])
+    Promise.all(
+      existingFiles.map(async (file) => {
+        try {
+          if (!media?.includes(file)) {
+            const originalFileName = file.split('/')?.slice(3)[0];
+            await deletion(`public/images/${originalFileName}`);
+          } else filteredMedia.push(file);
+        } catch (error) {
+          return next(
+            new AppError(
+              403,
+              "something went wrong, cant't delete removed post media files please try again"
+            )
+          );
+        }
+      })
+    );
+
+  if (req.files) {
+    const newFiles = req.xOriginal.map(
+      (fileName) => `${req.protocol}://${'localhost:4000'}/${fileName}`
+    );
+
+    const modifiedExistingFiles = filteredMedia[0] ? filteredMedia : [];
+
+    // const matchModifiedFilesToExisting = promisify(fs.existsSync);
+    // const match = await matchModifiedFilesToExisting(`public/images/${originalFileName}`);
+
+    post.media = [...modifiedExistingFiles, ...newFiles];
+  } else post.media = media;
+
+  if (description) post.description = description;
+
+  await post.save();
+
+  res.status(200).json(post);
 });
 
 export const reactOnPost = asyncWrapper(async function (req, res, next) {
