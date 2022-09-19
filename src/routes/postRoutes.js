@@ -1,12 +1,14 @@
 import express from 'express';
 import {
+  uploadPostMediaFiles,
+  resizeAndOptimiseMedia,
   createPost,
   deletePost,
-  uploadImages,
-  resizeAndOptimiseMedia,
   updatePost,
   reactOnPost,
+  sharePost,
   getPostComments,
+  getPost,
 } from '../controllers/postController.js';
 import { addComment } from '../controllers/commentsController.js';
 import { checkAuth } from '../controllers/authenticationController.js';
@@ -19,9 +21,13 @@ router.route('/:postId/comments').get(checkAuth, getPostComments).post(checkAuth
 
 router
   .route('/:postId')
+  .get(checkAuth, getPost)
+  .post(checkAuth, sharePost)
   .delete(checkAuth, deletePost)
-  .patch(checkAuth, uploadImages, resizeAndOptimiseMedia, updatePost);
+  .patch(checkAuth, uploadPostMediaFiles('images'), resizeAndOptimiseMedia, updatePost);
 
-router.route('/').post(checkAuth, uploadImages, resizeAndOptimiseMedia, createPost);
+router
+  .route('/')
+  .post(checkAuth, uploadPostMediaFiles('images'), resizeAndOptimiseMedia, createPost);
 
 export default router;

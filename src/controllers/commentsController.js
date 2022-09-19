@@ -8,6 +8,8 @@ export const addComment = asyncWrapper(async function (req, res, next) {
   const { text, tags } = req.body;
   const currUser = req.user;
 
+  if (!text) return next(new AppError(400, "text field can't be empty"));
+
   const updatedPost = await Post.findByIdAndUpdate(postId, {
     $inc: { commentsAmount: 1 },
   });
@@ -17,12 +19,7 @@ export const addComment = asyncWrapper(async function (req, res, next) {
   const comment = await Comment.create({ post: postId, text, author: currUser.id, tags });
 
   await comment.populate({
-    path: 'author',
-    select: 'userName profileImg',
-  });
-
-  await comment.populate({
-    path: 'tags',
+    path: 'author tags',
     select: 'userName profileImg',
   });
 
@@ -34,26 +31,29 @@ export const addCommentReply = asyncWrapper(async function (req, res, next) {
   const { text, tags } = req.body;
   const currUser = req.user;
 
-  const updatedComment = await Comment.findByIdAndUpdate(
-    commentId,
-    {
-      $push: { replies: { tags, text, author: currUser.id } },
-      $inc: { repliesAmount: 1 },
-    },
-    { new: true }
-  )
-    .populate({
-      path: 'replies.author',
-      select: 'userName profileImg',
-    })
-    .populate({
-      path: 'replies.tags',
-      select: 'userName profileImg',
-    });
+  if (!text) return next(new AppError(400, 'please enter the comment text'));
 
-  const newCommentReply = updatedComment.replies[updatedComment.replies.length - 1];
+  const commentToUpdate = await Comment.findById(commentId);
 
-  await Post.findByIdAndUpdate(updatedComment.post, { $inc: { commentsAmount: 1 } });
+  if (!commentToUpdate) return next(new AppError(400, 'comment does not exists'));
+
+  const updatedPost = await Post.findByIdAndUpdate(commentToUpdate.post, {
+    $inc: { commentsAmount: 1 },
+  });
+
+  if (!updatedPost) return next(new AppError(400, 'post does not exists'));
+
+  commentToUpdate.replies = [...commentToUpdate.replies, { tags, text, author: currUser.id }];
+  commentToUpdate.repliesAmount += 1;
+
+  await commentToUpdate.populate({
+    path: 'replies.author replies.tags',
+    select: 'userName profileImg',
+  });
+
+  await commentToUpdate.save();
+
+  const newCommentReply = commentToUpdate.replies[commentToUpdate.replies.length - 1];
 
   res.status(200).json(newCommentReply);
 });
@@ -68,6 +68,10 @@ export const updateComment = asyncWrapper(async function (req, res, next) {
   if (!comment) return next(new AppError(404, 'comment does not exists'));
   else if (comment.author.toString() !== currUser.id)
     return next(new AppError(404, 'you are not authorized for this operation'));
+
+  const post = await Post.findById(comment.post);
+
+  if (!post) return next(new AppError(400, 'post does not exists'));
 
   comment.text = text;
   comment.tags = tags;
@@ -94,6 +98,10 @@ export const updateCommentReply = asyncWrapper(async function (req, res, next) {
 
   const comment = await Comment.findById(commentId);
 
+  const post = await Post.findById(comment.post);
+
+  if (!post) return next(new AppError(400, 'post does not exists'));
+
   const i = comment.replies.findIndex(
     (comm) => comm._id.toString() === replyId && comm.author.toString() === currUser.id
   );
@@ -101,8 +109,7 @@ export const updateCommentReply = asyncWrapper(async function (req, res, next) {
   const commentReply = comment.replies[i];
 
   if (!comment || !commentReply) return next(new AppError(404, 'comment does not exists'));
-
-  if (commentReply.author.toString() !== currUser.id)
+  else if (commentReply.author.toString() !== currUser.id)
     return next(new AppError(404, 'you are not authorized for this operation'));
 
   commentReply.text = text;
@@ -133,7 +140,8 @@ export const deleteComment = asyncWrapper(async function (req, res, next) {
 
   const post = await Post.findById(comment.post);
 
-  if (comment.author.toString() !== currUser.id || post.author.toString() !== currUser.id)
+  if (!post) return next(new AppError(400, 'post does not exists'));
+  else if (comment.author.toString() !== currUser.id || post.author.toString() !== currUser.id)
     return next(new AppError(404, 'you are not authorized for this operation'));
 
   post.commentsAmount = post.commentsAmount - (comment.repliesAmount + 1);
@@ -160,7 +168,8 @@ export const deleteCommentReply = asyncWrapper(async function (req, res, next) {
 
   const post = await Post.findById(comment.post);
 
-  if (post.author.toString() !== currUser.id || commentReply.author.toString() !== currUser.id)
+  if (!post) return next(new AppError(400, 'post does not exists'));
+  else if (post.author.toString() !== currUser.id || commentReply.author.toString() !== currUser.id)
     return next(new AppError(404, 'you are not authorized for this operation'));
 
   comment.replies = comment.replies.filter(

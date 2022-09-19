@@ -1,7 +1,25 @@
 import AppError from '../lib/AppError.js';
 import { asyncWrapper } from '../lib/asyncWrapper.js';
+
 import Post from '../models/Post.js';
 import User from '../models/User.js';
+
+import fs from 'fs';
+import { promisify } from 'util';
+
+import { uploadMedia, editMedia } from '../lib/multer.js';
+
+export const resizeAndOptimiseMedia = editMedia({
+  multy: false,
+  resize: false,
+});
+
+export const uploadUserProfileFile = (imageName) =>
+  uploadMedia({
+    storage: 'memoryStorage',
+    upload: 'single',
+    filename: imageName,
+  });
 
 export const searchUsers = asyncWrapper(async function (req, res, next) {
   const { key } = req.query;
@@ -37,16 +55,8 @@ export const getProfilePosts = asyncWrapper(async function (req, res, next) {
 
   const posts = await Post.find({ author: userId })
     .populate({
-      path: 'author',
+      path: 'author authenticAuthor reactions.author',
       select: 'userName profileImg',
-    })
-    .populate({
-      path: 'authenticAuthor',
-      select: 'userName profileImg',
-    })
-    .populate({
-      path: 'reactions.author',
-      select: 'userName',
     })
     .sort('-createdAt');
 
@@ -60,22 +70,18 @@ export const getUserFeed = asyncWrapper(async function (req, reqs, next) {
 
   const userFriends = user.friends;
 
-  const userPosts = await Post.find({ author: userId })
-    .populate({
-      path: 'author',
-      select: 'userName profileImg',
-    })
-    .populate({ path: 'authenticAuthor', select: 'userName profileImg' });
+  const userPosts = await Post.find({ author: userId }).populate({
+    path: 'author authenticAuthor',
+    select: 'userName profileImg',
+  });
 
   const [friendsPosts] = await Promise.all(
     userFriends.map(
       async (friend) =>
-        await Post.find({ author: friend.friend })
-          .populate({
-            path: 'author',
-            select: 'userName profileImg',
-          })
-          .populate({ path: 'authenticAuthor', select: 'userName profileImg' })
+        await Post.find({ author: friend.friend }).populate({
+          path: 'author authenticAuthor',
+          select: 'userName profileImg',
+        })
     )
   );
 
@@ -86,6 +92,84 @@ export const getUserFeed = asyncWrapper(async function (req, reqs, next) {
   reqs.status(200).json(feed);
 });
 
+export const updateProfileImage = asyncWrapper(async function (req, res, next) {
+  const currUser = req.user;
+
+  const user = await User.findById(currUser.id);
+
+  const existingProfileImg = user.profileImg;
+  const originalFileName = existingProfileImg.split('/')?.slice(3)[0];
+
+  async function deleteExistingImage() {
+    try {
+      const deletion = promisify(fs.unlink);
+      await deletion(`public/images/${originalFileName}`);
+    } catch (error) {
+      throw new Error(error.message);
+    }
+  }
+
+  let mediaUrl;
+  try {
+    if (originalFileName === 'profile-default.jpg') return;
+    await deleteExistingImage();
+    mediaUrl = `${req.protocol}://${'localhost:4000'}/${req.xOriginal}`;
+  } catch (error) {
+    return next(
+      new AppError(
+        406,
+        "something went wrong, cant't find and delete your existing profile images. please report the problem or try later"
+      )
+    );
+  }
+
+  user.profileImg = mediaUrl;
+
+  await user.save();
+
+  res.status(201).json(mediaUrl);
+});
+
+export const updateCoverImage = asyncWrapper(async function (req, res, next) {
+  const currUser = req.user;
+
+  const user = await User.findById(currUser.id);
+
+  const existingProfileImg = user.coverImg;
+  const originalFileName = existingProfileImg.split('/')?.slice(3)[0];
+
+  async function deleteExistingImage() {
+    try {
+      const deletion = promisify(fs.unlink);
+      await deletion(`public/images/${originalFileName}`);
+    } catch (error) {
+      throw new Error(error.message);
+    }
+  }
+
+  let mediaUrl;
+  try {
+    if (originalFileName === 'cover-default.webp') return;
+    await deleteExistingImage();
+    mediaUrl = `${req.protocol}://${'localhost:4000'}/${req.xOriginal}`;
+  } catch (error) {
+    return next(
+      new AppError(
+        406,
+        "something went wrong, cant't find and delete your existing cover images. please report the problem or try later"
+      )
+    );
+  }
+
+  user.coverImg = mediaUrl;
+
+  await user.save();
+
+  res.status(201).json(mediaUrl);
+});
+
+/////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////
 export const getUser = asyncWrapper(async function (req, res, next) {
   const user = await User.findById(currUser.id);
   await user.populate('sentRequests.adressat pendingRequests.adressat friends.friend');
@@ -139,39 +223,6 @@ export const deleteUserInfo = asyncWrapper(async function (req, res, next) {
 
   if (!updatedUser) throw new Error('user does not exist');
 
-  res.status(200).json();
-});
-
-export const updateProfileImage = asyncWrapper(async function (req, res, next) {
-  const user = await User.findById(currUser.id);
-
-  async function deleteExistingImage() {
-    try {
-      const existingProfileImg = user.profileImg;
-      const originalFileName = existingProfileImg.split('/')?.slice(4)[0];
-      const deletion = promisify(fs.unlink);
-      await deletion(`public/images/${originalFileName}`);
-    } catch (error) {
-      throw new Error(error.message);
-    }
-  }
-
-  let mediaUrl;
-  try {
-    mediaUrl = await fileUpload(file, currUser.id);
-    await deleteExistingImage();
-  } catch (error) {
-    throw new Error(error.message);
-  }
-
-  user.profileImg = mediaUrl;
-
-  await user.save();
-
-  res.status(200).json();
-});
-
-export const updateCoverImage = asyncWrapper(async function (req, res, next) {
   res.status(200).json();
 });
 
