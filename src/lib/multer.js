@@ -38,11 +38,6 @@ const media = (params) =>
  */
 export const uploadMedia = (params) => media(params);
 
-uploadMedia({
-  upload: 'any',
-  fileName: 'profileImg',
-});
-
 // EDIT AND RESIZE MEDIA
 /**
  * @param {} params {multy, width, height}

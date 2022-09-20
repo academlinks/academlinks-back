@@ -98,12 +98,12 @@ export const updateProfileImage = asyncWrapper(async function (req, res, next) {
   const user = await User.findById(currUser.id);
 
   const existingProfileImg = user.profileImg;
-  const originalFileName = existingProfileImg.split('/')?.slice(3)[0];
+  const originalFileNameFragments = existingProfileImg.split('/')?.slice(3);
 
   async function deleteExistingImage() {
     try {
       const deletion = promisify(fs.unlink);
-      await deletion(`public/images/${originalFileName}`);
+      await deletion(`public/images/${originalFileNameFragments[0]}`);
     } catch (error) {
       throw new Error(error.message);
     }
@@ -111,8 +111,8 @@ export const updateProfileImage = asyncWrapper(async function (req, res, next) {
 
   let mediaUrl;
   try {
-    if (originalFileName === 'profile-default.jpg') return;
-    await deleteExistingImage();
+    if (!originalFileNameFragments[1] && originalFileNameFragments[1] !== 'profile-default.jpg')
+      await deleteExistingImage();
     mediaUrl = `${req.protocol}://${'localhost:4000'}/${req.xOriginal}`;
   } catch (error) {
     return next(
@@ -136,12 +136,12 @@ export const updateCoverImage = asyncWrapper(async function (req, res, next) {
   const user = await User.findById(currUser.id);
 
   const existingProfileImg = user.coverImg;
-  const originalFileName = existingProfileImg.split('/')?.slice(3)[0];
+  const originalFileNameFragments = existingProfileImg.split('/')?.slice(3);
 
   async function deleteExistingImage() {
     try {
       const deletion = promisify(fs.unlink);
-      await deletion(`public/images/${originalFileName}`);
+      await deletion(`public/images/${originalFileNameFragments[0]}`);
     } catch (error) {
       throw new Error(error.message);
     }
@@ -149,8 +149,8 @@ export const updateCoverImage = asyncWrapper(async function (req, res, next) {
 
   let mediaUrl;
   try {
-    if (originalFileName === 'cover-default.webp') return;
-    await deleteExistingImage();
+    if (!originalFileNameFragments[1] && originalFileNameFragments[1] !== 'cover-default.webp')
+      await deleteExistingImage();
     mediaUrl = `${req.protocol}://${'localhost:4000'}/${req.xOriginal}`;
   } catch (error) {
     return next(

@@ -1,6 +1,7 @@
 import express from 'express';
 import {
   uploadUserProfileFile,
+  resizeAndOptimiseMedia,
   searchUsers,
   getUserProfile,
   getProfilePosts,
@@ -18,11 +19,11 @@ router.route('/:userId/profile/posts').get(checkAuth, getProfilePosts);
 
 router
   .route('/:userId/profile/profileImg')
-  .post(checkAuth, uploadUserProfileFile('profileImg'), updateProfileImage);
+  .post(checkAuth, uploadUserProfileFile('profileImg'), resizeAndOptimiseMedia, updateProfileImage);
 
 router
   .route('/:userId/profile/coverImg')
-  .post(checkAuth, uploadUserProfileFile('coverImg'), updateCoverImage);
+  .post(checkAuth, uploadUserProfileFile('coverImg'), resizeAndOptimiseMedia, updateCoverImage);
 
 router.route('/:userId/profile').get(checkAuth, getUserProfile);
 
