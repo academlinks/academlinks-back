@@ -9,11 +9,14 @@ import {
   sharePost,
   getPostComments,
   getPost,
+  savePost,
 } from '../controllers/postController.js';
 import { addComment } from '../controllers/commentsController.js';
 import { checkAuth } from '../controllers/authenticationController.js';
 
 const router = express.Router();
+
+router.route('/:postId/bookmark').post(checkAuth, savePost);
 
 router.route('/:postId/reaction').post(checkAuth, reactOnPost);
 

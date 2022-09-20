@@ -33,7 +33,9 @@ export const getUserProfile = asyncWrapper(async function (req, res, next) {
   const { userId } = req.params;
 
   const user = await User.findById(userId)
-    .select('-sentRequests -pendingRequests')
+    .select(
+      '-sentRequests -pendingRequests -education -workplace.description -workplace.workingYears'
+    )
     .populate({
       path: 'friends.friend',
       select: 'userName profileImg',
@@ -42,7 +44,6 @@ export const getUserProfile = asyncWrapper(async function (req, res, next) {
 
   const userProfile = {
     ...user._doc,
-    education: user._doc.education[0],
     workplace: user._doc.workplace[0],
     friends: user._doc.friends.slice(0, 9).map((fr) => fr.friend),
   };
@@ -166,6 +167,20 @@ export const updateCoverImage = asyncWrapper(async function (req, res, next) {
   await user.save();
 
   res.status(201).json(mediaUrl);
+});
+
+export const getBookmarks = asyncWrapper(async function (req, res, next) {
+  const { userId } = req.params;
+  const currUser = req.user;
+
+  if (userId !== currUser.id)
+    return next(new AppError(403, 'you are not authorizd for this operation'));
+
+  const savedPosts = await User.findById(userId)
+    .select('bookmarks')
+    .populate({ path: 'bookmarks', populate: { path: 'author', select: 'userName profileImg' } });
+
+  res.status(200).json(savedPosts.bookmarks);
 });
 
 /////////////////////////////////////////////////////////////////////

@@ -241,6 +241,27 @@ export const getPost = asyncWrapper(async function (req, res, next) {
   res.status(200).json(post);
 });
 
+export const savePost = asyncWrapper(async function (req, res, next) {
+  const { postId } = req.params;
+  const currUser = req.user;
+
+  const user = await User.findById(currUser.id);
+
+  const operation = {};
+
+  if (user.bookmarks.includes(postId)) {
+    user.bookmarks = user.bookmarks.filter((bookmark) => bookmark.toString() !== postId);
+    operation.removed = true;
+  } else {
+    user.bookmarks.push(postId);
+    operation.saved = true;
+  }
+
+  await user.save();
+
+  res.status(201).json(operation);
+});
+
 /////////////////////////////////////////////////////////////////////
 
 export const getAllPosts = asyncWrapper(async function (req, res, next) {

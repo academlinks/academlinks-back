@@ -141,7 +141,7 @@ export const deleteComment = asyncWrapper(async function (req, res, next) {
   const post = await Post.findById(comment.post);
 
   if (!post) return next(new AppError(400, 'post does not exists'));
-  else if (comment.author.toString() !== currUser.id || post.author.toString() !== currUser.id)
+  else if (comment.author.toString() !== currUser.id)
     return next(new AppError(404, 'you are not authorized for this operation'));
 
   post.commentsAmount = post.commentsAmount - (comment.repliesAmount + 1);
@@ -169,7 +169,7 @@ export const deleteCommentReply = asyncWrapper(async function (req, res, next) {
   const post = await Post.findById(comment.post);
 
   if (!post) return next(new AppError(400, 'post does not exists'));
-  else if (post.author.toString() !== currUser.id || commentReply.author.toString() !== currUser.id)
+  else if (commentReply.author.toString() !== currUser.id)
     return next(new AppError(404, 'you are not authorized for this operation'));
 
   comment.replies = comment.replies.filter(

@@ -8,6 +8,7 @@ import {
   getUserFeed,
   updateProfileImage,
   updateCoverImage,
+  getBookmarks,
 } from '../controllers/userController.js';
 import { checkAuth } from '../controllers/authenticationController.js';
 
@@ -16,6 +17,8 @@ const router = express.Router();
 router.route('/search').get(checkAuth, searchUsers);
 
 router.route('/:userId/profile/posts').get(checkAuth, getProfilePosts);
+
+router.route('/:userId/profile/bookmarks').get(checkAuth, getBookmarks);
 
 router
   .route('/:userId/profile/profileImg')

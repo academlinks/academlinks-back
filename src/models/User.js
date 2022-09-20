@@ -109,6 +109,7 @@ const UserSchema = new Schema(
       type: Number,
       default: 0,
     },
+    bookmarks: [{ type: Schema.ObjectId, ref: 'Post' }],
     password: {
       type: String,
       require: true,
