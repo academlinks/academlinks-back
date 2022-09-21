@@ -4,6 +4,7 @@ import { asyncWrapper } from '../lib/asyncWrapper.js';
 import Post from '../models/Post.js';
 import User from '../models/User.js';
 
+import mongoose from 'mongoose';
 import fs from 'fs';
 import { promisify } from 'util';
 
@@ -67,30 +68,58 @@ export const getProfilePosts = asyncWrapper(async function (req, res, next) {
 export const getUserFeed = asyncWrapper(async function (req, reqs, next) {
   const { userId } = req.params;
 
-  const user = await User.findById(userId);
+  const feed = await User.aggregate([
+    {
+      $match: { _id: mongoose.Types.ObjectId(userId) },
+    },
+    {
+      $project: {
+        _id: 1,
+        friends: 1,
+      },
+    },
+    {
+      $unwind: '$friends',
+    },
+    {
+      $lookup: {
+        from: 'posts',
+        localField: 'friends.friend',
+        foreignField: 'author',
+        as: 'friendsPosts',
+        // pipeline: [
+        //   {
+        //     $skip: 1,
+        //   },
+        // ],
+      },
+    },
+    {
+      $lookup: {
+        from: 'posts',
+        localField: '_id',
+        foreignField: 'author',
+        as: 'userPosts',
+        // pipeline: [
+        //   {
+        //     $skip: 1,
+        //   },
+        // ],
+      },
+    },
+    {
+      $project: {
+        feed: { $concatArrays: ['$friendsPosts', '$userPosts'] },
+      },
+    },
+  ]);
 
-  const userFriends = user.friends;
-
-  const userPosts = await Post.find({ author: userId }).populate({
+  const feedPosts = await Post.populate(feed[0].feed, {
     path: 'author authenticAuthor',
     select: 'userName profileImg',
   });
 
-  const [friendsPosts] = await Promise.all(
-    userFriends.map(
-      async (friend) =>
-        await Post.find({ author: friend.friend }).populate({
-          path: 'author authenticAuthor',
-          select: 'userName profileImg',
-        })
-    )
-  );
-
-  const feed = [...friendsPosts, ...userPosts].sort(
-    (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-  );
-
-  reqs.status(200).json(feed);
+  reqs.status(200).json(feedPosts);
 });
 
 export const updateProfileImage = asyncWrapper(async function (req, res, next) {
