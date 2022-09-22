@@ -10,6 +10,11 @@ import {
   updateCoverImage,
   getBookmarks,
   isFriend,
+  sendFriendRequest,
+  cancelFriendRequest,
+  deleteFriendRequest,
+  confirmFriendRequest,
+  deleteFriend,
 } from '../controllers/userController.js';
 import { checkAuth } from '../controllers/authenticationController.js';
 
@@ -34,5 +39,17 @@ router.route('/:userId/profile').get(checkAuth, getUserProfile);
 router.route('/:userId/feed').get(checkAuth, getUserFeed);
 
 router.route('/:userId/isFriend').get(checkAuth, isFriend);
+
+router
+  .route('/:userId/request')
+  .post(checkAuth, sendFriendRequest)
+  .patch(checkAuth, confirmFriendRequest);
+
+router
+  .route('/:userId/cancel-request')
+  .post(checkAuth, deleteFriendRequest)
+  .patch(checkAuth, cancelFriendRequest);
+
+router.route('/:userId/friends').delete(checkAuth, deleteFriend);
 
 export default router;

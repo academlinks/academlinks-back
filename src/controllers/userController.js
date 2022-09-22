@@ -259,6 +259,121 @@ export const isFriend = asyncWrapper(async function (req, res, next) {
   res.status(200).json(info);
 });
 
+export const sendFriendRequest = asyncWrapper(async function (req, res, next) {
+  const { userId } = req.params;
+  const currUser = req.user;
+
+  if (userId === currUser.id) return next(new AppError(400, 'please provide us valid user id'));
+
+  const user = await User.findById(currUser.id);
+  const adressatUser = await User.findById(userId);
+
+  if (!adressatUser) return next(new AppError(404, 'user does not exists'));
+
+  adressatUser.pendingRequests.push({ adressat: currUser.id });
+  user.sentRequests.push({ adressat: adressatUser._id });
+
+  await user.save();
+  await adressatUser.save();
+
+  res.status(200).json({ sent: true });
+});
+
+export const cancelFriendRequest = asyncWrapper(async function (req, res, next) {
+  const { userId } = req.params;
+  const currUser = req.user;
+
+  if (userId === currUser.id) return next(new AppError(400, 'please provide us valid user id'));
+
+  const user = await User.findById(currUser.id);
+  const adressatUser = await User.findById(userId);
+
+  adressatUser.pendingRequests = adressatUser.pendingRequests.filter(
+    (request) => request.adressat.toString() !== currUser.id
+  );
+
+  user.sentRequests = user.sentRequests.filter(
+    (request) => request.adressat.toString() !== adressatUser._id.toString()
+  );
+
+  await user.save();
+  await adressatUser.save();
+
+  res.status(200).json({ canceled: true });
+});
+
+export const deleteFriendRequest = asyncWrapper(async function (req, res, next) {
+  const { userId } = req.params;
+  const currUser = req.user;
+
+  if (userId === currUser.id) return next(new AppError(400, 'please provide us valid user id'));
+
+  const user = await User.findById(currUser.id);
+  const adressatUser = await User.findById(userId);
+
+  adressatUser.sentRequests = adressatUser.sentRequests.filter(
+    (request) => request.adressat.toString() !== currUser.id
+  );
+
+  user.pendingRequests = user.pendingRequests.filter(
+    (request) => request.adressat.toString() !== adressatUser._id.toString()
+  );
+
+  await user.save();
+  await adressatUser.save();
+
+  res.status(200).json({ deleted: true });
+});
+
+export const confirmFriendRequest = asyncWrapper(async function (req, res, next) {
+  const { userId } = req.params;
+  const currUser = req.user;
+
+  if (userId === currUser.id) return next(new AppError(400, 'please provide us valid user id'));
+
+  const user = await User.findById(currUser.id);
+  const adressatUser = await User.findById(userId);
+
+  if (!adressatUser) return next(new AppError(404, 'user does not exists'));
+
+  adressatUser.sentRequests = adressatUser.sentRequests.filter(
+    (request) => request.adressat.toString() !== currUser.id
+  );
+
+  user.pendingRequests = user.pendingRequests.filter(
+    (request) => request.adressat.toString() !== adressatUser._id.toString()
+  );
+
+  user.friends.push({ friend: adressatUser._id });
+  adressatUser.friends.push({ friend: currUser.id });
+
+  await user.save();
+  await adressatUser.save();
+
+  res.status(200).json({ confirmed: true });
+});
+
+export const deleteFriend = asyncWrapper(async function (req, res, next) {
+  const { userId } = req.params;
+  const currUser = req.user;
+
+  if (userId === currUser.id) return next(new AppError(400, 'please provide us valid user id'));
+
+  const user = await User.findById(currUser.id);
+  const adressatUser = await User.findById(userId);
+
+  if (!adressatUser) return next(new AppError(404, 'user does not exists'));
+
+  adressatUser.friends = adressatUser.friends.filter((fr) => fr.friend.toString() !== currUser.id);
+
+  user.friends = user.friends.filter((fr) => fr.friend.toString() !== adressatUser._id.toString());
+
+  await user.save();
+  await adressatUser.save();
+
+  res.status(200).json({ deleted: true });
+});
+
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
 export const getUser = asyncWrapper(async function (req, res, next) {
@@ -313,120 +428,6 @@ export const deleteUserInfo = asyncWrapper(async function (req, res, next) {
   );
 
   if (!updatedUser) throw new Error('user does not exist');
-
-  res.status(200).json();
-});
-
-export const sendFriendRequest = asyncWrapper(async function (req, res, next) {
-  if (adressat === currUser.id) throw new Error("you can't send friend request to yourself");
-
-  const user = await User.findById(currUser.id);
-  const adressatUser = await User.findById(adressat);
-
-  if (!adressatUser) throw new Error('user does not exists');
-
-  adressatUser.pendingRequests.push({ adressat: currUser.id });
-  user.sentRequests.push({ adressat: adressatUser._id });
-
-  await user.save();
-  await adressatUser.save();
-
-  await user.populate({ path: 'sentRequests.adressat' });
-
-  res.status(200).json();
-});
-
-export const cancelFriendRequest = asyncWrapper(async function (req, res, next) {
-  if (adressat === currUser.id) throw new Error('please provide us valid user id');
-
-  const user = await User.findById(currUser.id);
-  const adressatUser = await User.findById(adressat);
-
-  adressatUser.pendingRequests = adressatUser.pendingRequests.filter(
-    (request) => request.adressat.toString() !== currUser.id
-  );
-
-  user.sentRequests = user.sentRequests.filter(
-    (request) => request.adressat.toString() !== adressatUser._id.toString()
-  );
-
-  await user.save();
-  await adressatUser.save();
-
-  await user.populate({ path: 'sentRequests.adressat' });
-
-  res.status(200).json();
-});
-
-export const deleteFriendRequest = asyncWrapper(async function (req, res, next) {
-  res.status(200).json();
-
-  if (adressat === currUser.id) throw new Error('please provide us valid user id');
-
-  const user = await User.findById(currUser.id);
-  const adressatUser = await User.findById(adressat);
-
-  adressatUser.sentRequests = adressatUser.sentRequests.filter(
-    (request) => request.adressat.toString() !== currUser.id
-  );
-
-  user.pendingRequests = user.pendingRequests.filter(
-    (request) => request.adressat.toString() !== adressatUser._id.toString()
-  );
-
-  await user.save();
-  await adressatUser.save();
-
-  await user.populate({ path: 'pendingRequests.adressat' });
-
-  res.status(200).json();
-});
-
-export const confirmFriendRequest = asyncWrapper(async function (req, res, next) {
-  res.status(200).json();
-
-  if (adressat === currUser.id) throw new Error('please provide us valid user id');
-
-  const user = await User.findById(currUser.id);
-  const adressatUser = await User.findById(adressat);
-
-  if (!adressatUser) throw new Error('user does not exists');
-
-  adressatUser.sentRequests = adressatUser.sentRequests.filter(
-    (request) => request.adressat.toString() !== currUser.id
-  );
-
-  user.pendingRequests = user.pendingRequests.filter(
-    (request) => request.adressat.toString() !== adressatUser._id.toString()
-  );
-
-  user.friends.push({ friend: adressatUser._id });
-  adressatUser.friends.push({ friend: currUser.id });
-
-  await user.save();
-  await adressatUser.save();
-
-  await user.populate({ path: 'pendingRequests.adressat' });
-
-  res.status(200).json();
-});
-
-export const deleteFriend = asyncWrapper(async function (req, res, next) {
-  if (adressat === currUser.id) throw new Error('please provide us valid user id');
-
-  const user = await User.findById(currUser.id);
-  const adressatUser = await User.findById(adressat);
-
-  if (!adressatUser) throw new Error('user does not exists');
-
-  adressatUser.friends = adressatUser.friends.filter((fr) => fr.friend.toString() !== currUser.id);
-
-  user.friends = user.friends.filter((fr) => fr.friend.toString() !== adressatUser._id.toString());
-
-  await user.save();
-  await adressatUser.save();
-
-  await user.populate({ path: 'friends.friend' });
 
   res.status(200).json();
 });
