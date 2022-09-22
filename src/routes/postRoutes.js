@@ -9,6 +9,7 @@ import {
   sharePost,
   getPostComments,
   getPost,
+  isUserPost,
   savePost,
 } from '../controllers/postController.js';
 import { addComment } from '../controllers/commentsController.js';
@@ -21,6 +22,8 @@ router.route('/:postId/bookmark').post(checkAuth, savePost);
 router.route('/:postId/reaction').post(checkAuth, reactOnPost);
 
 router.route('/:postId/comments').get(checkAuth, getPostComments).post(checkAuth, addComment);
+
+router.route('/:postId/options').get(checkAuth, isUserPost);
 
 router
   .route('/:postId')

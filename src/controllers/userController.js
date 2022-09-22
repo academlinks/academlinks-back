@@ -112,9 +112,21 @@ export const getUserFeed = asyncWrapper(async function (req, reqs, next) {
         feed: { $concatArrays: ['$friendsPosts', '$userPosts'] },
       },
     },
+    {
+      $unwind: '$feed',
+    },
+    {
+      $sort: { 'feed.createdAt': -1 },
+    },
+    {
+      $group: {
+        _id: null,
+        feedPosts: { $push: '$feed' },
+      },
+    },
   ]);
 
-  const feedPosts = await Post.populate(feed[0].feed, {
+  const feedPosts = await Post.populate(feed[0].feedPosts, {
     path: 'author authenticAuthor',
     select: 'userName profileImg',
   });
@@ -207,9 +219,44 @@ export const getBookmarks = asyncWrapper(async function (req, res, next) {
 
   const savedPosts = await User.findById(userId)
     .select('bookmarks')
-    .populate({ path: 'bookmarks', populate: { path: 'author', select: 'userName profileImg' } });
+    .populate({
+      path: 'bookmarks',
+      populate: { path: 'author authenticAuthor', select: 'userName profileImg' },
+    });
 
   res.status(200).json(savedPosts.bookmarks);
+});
+
+export const isFriend = asyncWrapper(async function (req, res, next) {
+  const { userId } = req.params;
+  const currUser = req.user;
+
+  const user = await User.findById(currUser.id);
+
+  const isFriend = user.friends.some((friend) => friend.friend.toString() === userId);
+
+  const info = {
+    isFriend,
+    isPendingRequest: false,
+    isSentRequest: false,
+    isForeign: false,
+  };
+
+  if (!isFriend) {
+    const isPendingRequest = user.pendingRequests.some(
+      (request) => request.adressat.toString() === userId
+    );
+    if (isPendingRequest) info.isPendingRequest = isPendingRequest;
+    else if (!isPendingRequest) {
+      const isSentRequest = user.sentRequests.some(
+        (request) => request.adressat.toString() === userId
+      );
+      if (isSentRequest) info.isSentRequest = isSentRequest;
+      else if (!isSentRequest) info.isForeign = true;
+    }
+  }
+
+  res.status(200).json(info);
 });
 
 /////////////////////////////////////////////////////////////////////

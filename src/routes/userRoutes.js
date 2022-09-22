@@ -9,6 +9,7 @@ import {
   updateProfileImage,
   updateCoverImage,
   getBookmarks,
+  isFriend,
 } from '../controllers/userController.js';
 import { checkAuth } from '../controllers/authenticationController.js';
 
@@ -31,5 +32,7 @@ router
 router.route('/:userId/profile').get(checkAuth, getUserProfile);
 
 router.route('/:userId/feed').get(checkAuth, getUserFeed);
+
+router.route('/:userId/isFriend').get(checkAuth, isFriend);
 
 export default router;

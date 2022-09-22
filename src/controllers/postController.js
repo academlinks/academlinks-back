@@ -241,6 +241,24 @@ export const getPost = asyncWrapper(async function (req, res, next) {
   res.status(200).json(post);
 });
 
+export const isUserPost = asyncWrapper(async function (req, res, next) {
+  const { postId } = req.params;
+  const currUser = req.user;
+
+  const post = await Post.findById(postId);
+
+  if (!post) return next(new AppError(404, 'post does not exists'));
+
+  const user = await User.findById(currUser.id);
+
+  const info = {
+    belongsToUser: post.author.toString() === currUser.id,
+    isBookmarked: user.bookmarks.includes(postId),
+  };
+
+  res.status(200).json(info);
+});
+
 export const savePost = asyncWrapper(async function (req, res, next) {
   const { postId } = req.params;
   const currUser = req.user;
