@@ -68,7 +68,7 @@ export const getProfilePosts = asyncWrapper(async function (req, res, next) {
 export const getUserFeed = asyncWrapper(async function (req, reqs, next) {
   const { userId } = req.params;
 
-  const feed = await User.aggregate([
+  const friendsPosts = await User.aggregate([
     {
       $match: { _id: mongoose.Types.ObjectId(userId) },
     },
@@ -87,49 +87,27 @@ export const getUserFeed = asyncWrapper(async function (req, reqs, next) {
         localField: 'friends.friend',
         foreignField: 'author',
         as: 'friendsPosts',
-        // pipeline: [
-        //   {
-        //     $skip: 1,
-        //   },
-        // ],
       },
     },
     {
-      $lookup: {
-        from: 'posts',
-        localField: '_id',
-        foreignField: 'author',
-        as: 'userPosts',
-        // pipeline: [
-        //   {
-        //     $skip: 1,
-        //   },
-        // ],
-      },
-    },
-    {
-      $project: {
-        feed: { $concatArrays: ['$friendsPosts', '$userPosts'] },
-      },
-    },
-    {
-      $unwind: '$feed',
-    },
-    {
-      $sort: { 'feed.createdAt': -1 },
+      $unwind: '$friendsPosts',
     },
     {
       $group: {
-        _id: null,
-        feedPosts: { $push: '$feed' },
+        _id: '$_id',
+        feedPosts: { $push: '$friendsPosts._id' },
       },
     },
   ]);
 
-  const feedPosts = await Post.populate(feed[0].feedPosts, {
-    path: 'author authenticAuthor',
-    select: 'userName profileImg',
-  });
+  const feedPosts = await Post.find({
+    $or: [{ author: userId }, { _id: friendsPosts[0]?.feedPosts }],
+  })
+    .sort('-createdAt')
+    .populate({
+      path: 'author authenticAuthor',
+      select: 'userName profileImg',
+    });
 
   reqs.status(200).json(feedPosts);
 });
@@ -257,121 +235,6 @@ export const isFriend = asyncWrapper(async function (req, res, next) {
   }
 
   res.status(200).json(info);
-});
-
-export const sendFriendRequest = asyncWrapper(async function (req, res, next) {
-  const { userId } = req.params;
-  const currUser = req.user;
-
-  if (userId === currUser.id) return next(new AppError(400, 'please provide us valid user id'));
-
-  const user = await User.findById(currUser.id);
-  const adressatUser = await User.findById(userId);
-
-  if (!adressatUser) return next(new AppError(404, 'user does not exists'));
-
-  adressatUser.pendingRequests.push({ adressat: currUser.id });
-  user.sentRequests.push({ adressat: adressatUser._id });
-
-  await user.save();
-  await adressatUser.save();
-
-  res.status(200).json({ sent: true });
-});
-
-export const cancelFriendRequest = asyncWrapper(async function (req, res, next) {
-  const { userId } = req.params;
-  const currUser = req.user;
-
-  if (userId === currUser.id) return next(new AppError(400, 'please provide us valid user id'));
-
-  const user = await User.findById(currUser.id);
-  const adressatUser = await User.findById(userId);
-
-  adressatUser.pendingRequests = adressatUser.pendingRequests.filter(
-    (request) => request.adressat.toString() !== currUser.id
-  );
-
-  user.sentRequests = user.sentRequests.filter(
-    (request) => request.adressat.toString() !== adressatUser._id.toString()
-  );
-
-  await user.save();
-  await adressatUser.save();
-
-  res.status(200).json({ canceled: true });
-});
-
-export const deleteFriendRequest = asyncWrapper(async function (req, res, next) {
-  const { userId } = req.params;
-  const currUser = req.user;
-
-  if (userId === currUser.id) return next(new AppError(400, 'please provide us valid user id'));
-
-  const user = await User.findById(currUser.id);
-  const adressatUser = await User.findById(userId);
-
-  adressatUser.sentRequests = adressatUser.sentRequests.filter(
-    (request) => request.adressat.toString() !== currUser.id
-  );
-
-  user.pendingRequests = user.pendingRequests.filter(
-    (request) => request.adressat.toString() !== adressatUser._id.toString()
-  );
-
-  await user.save();
-  await adressatUser.save();
-
-  res.status(200).json({ deleted: true });
-});
-
-export const confirmFriendRequest = asyncWrapper(async function (req, res, next) {
-  const { userId } = req.params;
-  const currUser = req.user;
-
-  if (userId === currUser.id) return next(new AppError(400, 'please provide us valid user id'));
-
-  const user = await User.findById(currUser.id);
-  const adressatUser = await User.findById(userId);
-
-  if (!adressatUser) return next(new AppError(404, 'user does not exists'));
-
-  adressatUser.sentRequests = adressatUser.sentRequests.filter(
-    (request) => request.adressat.toString() !== currUser.id
-  );
-
-  user.pendingRequests = user.pendingRequests.filter(
-    (request) => request.adressat.toString() !== adressatUser._id.toString()
-  );
-
-  user.friends.push({ friend: adressatUser._id });
-  adressatUser.friends.push({ friend: currUser.id });
-
-  await user.save();
-  await adressatUser.save();
-
-  res.status(200).json({ confirmed: true });
-});
-
-export const deleteFriend = asyncWrapper(async function (req, res, next) {
-  const { userId } = req.params;
-  const currUser = req.user;
-
-  if (userId === currUser.id) return next(new AppError(400, 'please provide us valid user id'));
-
-  const user = await User.findById(currUser.id);
-  const adressatUser = await User.findById(userId);
-
-  if (!adressatUser) return next(new AppError(404, 'user does not exists'));
-
-  adressatUser.friends = adressatUser.friends.filter((fr) => fr.friend.toString() !== currUser.id);
-
-  user.friends = user.friends.filter((fr) => fr.friend.toString() !== adressatUser._id.toString());
-
-  await user.save();
-  await adressatUser.save();
-
-  res.status(200).json({ deleted: true });
 });
 
 /////////////////////////////////////////////////////////////////////

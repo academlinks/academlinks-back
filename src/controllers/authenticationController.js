@@ -8,7 +8,7 @@ export const loginUser = asyncWrapper(async function (req, res, next) {
   const { email, password } = req.body;
 
   const candidateUser = await User.findOne({ email }).select(
-    '+password email firstName lastName userName profileImg createdAt'
+    '+password email firstName lastName userName profileImg coverImg createdAt'
   );
 
   const validPassword = await candidateUser.checkPassword(password, candidateUser.password);
@@ -20,6 +20,15 @@ export const loginUser = asyncWrapper(async function (req, res, next) {
   const { token } = asignToken(candidateUser);
 
   res.status(200).json({ ...candidateUser._doc, token });
+});
+
+export const registerUser = asyncWrapper(async function (req, res, next) {
+  const { email, password, firstName, lastName } = req.body;
+  const newUser = await User.create({ email, password, firstName, lastName });
+
+  const { token } = asignToken(newUser);
+
+  res.status(200).json({ ...newUser._doc, token });
 });
 
 export const checkAuth = asyncWrapper(async function (req, res, next) {
@@ -39,21 +48,3 @@ export const checkAuth = asyncWrapper(async function (req, res, next) {
 
   next();
 });
-
-// async registerUser(_, { registerInput: { email, password, firstName, lastName } }, context) {
-//   try {
-//     const newUser = await User.create({ email, password, firstName, lastName });
-
-//     const { token } = asignToken(newUser);
-
-//     return { ...newUser._doc, token };
-//   } catch (error) {
-//     throw new UserInputError(error.message);
-//   }
-// },
-
-// async loginUser(_, { loginInput: { email, password } }, context) {
-//   try {
-
-//   } catch (error) {}
-// },
