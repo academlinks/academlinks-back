@@ -10,6 +10,10 @@ import {
   updateCoverImage,
   getBookmarks,
   isFriend,
+  getUserInfo,
+  updateUserInfo,
+  addUserInfo,
+  deleteUserInfo,
 } from '../controllers/userController.js';
 import { checkAuth } from '../controllers/authenticationController.js';
 
@@ -34,5 +38,12 @@ router.route('/:userId/profile').get(checkAuth, getUserProfile);
 router.route('/:userId/feed').get(checkAuth, getUserFeed);
 
 router.route('/:userId/isFriend').get(checkAuth, isFriend);
+
+router
+  .route('/:userId/about')
+  .get(checkAuth, getUserInfo)
+  .post(checkAuth, addUserInfo)
+  .patch(checkAuth, updateUserInfo)
+  .delete(checkAuth, deleteUserInfo);
 
 export default router;
