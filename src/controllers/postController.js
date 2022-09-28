@@ -23,14 +23,24 @@ export const uploadPostMediaFiles = (imageName) =>
   });
 
 export const createPost = asyncWrapper(async function (req, res, next) {
-  const { type, description } = req.body;
+  const { type, description, article, categories, tags, title } = req.body;
   const currUser = req.user;
+
+  console.log(req.body);
 
   const newPost = new Post({
     type,
     author: currUser.id,
-    description,
+    tags: JSON.parse(tags),
   });
+
+  if (type === 'post') {
+    newPost.description = description;
+  } else if (type === 'blogPost') {
+    newPost.article = article;
+    newPost.categories = categories;
+    newPost.title = title;
+  }
 
   if (req.files) {
     // If multer storage is diskStorage use this
@@ -42,7 +52,7 @@ export const createPost = asyncWrapper(async function (req, res, next) {
   }
 
   newPost.populate({
-    path: 'author',
+    path: 'author tags',
     select: 'userName profileImg',
   });
 
@@ -91,13 +101,16 @@ export const deletePost = asyncWrapper(async function (req, res, next) {
 
 export const updatePost = asyncWrapper(async function (req, res, next) {
   const { postId } = req.params;
-  const { description, media } = req.body;
+  const { media } = req.body;
   const currUser = req.user;
 
-  const post = await Post.findById(postId).populate({
-    path: 'author authenticAuthor reactions.author',
-    select: 'userName profileImg',
-  });
+  const body = {};
+  const availableKeys = ['description', 'tags', 'article', 'categories'];
+  Object.keys(req.body)
+    .filter((key) => availableKeys.includes(key))
+    .forEach((key) => (body[key] = req.body[key]));
+
+  const post = await Post.findById(postId);
 
   if (!post || post.author._id.toString() !== currUser.id)
     return next(new AppError(404, 'post does not exists'));
@@ -138,9 +151,17 @@ export const updatePost = asyncWrapper(async function (req, res, next) {
     post.media = [...modifiedExistingFiles, ...newFiles];
   } else if (!post.shared) post.media = media;
 
-  if (description) post.description = description;
+  Object.keys(body).forEach((key) => {
+    if (key === 'tags') post[key] = JSON.parse(body[key]);
+    else post[key] = body[key];
+  });
 
   await post.save();
+
+  await post.populate({
+    path: 'author authenticAuthor reactions.author tags',
+    select: 'userName profileImg',
+  });
 
   res.status(201).json(post);
 });
@@ -217,6 +238,7 @@ export const sharePost = asyncWrapper(async function (req, res, next) {
     authenticDateCreation: postToShare.shared
       ? postToShare.authenticDateCreation
       : postToShare.createdAt,
+    authenticTags: postToShare.shared ? postToShare.authenticTags : postToShare.tags,
   };
 
   const newPost = await Post.create(sharedPost);
@@ -280,6 +302,13 @@ export const savePost = asyncWrapper(async function (req, res, next) {
   res.status(201).json(operation);
 });
 
+export const getBlogPosts = asyncWrapper(async function (req, res, next) {
+  const blogPosts = await Post.find({ type: 'blogPost' }).populate({
+    path: 'author tags reactions.author',
+    select: 'userName profileImg',
+  });
+  res.status(200).json(blogPosts);
+});
 /////////////////////////////////////////////////////////////////////
 
 export const getAllPosts = asyncWrapper(async function (req, res, next) {

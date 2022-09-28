@@ -11,6 +11,7 @@ import {
   getPost,
   isUserPost,
   savePost,
+  getBlogPosts,
 } from '../controllers/postController.js';
 import { addComment } from '../controllers/commentsController.js';
 import { checkAuth } from '../controllers/authenticationController.js';
@@ -24,6 +25,8 @@ router.route('/:postId/reaction').post(checkAuth, reactOnPost);
 router.route('/:postId/comments').get(checkAuth, getPostComments).post(checkAuth, addComment);
 
 router.route('/:postId/options').get(checkAuth, isUserPost);
+
+router.route('/blogPosts').get(checkAuth, getBlogPosts);
 
 router
   .route('/:postId')

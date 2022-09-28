@@ -18,6 +18,12 @@ const PostSchema = new Schema(
     media: {
       type: [String],
     },
+    tags: [
+      {
+        type: Schema.ObjectId,
+        ref: 'User',
+      },
+    ],
     reactions: {
       type: [
         {
@@ -49,6 +55,15 @@ const PostSchema = new Schema(
       type: Boolean,
       default: false,
     },
+    article: {
+      type: String,
+    },
+    title: {
+      type: String,
+    },
+    categories: {
+      type: [String],
+    },
     authenticType: {
       type: String,
       enum: ['blogPost', 'post'],
@@ -62,6 +77,14 @@ const PostSchema = new Schema(
     },
     authenticDescription: {
       type: String,
+    },
+    authenticTags: {
+      type: [
+        {
+          userId: String,
+          userName: String,
+        },
+      ],
     },
   },
   { timestamps: true }

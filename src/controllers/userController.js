@@ -55,9 +55,9 @@ export const getUserProfile = asyncWrapper(async function (req, res, next) {
 export const getProfilePosts = asyncWrapper(async function (req, res, next) {
   const { userId } = req.params;
 
-  const posts = await Post.find({ author: userId })
+  const posts = await Post.find({ author: userId, type: 'post' })
     .populate({
-      path: 'author authenticAuthor reactions.author',
+      path: 'author authenticAuthor reactions.author tags authenticTags',
       select: 'userName profileImg',
     })
     .sort('-createdAt');
@@ -102,10 +102,11 @@ export const getUserFeed = asyncWrapper(async function (req, reqs, next) {
 
   const feedPosts = await Post.find({
     $or: [{ author: userId }, { _id: friendsPosts[0]?.feedPosts }],
+    type: 'post',
   })
     .sort('-createdAt')
     .populate({
-      path: 'author authenticAuthor',
+      path: 'author authenticAuthor tags authenticTags',
       select: 'userName profileImg',
     });
 
