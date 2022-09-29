@@ -78,14 +78,12 @@ const PostSchema = new Schema(
     authenticDescription: {
       type: String,
     },
-    authenticTags: {
-      type: [
-        {
-          userId: String,
-          userName: String,
-        },
-      ],
-    },
+    authenticTags: [
+      {
+        type: Schema.ObjectId,
+        ref: 'User',
+      },
+    ],
   },
   { timestamps: true }
 );

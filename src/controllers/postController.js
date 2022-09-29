@@ -26,8 +26,6 @@ export const createPost = asyncWrapper(async function (req, res, next) {
   const { type, description, article, categories, tags, title } = req.body;
   const currUser = req.user;
 
-  console.log(req.body);
-
   const newPost = new Post({
     type,
     author: currUser.id,
@@ -219,17 +217,17 @@ export const getPostComments = asyncWrapper(async function (req, res, next) {
 
 export const sharePost = asyncWrapper(async function (req, res, next) {
   const { postId } = req.params;
-  const { description } = req.body;
+  const { description, tags } = req.body;
   const currUser = req.user;
 
   const postToShare = await Post.findById(postId);
 
   const sharedPost = {
     type: 'post',
+    shared: true,
     author: currUser.id,
     description: description,
     media: postToShare.media,
-    shared: true,
     authenticType: postToShare.shared ? postToShare.authenticType : postToShare.type,
     authenticAuthor: postToShare.shared ? postToShare.authenticAuthor : postToShare.author,
     authenticDescription: postToShare.shared
@@ -239,12 +237,13 @@ export const sharePost = asyncWrapper(async function (req, res, next) {
       ? postToShare.authenticDateCreation
       : postToShare.createdAt,
     authenticTags: postToShare.shared ? postToShare.authenticTags : postToShare.tags,
+    tags: JSON.parse(tags),
   };
 
   const newPost = await Post.create(sharedPost);
 
   await newPost.populate({
-    path: 'author authenticAuthor',
+    path: 'author authenticAuthor tags authenticTags',
     select: 'userName profileImg',
   });
 
