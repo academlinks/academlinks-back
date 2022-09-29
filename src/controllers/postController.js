@@ -236,8 +236,12 @@ export const sharePost = asyncWrapper(async function (req, res, next) {
     authenticDateCreation: postToShare.shared
       ? postToShare.authenticDateCreation
       : postToShare.createdAt,
+    authenticId: postToShare._id,
     authenticTags: postToShare.shared ? postToShare.authenticTags : postToShare.tags,
     tags: JSON.parse(tags),
+    article: postToShare.type === 'blogPost' ? postToShare.article : '',
+    title: postToShare.type === 'blogPost' ? postToShare.title : '',
+    categories: postToShare.type === 'blogPost' ? postToShare.categories : '',
   };
 
   const newPost = await Post.create(sharedPost);
