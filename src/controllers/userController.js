@@ -200,7 +200,8 @@ export const getBookmarks = asyncWrapper(async function (req, res, next) {
     .select('bookmarks')
     .populate({
       path: 'bookmarks',
-      populate: { path: 'author authenticAuthor', select: 'userName profileImg' },
+      populate: { path: 'author authenticAuthor tags', select: 'userName profileImg' },
+      options: { sort: '-createdAt' },
     });
 
   res.status(200).json(savedPosts.bookmarks);

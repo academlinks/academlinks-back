@@ -36,7 +36,7 @@ export const createPost = asyncWrapper(async function (req, res, next) {
     newPost.description = description;
   } else if (type === 'blogPost') {
     newPost.article = article;
-    newPost.categories = categories;
+    newPost.categories = JSON.parse(categories);
     newPost.title = title;
   }
 
@@ -103,10 +103,13 @@ export const updatePost = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
 
   const body = {};
-  const availableKeys = ['description', 'tags', 'article', 'categories'];
+  const availableKeys = ['description', 'tags', 'article', 'categories', 'title'];
   Object.keys(req.body)
     .filter((key) => availableKeys.includes(key))
-    .forEach((key) => (body[key] = req.body[key]));
+    .forEach((key) => {
+      if (key === 'tags' || key === 'categories') body[key] = JSON.parse(req.body[key]);
+      else body[key] = req.body[key];
+    });
 
   const post = await Post.findById(postId);
 
@@ -148,11 +151,8 @@ export const updatePost = asyncWrapper(async function (req, res, next) {
 
     post.media = [...modifiedExistingFiles, ...newFiles];
   } else if (!post.shared) post.media = media;
-
-  Object.keys(body).forEach((key) => {
-    if (key === 'tags') post[key] = JSON.parse(body[key]);
-    else post[key] = body[key];
-  });
+  console.log(body);
+  Object.keys(body).forEach((key) => (post[key] = body[key]));
 
   await post.save();
 
@@ -257,9 +257,10 @@ export const sharePost = asyncWrapper(async function (req, res, next) {
 export const getPost = asyncWrapper(async function (req, res, next) {
   const { postId } = req.params;
 
-  const post = await Post.findById(postId)
-    .populate({ path: 'author', select: 'userName profileImg' })
-    .populate({ path: 'authenticAuthor', select: 'userName profileImg' });
+  const post = await Post.findById(postId).populate({
+    path: 'author authenticAuthor tags',
+    select: 'userName profileImg',
+  });
 
   if (!post) return next(new AppError(404, 'post does not exists'));
 
@@ -306,7 +307,7 @@ export const savePost = asyncWrapper(async function (req, res, next) {
 });
 
 export const getBlogPosts = asyncWrapper(async function (req, res, next) {
-  const blogPosts = await Post.find({ type: 'blogPost' }).populate({
+  const blogPosts = await Post.find({ type: 'blogPost' }).sort('-createdAt').populate({
     path: 'author tags reactions.author',
     select: 'userName profileImg',
   });

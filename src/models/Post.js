@@ -64,6 +64,9 @@ const PostSchema = new Schema(
     categories: {
       type: [String],
     },
+    authenticId: {
+      type: String,
+    },
     authenticType: {
       type: String,
       enum: ['blogPost', 'post'],
