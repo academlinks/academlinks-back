@@ -54,63 +54,55 @@ export const getUserProfile = asyncWrapper(async function (req, res, next) {
 
 export const getProfilePosts = asyncWrapper(async function (req, res, next) {
   const { userId } = req.params;
+  const { page, limit, hasMore } = req.query;
+
+  const skip = page * limit - limit;
+
+  let postsLength;
+  if (hasMore && !JSON.parse(hasMore))
+    postsLength = await Post.find({ author: userId, type: 'post' }).countDocuments();
 
   const posts = await Post.find({ author: userId, type: 'post' })
+    .skip(skip)
+    .limit(limit)
+    .sort('-createdAt')
     .populate({
       path: 'author authenticAuthor reactions.author tags authenticTags',
       select: 'userName profileImg',
-    })
-    .sort('-createdAt');
+    });
 
-  res.status(200).json(posts);
+  res.status(200).json({ data: posts, results: postsLength });
 });
 
 export const getUserFeed = asyncWrapper(async function (req, reqs, next) {
   const { userId } = req.params;
+  const { page, limit, hasMore } = req.query;
 
-  const friendsPosts = await User.aggregate([
-    {
-      $match: { _id: mongoose.Types.ObjectId(userId) },
-    },
-    {
-      $project: {
-        _id: 1,
-        friends: 1,
-      },
-    },
-    {
-      $unwind: '$friends',
-    },
-    {
-      $lookup: {
-        from: 'posts',
-        localField: 'friends.friend',
-        foreignField: 'author',
-        as: 'friendsPosts',
-      },
-    },
-    {
-      $unwind: '$friendsPosts',
-    },
-    {
-      $group: {
-        _id: '$_id',
-        feedPosts: { $push: '$friendsPosts._id' },
-      },
-    },
-  ]);
+  const skip = page * limit - limit;
+
+  const user = await User.findById(userId);
+  const friends = user.friends.map((friend) => friend.friend);
+
+  let postsLength;
+  if (hasMore && !JSON.parse(hasMore))
+    postsLength = await Post.find({
+      $or: [{ author: userId }, { author: friends }],
+      type: 'post',
+    }).countDocuments();
 
   const feedPosts = await Post.find({
-    $or: [{ author: userId }, { _id: friendsPosts[0]?.feedPosts }],
+    $or: [{ author: userId }, { author: friends }],
     type: 'post',
   })
+    .skip(skip)
+    .limit(limit)
     .sort('-createdAt')
     .populate({
       path: 'author authenticAuthor tags authenticTags',
       select: 'userName profileImg',
     });
 
-  reqs.status(200).json(feedPosts);
+  reqs.status(200).json({ data: feedPosts, results: postsLength });
 });
 
 export const updateProfileImage = asyncWrapper(async function (req, res, next) {
@@ -191,20 +183,32 @@ export const updateCoverImage = asyncWrapper(async function (req, res, next) {
 
 export const getBookmarks = asyncWrapper(async function (req, res, next) {
   const { userId } = req.params;
+  const { page, limit, hasMore } = req.query;
   const currUser = req.user;
+
+  const skip = page * limit - limit;
 
   if (userId !== currUser.id)
     return next(new AppError(403, 'you are not authorizd for this operation'));
+
+  let postsLength;
+  if (hasMore && !JSON.parse(hasMore)) {
+    const user = await User.findById(userId);
+    postsLength = user.bookmarks.length;
+  }
 
   const savedPosts = await User.findById(userId)
     .select('bookmarks')
     .populate({
       path: 'bookmarks',
       populate: { path: 'author authenticAuthor tags', select: 'userName profileImg' },
-      options: { sort: '-createdAt' },
+      options: {
+        limit,
+        skip,
+      },
     });
 
-  res.status(200).json(savedPosts.bookmarks);
+  res.status(200).json({ data: savedPosts.bookmarks, results: postsLength });
 });
 
 export const isFriend = asyncWrapper(async function (req, res, next) {

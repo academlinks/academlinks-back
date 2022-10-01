@@ -297,7 +297,7 @@ export const savePost = asyncWrapper(async function (req, res, next) {
     user.bookmarks = user.bookmarks.filter((bookmark) => bookmark.toString() !== postId);
     operation.removed = true;
   } else {
-    user.bookmarks.push(postId);
+    user.bookmarks = [postId, ...user.bookmarks];
     operation.saved = true;
   }
 
@@ -307,11 +307,24 @@ export const savePost = asyncWrapper(async function (req, res, next) {
 });
 
 export const getBlogPosts = asyncWrapper(async function (req, res, next) {
-  const blogPosts = await Post.find({ type: 'blogPost' }).sort('-createdAt').populate({
-    path: 'author tags reactions.author',
-    select: 'userName profileImg',
-  });
-  res.status(200).json(blogPosts);
+  const { page, limit, hasMore } = req.query;
+
+  const skip = page * limit - limit;
+
+  let postsLength;
+  if (hasMore && !JSON.parse(hasMore))
+    postsLength = await Post.find({ type: 'blogPost' }).countDocuments();
+
+  const blogPosts = await Post.find({ type: 'blogPost' })
+    .skip(skip)
+    .limit(limit)
+    .sort('-createdAt')
+    .populate({
+      path: 'author tags reactions.author',
+      select: 'userName profileImg',
+    });
+
+  res.status(200).json({ data: blogPosts, results: postsLength });
 });
 /////////////////////////////////////////////////////////////////////
 
