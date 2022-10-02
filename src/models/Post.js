@@ -51,10 +51,7 @@ const PostSchema = new Schema(
       type: Number,
       default: 0,
     },
-    shared: {
-      type: Boolean,
-      default: false,
-    },
+
     article: {
       type: String,
     },
@@ -64,29 +61,41 @@ const PostSchema = new Schema(
     categories: {
       type: [String],
     },
-    authenticId: {
-      type: String,
+    shared: {
+      type: Boolean,
+      default: false,
     },
-    authenticType: {
-      type: String,
-      enum: ['blogPost', 'post'],
-    },
-    authenticAuthor: {
+    authentic: {
       type: Schema.ObjectId,
-      ref: 'User',
+      ref: 'Post',
     },
-    authenticDateCreation: {
-      type: Date,
+    deleted: {
+      type: Boolean,
+      default: false,
     },
-    authenticDescription: {
-      type: String,
-    },
-    authenticTags: [
-      {
-        type: Schema.ObjectId,
-        ref: 'User',
-      },
-    ],
+    // authenticId: {
+    //   type: String,
+    // },
+    // authenticType: {
+    //   type: String,
+    //   enum: ['blogPost', 'post'],
+    // },
+    // authenticAuthor: {
+    //   type: Schema.ObjectId,
+    //   ref: 'User',
+    // },
+    // authenticDateCreation: {
+    //   type: Date,
+    // },
+    // authenticDescription: {
+    //   type: String,
+    // },
+    // authenticTags: [
+    //   {
+    //     type: Schema.ObjectId,
+    //     ref: 'User',
+    //   },
+    // ],
   },
   { timestamps: true }
 );

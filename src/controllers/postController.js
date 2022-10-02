@@ -4,6 +4,7 @@ import { asyncWrapper } from '../lib/asyncWrapper.js';
 import User from '../models/User.js';
 import Post from '../models/Post.js';
 import Comment from '../models/Comment.js';
+import Bookmarks from '../models/Bookmarks.js';
 
 import fs from 'fs';
 import { promisify } from 'util';
@@ -91,9 +92,13 @@ export const deletePost = asyncWrapper(async function (req, res, next) {
     );
   }
 
+  await postToDelete.delete();
+
   await Comment.deleteMany({ post: postToDelete._id });
 
-  await postToDelete.delete();
+  await Bookmarks.updateMany({ post: postId }, { $set: { deleted: true } });
+
+  await Post.updateMany({ shared: true, authentic: postId }, { $set: { deleted: true } });
 
   res.status(204).json({ deleted: true });
 });
@@ -152,13 +157,13 @@ export const updatePost = asyncWrapper(async function (req, res, next) {
 
     post.media = [...modifiedExistingFiles, ...newFiles];
   } else if (!post.shared) post.media = media;
-  console.log(body);
+
   Object.keys(body).forEach((key) => (post[key] = body[key]));
 
   await post.save();
 
   await post.populate({
-    path: 'author authenticAuthor reactions.author tags',
+    path: 'author reactions.author tags',
     select: 'userName profileImg',
   });
 
@@ -223,32 +228,20 @@ export const sharePost = asyncWrapper(async function (req, res, next) {
 
   const postToShare = await Post.findById(postId);
 
-  const sharedPost = {
-    type: 'post',
+  const body = {
     shared: true,
+    authentic: postToShare._id,
+    type: 'post',
     author: currUser.id,
     description: description,
-    media: postToShare.media,
-    authenticType: postToShare.shared ? postToShare.authenticType : postToShare.type,
-    authenticAuthor: postToShare.shared ? postToShare.authenticAuthor : postToShare.author,
-    authenticDescription: postToShare.shared
-      ? postToShare.authenticDescription
-      : postToShare.description,
-    authenticDateCreation: postToShare.shared
-      ? postToShare.authenticDateCreation
-      : postToShare.createdAt,
-    authenticId: postToShare._id,
-    authenticTags: postToShare.shared ? postToShare.authenticTags : postToShare.tags,
-    tags: JSON.parse(tags),
-    article: postToShare.type === 'blogPost' ? postToShare.article : '',
-    title: postToShare.type === 'blogPost' ? postToShare.title : '',
-    categories: postToShare.type === 'blogPost' ? postToShare.categories : '',
   };
 
-  const newPost = await Post.create(sharedPost);
+  if (tags && JSON.parse(tags)) body.tags = JSON.parse(tags);
 
-  await newPost.populate({
-    path: 'author authenticAuthor tags authenticTags',
+  const newPost = await (
+    await Post.create(body)
+  ).populate({
+    path: 'author tags authentic authentic.author',
     select: 'userName profileImg',
   });
 
@@ -259,7 +252,7 @@ export const getPost = asyncWrapper(async function (req, res, next) {
   const { postId } = req.params;
 
   const post = await Post.findById(postId).populate({
-    path: 'author authenticAuthor tags',
+    path: 'author tags',
     select: 'userName profileImg',
   });
 
@@ -274,13 +267,13 @@ export const isUserPost = asyncWrapper(async function (req, res, next) {
 
   const post = await Post.findById(postId);
 
-  if (!post) return next(new AppError(404, 'post does not exists'));
+  const bookmark = await Bookmarks.find({ $or: [{ post: postId }, { cachedId: postId }] });
 
-  const user = await User.findById(currUser.id);
+  if (!post && !bookmark[0]) return next(new AppError(404, 'post does not exists'));
 
   const info = {
-    belongsToUser: post.author.toString() === currUser.id,
-    isBookmarked: user.bookmarks.includes(postId),
+    belongsToUser: post?.author.toString() === currUser.id,
+    isBookmarked: bookmark[0]?.cachedId === postId && bookmark[0]?.author === currUser.id,
   };
 
   res.status(200).json(info);
@@ -290,19 +283,21 @@ export const savePost = asyncWrapper(async function (req, res, next) {
   const { postId } = req.params;
   const currUser = req.user;
 
-  const user = await User.findById(currUser.id);
+  const existingBookmark = await Bookmarks.find({ $or: [{ post: postId }, { cachedId: postId }] });
 
   const operation = {};
 
-  if (user.bookmarks.includes(postId)) {
-    user.bookmarks = user.bookmarks.filter((bookmark) => bookmark.toString() !== postId);
-    operation.removed = true;
-  } else {
-    user.bookmarks = [postId, ...user.bookmarks];
-    operation.saved = true;
-  }
+  if (!existingBookmark[0]) {
+    await Bookmarks.create({
+      post: postId,
+      author: currUser.id,
+    });
 
-  await user.save();
+    operation.saved = true;
+  } else if (existingBookmark[0]) {
+    await Bookmarks.findByIdAndDelete(existingBookmark[0]._id);
+    operation.removed = true;
+  }
 
   res.status(201).json(operation);
 });

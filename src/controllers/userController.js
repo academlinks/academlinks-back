@@ -3,6 +3,7 @@ import { asyncWrapper } from '../lib/asyncWrapper.js';
 
 import Post from '../models/Post.js';
 import User from '../models/User.js';
+import Bookmarks from '../models/Bookmarks.js';
 
 import mongoose from 'mongoose';
 import fs from 'fs';
@@ -67,8 +68,13 @@ export const getProfilePosts = asyncWrapper(async function (req, res, next) {
     .limit(limit)
     .sort('-createdAt')
     .populate({
-      path: 'author authenticAuthor reactions.author tags authenticTags',
+      path: 'author reactions.author tags',
       select: 'userName profileImg',
+    })
+    .populate({
+      path: 'authentic',
+      select: 'type author createdAt description tags media',
+      populate: { path: 'author tags', select: 'userName profileImg' },
     });
 
   res.status(200).json({ data: posts, results: postsLength });
@@ -98,8 +104,13 @@ export const getUserFeed = asyncWrapper(async function (req, reqs, next) {
     .limit(limit)
     .sort('-createdAt')
     .populate({
-      path: 'author authenticAuthor tags authenticTags',
+      path: 'author tags',
       select: 'userName profileImg',
+    })
+    .populate({
+      path: 'authentic',
+      select: 'type author createdAt description tags media',
+      populate: { path: 'author tags', select: 'userName profileImg' },
     });
 
   reqs.status(200).json({ data: feedPosts, results: postsLength });
@@ -192,23 +203,20 @@ export const getBookmarks = asyncWrapper(async function (req, res, next) {
     return next(new AppError(403, 'you are not authorizd for this operation'));
 
   let postsLength;
-  if (hasMore && !JSON.parse(hasMore)) {
-    const user = await User.findById(userId);
-    postsLength = user.bookmarks.length;
-  }
+  if (hasMore && !JSON.parse(hasMore))
+    postsLength = await Bookmarks.find({ author: userId }).countDocuments();
 
-  const savedPosts = await User.findById(userId)
-    .select('bookmarks')
+  const savedPosts = await Bookmarks.find({ author: userId })
+    .skip(skip)
+    .limit(limit)
     .populate({
-      path: 'bookmarks',
-      populate: { path: 'author authenticAuthor tags', select: 'userName profileImg' },
-      options: {
-        limit,
-        skip,
-      },
+      path: 'post',
+      populate: { path: 'author', select: 'userName profileImg' },
     });
 
-  res.status(200).json({ data: savedPosts.bookmarks, results: postsLength });
+  // const bookmarks = savedPosts.map((post) => post.post);
+
+  res.status(200).json({ data: savedPosts, results: postsLength });
 });
 
 export const isFriend = asyncWrapper(async function (req, res, next) {
