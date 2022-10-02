@@ -14,6 +14,7 @@ import {
   getBlogPosts,
   getTopRatedBlogPosts,
   getTopRatedPublishers,
+  getRelatedPosts,
 } from '../controllers/postController.js';
 import { addComment } from '../controllers/commentsController.js';
 import { checkAuth } from '../controllers/authenticationController.js';
@@ -33,6 +34,8 @@ router.route('/blogPosts').get(checkAuth, getBlogPosts);
 router.route('/blogPosts/topRated').get(checkAuth, getTopRatedBlogPosts);
 
 router.route('/blogPosts/topRatedPublishers').get(checkAuth, getTopRatedPublishers);
+
+router.route('/blogPosts/relatedPosts/:postId').get(checkAuth, getRelatedPosts);
 
 router
   .route('/:postId')

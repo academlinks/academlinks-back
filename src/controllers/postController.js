@@ -385,6 +385,85 @@ export const getTopRatedPublishers = asyncWrapper(async function (req, res, next
 
   res.status(200).json(topRatedPublishers);
 });
+
+export const getRelatedPosts = asyncWrapper(async function (req, res, next) {
+  const { postId } = req.params;
+  const { limit } = req.query;
+
+  const { categories } = await Post.findById(postId).select('categories');
+
+  const posts = await Post.aggregate([
+    {
+      $match: {
+        type: 'blogPost',
+        categories: { $in: categories },
+        _id: { $ne: mongoose.Types.ObjectId(postId) },
+      },
+    },
+    {
+      $addFields: {
+        matched: { $setIntersection: ['$categories', categories] },
+      },
+    },
+    {
+      $unwind: '$matched',
+    },
+    {
+      $group: {
+        _id: '$_id',
+        size: { $sum: 1 },
+      },
+    },
+    {
+      $sort: { size: -1 },
+    },
+    {
+      $limit: +limit,
+    },
+    {
+      $lookup: {
+        as: 'posts',
+        from: 'posts',
+        foreignField: '_id',
+        localField: '_id',
+        pipeline: [
+          {
+            $lookup: {
+              as: 'author',
+              from: 'users',
+              foreignField: '_id',
+              localField: 'author',
+              pipeline: [
+                {
+                  $project: {
+                    userName: 1,
+                    profileImg: 1,
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+    {
+      $project: {
+        posts: 1,
+      },
+    },
+    {
+      $unwind: '$posts',
+    },
+    {
+      $unwind: '$posts.author',
+    },
+  ]);
+
+  const relatedPosts = posts.map((post) => post.posts);
+
+  res.status(200).json(relatedPosts);
+});
+
 /////////////////////////////////////////////////////////////////////
 
 export const getAllPosts = asyncWrapper(async function (req, res, next) {
