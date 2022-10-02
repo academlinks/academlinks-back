@@ -12,6 +12,8 @@ import {
   isUserPost,
   savePost,
   getBlogPosts,
+  getTopRatedBlogPosts,
+  getTopRatedPublishers,
 } from '../controllers/postController.js';
 import { addComment } from '../controllers/commentsController.js';
 import { checkAuth } from '../controllers/authenticationController.js';
@@ -27,6 +29,10 @@ router.route('/:postId/comments').get(checkAuth, getPostComments).post(checkAuth
 router.route('/:postId/options').get(checkAuth, isUserPost);
 
 router.route('/blogPosts').get(checkAuth, getBlogPosts);
+
+router.route('/blogPosts/topRated').get(checkAuth, getTopRatedBlogPosts);
+
+router.route('/blogPosts/topRatedPublishers').get(checkAuth, getTopRatedPublishers);
 
 router
   .route('/:postId')

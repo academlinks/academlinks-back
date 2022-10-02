@@ -9,6 +9,7 @@ import fs from 'fs';
 import { promisify } from 'util';
 
 import { uploadMedia, editMedia } from '../lib/multer.js';
+import mongoose from 'mongoose';
 
 export const resizeAndOptimiseMedia = editMedia({
   multy: true,
@@ -29,14 +30,14 @@ export const createPost = asyncWrapper(async function (req, res, next) {
   const newPost = new Post({
     type,
     author: currUser.id,
-    tags: JSON.parse(tags),
+    tags: tags && JSON.parse(tags),
   });
 
   if (type === 'post') {
     newPost.description = description;
   } else if (type === 'blogPost') {
     newPost.article = article;
-    newPost.categories = JSON.parse(categories);
+    newPost.categories = categories && JSON.parse(categories);
     newPost.title = title;
   }
 
@@ -325,6 +326,64 @@ export const getBlogPosts = asyncWrapper(async function (req, res, next) {
     });
 
   res.status(200).json({ data: blogPosts, results: postsLength });
+});
+
+export const getTopRatedBlogPosts = asyncWrapper(async function (req, res, next) {
+  const { limit } = req.query;
+
+  const posts = await Post.find({ type: 'blogPost' }).sort('-likesAmount').limit(limit).populate({
+    path: 'author tags',
+    select: 'userName profileImg',
+  });
+
+  res.status(200).json(posts);
+});
+
+export const getTopRatedPublishers = asyncWrapper(async function (req, res, next) {
+  const { limit } = req.query;
+
+  const topRatedPublishers = await Post.aggregate([
+    {
+      $match: { type: 'blogPost' },
+    },
+    {
+      $project: { author: 1, likesAmount: 1 },
+    },
+    {
+      $group: {
+        _id: '$author',
+        posts: { $sum: 1 },
+        likes: { $sum: '$likesAmount' },
+      },
+    },
+    {
+      $sort: { likes: -1 },
+    },
+    {
+      $limit: +limit || 3,
+    },
+    {
+      $lookup: {
+        as: 'author',
+        from: 'users',
+        foreignField: '_id',
+        localField: '_id',
+        pipeline: [
+          {
+            $project: {
+              userName: 1,
+              profileImg: 1,
+            },
+          },
+        ],
+      },
+    },
+    {
+      $unwind: '$author',
+    },
+  ]);
+
+  res.status(200).json(topRatedPublishers);
 });
 /////////////////////////////////////////////////////////////////////
 
