@@ -73,29 +73,6 @@ const PostSchema = new Schema(
       type: Boolean,
       default: false,
     },
-    // authenticId: {
-    //   type: String,
-    // },
-    // authenticType: {
-    //   type: String,
-    //   enum: ['blogPost', 'post'],
-    // },
-    // authenticAuthor: {
-    //   type: Schema.ObjectId,
-    //   ref: 'User',
-    // },
-    // authenticDateCreation: {
-    //   type: Date,
-    // },
-    // authenticDescription: {
-    //   type: String,
-    // },
-    // authenticTags: [
-    //   {
-    //     type: Schema.ObjectId,
-    //     ref: 'User',
-    //   },
-    // ],
   },
   { timestamps: true }
 );

@@ -108,6 +108,11 @@ export const updatePost = asyncWrapper(async function (req, res, next) {
   const { media } = req.body;
   const currUser = req.user;
 
+  const post = await Post.findById(postId);
+
+  if (!post || post.author._id.toString() !== currUser.id)
+    return next(new AppError(404, 'post does not exists'));
+
   const body = {};
   const availableKeys = ['description', 'tags', 'article', 'categories', 'title'];
   Object.keys(req.body)
@@ -116,11 +121,6 @@ export const updatePost = asyncWrapper(async function (req, res, next) {
       if (key === 'tags' || key === 'categories') body[key] = JSON.parse(req.body[key]);
       else body[key] = req.body[key];
     });
-
-  const post = await Post.findById(postId);
-
-  if (!post || post.author._id.toString() !== currUser.id)
-    return next(new AppError(404, 'post does not exists'));
 
   const deletion = promisify(fs.unlink);
 
@@ -165,6 +165,13 @@ export const updatePost = asyncWrapper(async function (req, res, next) {
   await post.populate({
     path: 'author reactions.author tags',
     select: 'userName profileImg',
+  });
+
+  await post.populate({
+    path: 'authentic',
+    select:
+      'type author createdAt description tags media categories article title likesAmount dislikesAmount commentsAmount',
+    populate: { path: 'author tags', select: 'userName profileImg' },
   });
 
   res.status(201).json(post);
@@ -238,11 +245,18 @@ export const sharePost = asyncWrapper(async function (req, res, next) {
 
   if (tags && JSON.parse(tags)) body.tags = JSON.parse(tags);
 
-  const newPost = await (
-    await Post.create(body)
-  ).populate({
-    path: 'author tags authentic authentic.author',
+  const newPost = await Post.create(body);
+
+  await newPost.populate({
+    path: 'author tags',
     select: 'userName profileImg',
+  });
+
+  await newPost.populate({
+    path: 'authentic',
+    select:
+      'type author createdAt description tags media categories article title likesAmount dislikesAmount commentsAmount',
+    populate: { path: 'author tags', select: 'userName profileImg' },
   });
 
   res.status(201).json(newPost);

@@ -73,7 +73,8 @@ export const getProfilePosts = asyncWrapper(async function (req, res, next) {
     })
     .populate({
       path: 'authentic',
-      select: 'type author createdAt description tags media',
+      select:
+        'type author createdAt description tags media categories article title likesAmount dislikesAmount commentsAmount',
       populate: { path: 'author tags', select: 'userName profileImg' },
     });
 
@@ -109,7 +110,8 @@ export const getUserFeed = asyncWrapper(async function (req, reqs, next) {
     })
     .populate({
       path: 'authentic',
-      select: 'type author createdAt description tags media',
+      select:
+        'type author createdAt description tags media categories article title likesAmount dislikesAmount commentsAmount',
       populate: { path: 'author tags', select: 'userName profileImg' },
     });
 
@@ -209,12 +211,11 @@ export const getBookmarks = asyncWrapper(async function (req, res, next) {
   const savedPosts = await Bookmarks.find({ author: userId })
     .skip(skip)
     .limit(limit)
+    .sort('-createdAt')
     .populate({
       path: 'post',
       populate: { path: 'author', select: 'userName profileImg' },
     });
-
-  // const bookmarks = savedPosts.map((post) => post.post);
 
   res.status(200).json({ data: savedPosts, results: postsLength });
 });
