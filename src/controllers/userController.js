@@ -23,109 +23,6 @@ export const uploadUserProfileFile = (imageName) =>
     filename: imageName,
   });
 
-export const searchUsers = asyncWrapper(async function (req, res, next) {
-  const { key } = req.query;
-
-  const users = await User.find({ userName: { $regex: key } }).select('userName profileImg');
-
-  res.status(200).json(users);
-});
-
-export const getUserProfile = asyncWrapper(async function (req, res, next) {
-  const { userId } = req.params;
-
-  const user = await User.findById(userId)
-    .select(
-      '-sentRequests -pendingRequests -education -workplace.description -workplace.workingYears'
-    )
-    .populate({
-      path: 'friends.friend',
-      select: 'userName profileImg',
-      options: { limit: 9 },
-    });
-
-  const userProfile = {
-    ...user._doc,
-    workplace: user._doc.workplace[0],
-    friends: user._doc.friends.slice(0, 9).map((fr) => fr.friend),
-  };
-
-  res.status(200).json(userProfile);
-});
-
-export const getProfilePosts = asyncWrapper(async function (req, res, next) {
-  const { userId } = req.params;
-  const { page, limit, hasMore } = req.query;
-  const currUser = req.user;
-
-  const skip = page * limit - limit;
-
-  const postQuery = { author: userId, type: 'post' };
-
-  const info = await checkIfIsFriend(userId, currUser);
-
-  if (userId !== currUser.id) {
-    if (info.isFriend) postQuery.audience = { $in: ['friends', 'public'] };
-    else postQuery.audience = 'public';
-  }
-
-  let postsLength;
-  if (hasMore && !JSON.parse(hasMore)) postsLength = await Post.find(postQuery).countDocuments();
-
-  const posts = await Post.find(postQuery)
-    .select('-reactions -__v')
-    .skip(skip)
-    .limit(limit)
-    .sort('-createdAt')
-    .populate({
-      path: 'author reactions.author tags',
-      select: 'userName profileImg',
-    })
-    .populate({
-      path: 'authentic',
-      select: '-reactions -shared -__v',
-      populate: { path: 'author tags', select: 'userName profileImg' },
-    });
-
-  res.status(200).json({ data: posts, results: postsLength });
-});
-
-export const getUserFeed = asyncWrapper(async function (req, reqs, next) {
-  const { userId } = req.params;
-  const { page, limit, hasMore } = req.query;
-
-  const skip = page * limit - limit;
-
-  const user = await User.findById(userId);
-  const friends = user.friends.map((friend) => friend.friend);
-
-  const postQuery = {
-    $or: [{ author: userId }, { author: friends }],
-    type: 'post',
-    audience: { $in: ['public', 'friends'] },
-  };
-
-  let postsLength;
-  if (hasMore && !JSON.parse(hasMore)) postsLength = await Post.find(postQuery).countDocuments();
-
-  const feedPosts = await Post.find(postQuery)
-    .select('-reactions -__v')
-    .skip(skip)
-    .limit(limit)
-    .sort('-createdAt')
-    .populate({
-      path: 'author tags',
-      select: 'userName profileImg',
-    })
-    .populate({
-      path: 'authentic',
-      select: '-reactions -__v -shared',
-      populate: { path: 'author tags', select: 'userName profileImg' },
-    });
-
-  reqs.status(200).json({ data: feedPosts, results: postsLength });
-});
-
 export const updateProfileImage = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
 
@@ -202,10 +99,122 @@ export const updateCoverImage = asyncWrapper(async function (req, res, next) {
   res.status(201).json(mediaUrl);
 });
 
-export const getBookmarks = asyncWrapper(async function (req, res, next) {
+export const searchUsers = asyncWrapper(async function (req, res, next) {
+  const { key } = req.query;
+
+  const users = await User.find({ userName: { $regex: key } }).select('userName profileImg');
+
+  res.status(200).json(users);
+});
+
+export const getUserProfile = asyncWrapper(async function (req, res, next) {
+  const { userId } = req.params;
+
+  const user = await User.findById(userId)
+    .select(
+      '-sentRequests -pendingRequests -education -workplace.description -workplace.workingYears'
+    )
+    .populate({
+      path: 'friends.friend',
+      select: 'userName profileImg',
+      options: { limit: 9 },
+    });
+
+  const userProfile = {
+    ...user._doc,
+    workplace: user._doc.workplace[0],
+    friends: user._doc.friends.slice(0, 9).map((fr) => fr.friend),
+  };
+
+  res.status(200).json(userProfile);
+});
+
+export const getProfilePosts = asyncWrapper(async function (req, res, next) {
+  const currUser = req.user;
   const { userId } = req.params;
   const { page, limit, hasMore } = req.query;
+
+  const skip = page * limit - limit;
+
+  const postQuery = { author: userId, type: 'post' };
+
+  const user = await User.findById(currUser.id);
+  const info = checkIfIsFriend(user, userId);
+
+  if (userId !== currUser.id) {
+    if (info.isFriend) postQuery.audience = { $in: ['friends', 'public'] };
+    else postQuery.audience = 'public';
+  }
+
+  let postsLength;
+  if (hasMore && !JSON.parse(hasMore)) postsLength = await Post.find(postQuery).countDocuments();
+
+  const posts = await Post.find(postQuery)
+    .select('-reactions -__v')
+    .skip(skip)
+    .limit(limit)
+    .sort('-createdAt')
+    .populate({
+      path: 'author reactions.author tags',
+      select: 'userName profileImg',
+    })
+    .populate({
+      path: 'authentic',
+      select: '-reactions -shared -__v',
+      // transform: (doc, id) => checkIfIsFriendOnEach(user, doc.author._id.toString(), doc),
+      populate: { path: 'author tags', select: 'userName profileImg' },
+    });
+
+  res.status(200).json({ data: posts, results: postsLength });
+});
+
+export const getUserFeed = asyncWrapper(async function (req, reqs, next) {
   const currUser = req.user;
+  const { userId } = req.params;
+  const { page, limit, hasMore } = req.query;
+
+  if (currUser.id !== userId)
+    return next(new AppError(401, 'you are not authorized for this operation'));
+
+  const user = await User.findById(userId);
+  if (!user) return next(new AppError(404, 'there are no such an user'));
+
+  const friends = user.friends.map((friend) => friend.friend);
+
+  const skip = page * limit - limit;
+
+  const postQuery = {
+    $or: [{ author: userId }, { author: friends }],
+    type: 'post',
+    audience: { $in: ['public', 'friends'] },
+  };
+
+  let postsLength;
+  if (hasMore && !JSON.parse(hasMore)) postsLength = await Post.find(postQuery).countDocuments();
+
+  const feedPosts = await Post.find(postQuery)
+    .select('-reactions -__v')
+    .skip(skip)
+    .limit(limit)
+    .sort('-createdAt')
+    .populate({
+      path: 'author tags',
+      select: 'userName profileImg',
+    })
+    .populate({
+      path: 'authentic',
+      select: '-reactions -__v -shared',
+      transform: (doc, id) => checkIfIsFriendOnEach(user, doc.author._id.toString(), doc),
+      populate: { path: 'author tags', select: 'userName profileImg' },
+    });
+
+  reqs.status(200).json({ data: feedPosts, results: postsLength });
+});
+
+export const getBookmarks = asyncWrapper(async function (req, res, next) {
+  const currUser = req.user;
+  const { userId } = req.params;
+  const { page, limit, hasMore } = req.query;
 
   const skip = page * limit - limit;
 
@@ -216,7 +225,7 @@ export const getBookmarks = asyncWrapper(async function (req, res, next) {
   if (hasMore && !JSON.parse(hasMore))
     postsLength = await Bookmarks.find({ author: userId }).countDocuments();
 
-  // const info = await checkIfIsFriend(userId, currUser);
+  const user = await User.findById(userId);
 
   const savedPosts = await Bookmarks.find({ author: userId })
     .skip(skip)
@@ -225,15 +234,13 @@ export const getBookmarks = asyncWrapper(async function (req, res, next) {
     .populate({
       path: 'post',
       select: '-reactions -__v',
-      // match: {
-      //   audience: info.isFriend ? { $in: ['public', 'friends'] } : 'public',
-      // },
+      transform: (doc, id) => checkIfIsFriendOnEach(user, doc.author._id.toString(), doc),
       populate: [
         { path: 'author tags', select: 'userName profileImg' },
         {
           path: 'authentic',
           select: '-reactions -__v',
-          // match:{},
+          transform: (doc, id) => checkIfIsFriendOnEach(user, doc.author._id.toString(), doc),
           populate: {
             path: 'tags author',
             select: 'userName profileImg',
@@ -249,7 +256,9 @@ export const isFriend = asyncWrapper(async function (req, res, next) {
   const { userId } = req.params;
   const currUser = req.user;
 
-  const info = await checkIfIsFriend(userId, currUser);
+  const user = await User.findById(currUser.id);
+
+  const info = await checkIfIsFriend(user, userId);
 
   res.status(200).json(info);
 });
@@ -381,11 +390,9 @@ export const getAllUsers = asyncWrapper(async function (req, res, next) {
 
 export const fnName = asyncWrapper(async function (req, res, next) {});
 
-async function checkIfIsFriend(userId, currUser) {
-  const user = await User.findById(currUser.id);
-
+function checkIfIsFriend(user, userId) {
   const isFriend = user.friends.some((friend) => friend.friend.toString() === userId);
-
+  console.log(userId);
   const info = {
     isFriend,
     isPendingRequest: false,
@@ -408,4 +415,12 @@ async function checkIfIsFriend(userId, currUser) {
   }
 
   return info;
+}
+
+function checkIfIsFriendOnEach(user, id, doc) {
+  const { isFriend } = checkIfIsFriend(user, id);
+
+  if (doc.audience === 'private') return { restricted: true };
+  else if (doc.audience === 'friends' && !isFriend) return { restricted: true };
+  else return doc;
 }
