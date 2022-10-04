@@ -4,6 +4,11 @@ import bcrypt from 'bcryptjs';
 
 const UserSchema = new Schema(
   {
+    role: {
+      type: String,
+      enum: ['guest', 'user', 'administrator'],
+      require: true,
+    },
     firstName: {
       type: String,
       require: true,

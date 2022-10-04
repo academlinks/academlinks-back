@@ -8,7 +8,7 @@ export const loginUser = asyncWrapper(async function (req, res, next) {
   const { email, password } = req.body;
 
   const candidateUser = await User.findOne({ email }).select(
-    '+password email firstName lastName userName profileImg coverImg createdAt'
+    '+password email firstName lastName userName profileImg coverImg createdAt role'
   );
 
   const validPassword = await candidateUser.checkPassword(password, candidateUser.password);
@@ -17,9 +17,9 @@ export const loginUser = asyncWrapper(async function (req, res, next) {
 
   candidateUser.password = undefined;
 
-  const { token } = asignToken(candidateUser);
+  const { refreshToken } = await asignToken(res, candidateUser);
 
-  res.status(200).json({ ...candidateUser._doc, token });
+  res.status(200).json({ ...candidateUser._doc, refreshToken });
 });
 
 export const registerUser = asyncWrapper(async function (req, res, next) {
@@ -32,19 +32,30 @@ export const registerUser = asyncWrapper(async function (req, res, next) {
 });
 
 export const checkAuth = asyncWrapper(async function (req, res, next) {
-  const authHeader = req.headers.authorization;
+  const { Authorization } = req.cookies;
 
-  if (!authHeader) next(new AppError(403, 'you are not authorized'));
+  const token = Authorization.split(' ');
 
-  const token = authHeader.split('Bearer ')[1];
+  if (!Authorization || token[0] !== 'Bearer' || !token[1])
+    next(new AppError(401, 'you are not authorized'));
 
-  if (!authHeader || !token) next(new AppError(403, 'you are not authorized'));
+  const decodedUser = await verifyToken(token[1]);
+  if (!decodedUser) next(new AppError(401, 'you are not authorized'));
 
-  const user = await verifyToken(token);
+  const user = await User.findById(decodedUser.id);
+  if (!user) next(new AppError(404, 'user does not exists'));
 
-  if (!user) next(new AppError(403, 'you are not authorized'));
-
-  req.user = user;
+  req.user = decodedUser;
 
   next();
 });
+
+export const restriction = (...roles) =>
+  asyncWrapper(async function (req, res, next) {
+    const currUser = req.user;
+
+    if (!roles.includes(currUser.role))
+      return next(new AppError(403, 'you are not allowed for this operation'));
+
+    next();
+  });

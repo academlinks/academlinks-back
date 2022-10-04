@@ -1,6 +1,7 @@
 import express from 'express';
 
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
 
 import path from 'path';
@@ -17,10 +18,11 @@ import friendsRoutes from './src/routes/friendsRoutes.js';
 
 const App = express();
 
-App.use(morgan('dev'));
 App.use(express.json());
 App.use(express.urlencoded({ extended: false }));
+App.use(cookieParser());
 App.use(cors({ origin: '*' }));
+App.use(morgan('dev'));
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

@@ -3,6 +3,11 @@ const { Schema, model } = mongoose;
 
 const PostSchema = new Schema(
   {
+    audience: {
+      type: String,
+      enum: ['public', 'friends', 'private'],
+      default: 'public',
+    },
     type: {
       type: String,
       enum: ['blogPost', 'post'],

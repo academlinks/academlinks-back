@@ -17,7 +17,7 @@ import {
   getRelatedPosts,
 } from '../controllers/postController.js';
 import { addComment } from '../controllers/commentsController.js';
-import { checkAuth } from '../controllers/authenticationController.js';
+import { checkAuth, restriction } from '../controllers/authenticationController.js';
 
 const router = express.Router();
 
@@ -39,7 +39,7 @@ router.route('/blogPosts/relatedPosts/:postId').get(checkAuth, getRelatedPosts);
 
 router
   .route('/:postId')
-  .get(checkAuth, getPost)
+  .get(checkAuth, restriction('user', 'guest', 'administrator'), getPost)
   .post(checkAuth, sharePost)
   .delete(checkAuth, deletePost)
   .patch(checkAuth, uploadPostMediaFiles('images'), resizeAndOptimiseMedia, updatePost);

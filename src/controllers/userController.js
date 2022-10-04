@@ -56,14 +56,23 @@ export const getUserProfile = asyncWrapper(async function (req, res, next) {
 export const getProfilePosts = asyncWrapper(async function (req, res, next) {
   const { userId } = req.params;
   const { page, limit, hasMore } = req.query;
+  const currUser = req.user;
 
   const skip = page * limit - limit;
 
-  let postsLength;
-  if (hasMore && !JSON.parse(hasMore))
-    postsLength = await Post.find({ author: userId, type: 'post' }).countDocuments();
+  const postQuery = { author: userId, type: 'post' };
 
-  const posts = await Post.find({ author: userId, type: 'post' })
+  const info = await checkIfIsFriend(userId, currUser);
+
+  if (userId !== currUser.id) {
+    if (info.isFriend) postQuery.audience = { $in: ['friends', 'public'] };
+    else postQuery.audience = 'public';
+  }
+
+  let postsLength;
+  if (hasMore && !JSON.parse(hasMore)) postsLength = await Post.find(postQuery).countDocuments();
+
+  const posts = await Post.find(postQuery)
     .select('-reactions -__v')
     .skip(skip)
     .limit(limit)
@@ -90,17 +99,16 @@ export const getUserFeed = asyncWrapper(async function (req, reqs, next) {
   const user = await User.findById(userId);
   const friends = user.friends.map((friend) => friend.friend);
 
-  let postsLength;
-  if (hasMore && !JSON.parse(hasMore))
-    postsLength = await Post.find({
-      $or: [{ author: userId }, { author: friends }],
-      type: 'post',
-    }).countDocuments();
-
-  const feedPosts = await Post.find({
+  const postQuery = {
     $or: [{ author: userId }, { author: friends }],
     type: 'post',
-  })
+    audience: { $in: ['public', 'friends'] },
+  };
+
+  let postsLength;
+  if (hasMore && !JSON.parse(hasMore)) postsLength = await Post.find(postQuery).countDocuments();
+
+  const feedPosts = await Post.find(postQuery)
     .select('-reactions -__v')
     .skip(skip)
     .limit(limit)
@@ -208,6 +216,8 @@ export const getBookmarks = asyncWrapper(async function (req, res, next) {
   if (hasMore && !JSON.parse(hasMore))
     postsLength = await Bookmarks.find({ author: userId }).countDocuments();
 
+  // const info = await checkIfIsFriend(userId, currUser);
+
   const savedPosts = await Bookmarks.find({ author: userId })
     .skip(skip)
     .limit(limit)
@@ -215,11 +225,15 @@ export const getBookmarks = asyncWrapper(async function (req, res, next) {
     .populate({
       path: 'post',
       select: '-reactions -__v',
+      // match: {
+      //   audience: info.isFriend ? { $in: ['public', 'friends'] } : 'public',
+      // },
       populate: [
         { path: 'author tags', select: 'userName profileImg' },
         {
           path: 'authentic',
           select: '-reactions -__v',
+          // match:{},
           populate: {
             path: 'tags author',
             select: 'userName profileImg',
@@ -235,30 +249,7 @@ export const isFriend = asyncWrapper(async function (req, res, next) {
   const { userId } = req.params;
   const currUser = req.user;
 
-  const user = await User.findById(currUser.id);
-
-  const isFriend = user.friends.some((friend) => friend.friend.toString() === userId);
-
-  const info = {
-    isFriend,
-    isPendingRequest: false,
-    isSentRequest: false,
-    isForeign: false,
-  };
-
-  if (!isFriend) {
-    const isPendingRequest = user.pendingRequests.some(
-      (request) => request.adressat.toString() === userId
-    );
-    if (isPendingRequest) info.isPendingRequest = isPendingRequest;
-    else if (!isPendingRequest) {
-      const isSentRequest = user.sentRequests.some(
-        (request) => request.adressat.toString() === userId
-      );
-      if (isSentRequest) info.isSentRequest = isSentRequest;
-      else if (!isSentRequest) info.isForeign = true;
-    }
-  }
+  const info = await checkIfIsFriend(userId, currUser);
 
   res.status(200).json(info);
 });
@@ -389,3 +380,32 @@ export const getAllUsers = asyncWrapper(async function (req, res, next) {
 });
 
 export const fnName = asyncWrapper(async function (req, res, next) {});
+
+async function checkIfIsFriend(userId, currUser) {
+  const user = await User.findById(currUser.id);
+
+  const isFriend = user.friends.some((friend) => friend.friend.toString() === userId);
+
+  const info = {
+    isFriend,
+    isPendingRequest: false,
+    isSentRequest: false,
+    isForeign: false,
+  };
+
+  if (!isFriend) {
+    const isPendingRequest = user.pendingRequests.some(
+      (request) => request.adressat.toString() === userId
+    );
+    if (isPendingRequest) info.isPendingRequest = isPendingRequest;
+    else if (!isPendingRequest) {
+      const isSentRequest = user.sentRequests.some(
+        (request) => request.adressat.toString() === userId
+      );
+      if (isSentRequest) info.isSentRequest = isSentRequest;
+      else if (!isSentRequest) info.isForeign = true;
+    }
+  }
+
+  return info;
+}

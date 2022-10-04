@@ -15,13 +15,15 @@ import {
   addUserInfo,
   deleteUserInfo,
 } from '../controllers/userController.js';
-import { checkAuth } from '../controllers/authenticationController.js';
+import { checkAuth, restriction } from '../controllers/authenticationController.js';
 
 const router = express.Router();
 
 router.route('/search').get(checkAuth, searchUsers);
 
-router.route('/:userId/profile/posts').get(checkAuth, getProfilePosts);
+router
+  .route('/:userId/profile/posts')
+  .get(checkAuth, restriction('user', 'guest', 'administrator'), getProfilePosts);
 
 router.route('/:userId/profile/bookmarks').get(checkAuth, getBookmarks);
 
