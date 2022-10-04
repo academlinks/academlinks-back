@@ -1,6 +1,9 @@
 import AppError from '../lib/AppError.js';
 import { asyncWrapper } from '../lib/asyncWrapper.js';
+
 import User from '../models/User.js';
+import Refresher from '../models/Refreshers.js';
+
 import asignToken from '../lib/asignToken.js';
 import { verifyToken } from '../lib/verifyToken.js';
 
@@ -59,3 +62,32 @@ export const restriction = (...roles) =>
 
     next();
   });
+
+export const refresh = asyncWrapper(async function (req, res, next) {
+  const { authorization } = req.headers;
+
+  const token = authorization.split(' ');
+
+  if (!authorization || token[0] !== 'Bearer' || !token[1])
+    next(new AppError(401, 'you are not authorized'));
+
+  const decodedUser = await verifyToken(token[1], true);
+  if (!decodedUser) next(new AppError(401, 'you are not authorized'));
+
+  const user = await User.findById(decodedUser.id);
+  if (!user) next(new AppError(404, 'user does not exists'));
+
+  const freshToken = await Refresher.find({ refresher: token[1] });
+  if (!freshToken[0]) return next(new AppError('invalid token'));
+
+  await Refresher.findOneAndDelete({ refresher: token[1] });
+
+  const { refreshToken } = await asignToken(res, {
+    _id: user._id,
+    role: user.role,
+    userName: user.userName,
+    email: user.email,
+  });
+
+  res.status(201).json({ refreshToken });
+});
