@@ -215,11 +215,7 @@ export const reactOnComment = asyncWrapper(async function (req, res, next) {
 
   await comment.save();
 
-  const lastReaction = existingReaction ? null : comment.reactions[comment.reactions.length - 1];
-
-  existingReaction
-    ? res.status(204).json({ deleted: true })
-    : res.status(200).json({ reaction: lastReaction, likesAmount: comment.likesAmount });
+  res.status(200).json({ likesAmount: comment.likesAmount });
 });
 
 export const reactOnCommentReply = asyncWrapper(async function (req, res, next) {
@@ -248,22 +244,9 @@ export const reactOnCommentReply = asyncWrapper(async function (req, res, next) 
 
   comment.controllCommentReplyLikes(commentReply._id);
 
-  await comment.populate({
-    path: 'replies.reactions.author',
-    select: 'userName',
-  });
-
   await comment.save();
 
-  const lastReaction = existingReaction
-    ? null
-    : commentReply.reactions[commentReply.reactions.length - 1];
-
-  existingReaction
-    ? res.status(204).json({ deleted: true })
-    : res.status(200).json({ reaction: lastReaction, likesAmount: commentReply.likesAmount });
-
-  res.status(200).json(lastReaction);
+  res.status(200).json({ likesAmount: commentReply.likesAmount });
 });
 
 export const pinComment = asyncWrapper(async function (req, res, next) {

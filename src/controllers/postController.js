@@ -108,7 +108,7 @@ export const updatePost = asyncWrapper(async function (req, res, next) {
   const { media } = req.body;
   const currUser = req.user;
 
-  const post = await Post.findById(postId);
+  const post = await Post.findById(postId).select('-reactions -__v');
 
   if (!post || post.author._id.toString() !== currUser.id)
     return next(new AppError(404, 'post does not exists'));
@@ -163,14 +163,13 @@ export const updatePost = asyncWrapper(async function (req, res, next) {
   await post.save();
 
   await post.populate({
-    path: 'author reactions.author tags',
+    path: 'author tags',
     select: 'userName profileImg',
   });
 
   await post.populate({
     path: 'authentic',
-    select:
-      'type author createdAt description tags media categories article title likesAmount dislikesAmount commentsAmount',
+    select: '-reactions -shared',
     populate: { path: 'author tags', select: 'userName profileImg' },
   });
 
@@ -205,7 +204,6 @@ export const reactOnPost = asyncWrapper(async function (req, res, next) {
   await post.save();
 
   res.status(200).json({
-    reactions: post.reactions,
     likesAmount: post.likesAmount,
     dislikesAmount: post.dislikesAmount,
   });
@@ -220,10 +218,11 @@ export const getPostComments = asyncWrapper(async function (req, res, next) {
 
   const comments = await Comment.find({ post: postId })
     .populate({
-      path: 'author tags reactions.author replies.author replies.reactions.author replies.tags',
+      path: 'author tags replies.author replies.tags',
       select: 'userName profileImg',
     })
-    .sort({ createdAt: -1 });
+    .sort({ createdAt: -1 })
+    .select('-reactions -replies.reactions');
 
   res.status(200).json(comments);
 });
@@ -254,8 +253,7 @@ export const sharePost = asyncWrapper(async function (req, res, next) {
 
   await newPost.populate({
     path: 'authentic',
-    select:
-      'type author createdAt description tags media categories article title likesAmount dislikesAmount commentsAmount',
+    select: '-reactions -shared',
     populate: { path: 'author tags', select: 'userName profileImg' },
   });
 
@@ -265,7 +263,7 @@ export const sharePost = asyncWrapper(async function (req, res, next) {
 export const getPost = asyncWrapper(async function (req, res, next) {
   const { postId } = req.params;
 
-  const post = await Post.findById(postId).populate({
+  const post = await Post.findById(postId).select('-reactions -__v').populate({
     path: 'author tags',
     select: 'userName profileImg',
   });
@@ -326,6 +324,7 @@ export const getBlogPosts = asyncWrapper(async function (req, res, next) {
     postsLength = await Post.find({ type: 'blogPost' }).countDocuments();
 
   const blogPosts = await Post.find({ type: 'blogPost' })
+    .select('-reactions -__v')
     .skip(skip)
     .limit(limit)
     .sort('-createdAt')
@@ -340,10 +339,14 @@ export const getBlogPosts = asyncWrapper(async function (req, res, next) {
 export const getTopRatedBlogPosts = asyncWrapper(async function (req, res, next) {
   const { limit } = req.query;
 
-  const posts = await Post.find({ type: 'blogPost' }).sort('-likesAmount').limit(limit).populate({
-    path: 'author tags',
-    select: 'userName profileImg',
-  });
+  const posts = await Post.find({ type: 'blogPost' })
+    .select('-reactions -__v')
+    .sort('-likesAmount')
+    .limit(limit)
+    .populate({
+      path: 'author tags',
+      select: 'userName profileImg',
+    });
 
   res.status(200).json(posts);
 });
@@ -456,12 +459,10 @@ export const getRelatedPosts = asyncWrapper(async function (req, res, next) {
       },
     },
     {
-      $project: {
-        posts: 1,
-      },
+      $unwind: '$posts',
     },
     {
-      $unwind: '$posts',
+      $unset: ['posts.reactions'],
     },
     {
       $unwind: '$posts.author',

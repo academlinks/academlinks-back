@@ -64,6 +64,7 @@ export const getProfilePosts = asyncWrapper(async function (req, res, next) {
     postsLength = await Post.find({ author: userId, type: 'post' }).countDocuments();
 
   const posts = await Post.find({ author: userId, type: 'post' })
+    .select('-reactions -__v')
     .skip(skip)
     .limit(limit)
     .sort('-createdAt')
@@ -73,8 +74,7 @@ export const getProfilePosts = asyncWrapper(async function (req, res, next) {
     })
     .populate({
       path: 'authentic',
-      select:
-        'type author createdAt description tags media categories article title likesAmount dislikesAmount commentsAmount',
+      select: '-reactions -shared -__v',
       populate: { path: 'author tags', select: 'userName profileImg' },
     });
 
@@ -101,6 +101,7 @@ export const getUserFeed = asyncWrapper(async function (req, reqs, next) {
     $or: [{ author: userId }, { author: friends }],
     type: 'post',
   })
+    .select('-reactions -__v')
     .skip(skip)
     .limit(limit)
     .sort('-createdAt')
@@ -110,8 +111,7 @@ export const getUserFeed = asyncWrapper(async function (req, reqs, next) {
     })
     .populate({
       path: 'authentic',
-      select:
-        'type author createdAt description tags media categories article title likesAmount dislikesAmount commentsAmount',
+      select: '-reactions -__v -shared',
       populate: { path: 'author tags', select: 'userName profileImg' },
     });
 
@@ -214,7 +214,18 @@ export const getBookmarks = asyncWrapper(async function (req, res, next) {
     .sort('-createdAt')
     .populate({
       path: 'post',
-      populate: { path: 'author', select: 'userName profileImg' },
+      select: '-reactions -__v',
+      populate: [
+        { path: 'author tags', select: 'userName profileImg' },
+        {
+          path: 'authentic',
+          select: '-reactions -__v',
+          populate: {
+            path: 'tags author',
+            select: 'userName profileImg',
+          },
+        },
+      ],
     });
 
   res.status(200).json({ data: savedPosts, results: postsLength });
