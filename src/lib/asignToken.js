@@ -1,5 +1,4 @@
 import JWT from 'jsonwebtoken';
-import Refresher from '../models/Refreshers.js';
 
 async function signToken(res, user) {
   const SECRET = process.env.JWT_SECRET;
@@ -13,15 +12,15 @@ async function signToken(res, user) {
   };
 
   const accessToken = JWT.sign(payload, SECRET, { expiresIn: '1h' });
+
   const cookieOptions = {
     httpOnly: true,
+    origin: 'http://localhost:3000',
   };
-  res.cookie('Authorization', `Bearer ${accessToken}`, cookieOptions);
-
   const refreshToken = JWT.sign(payload, REFRESH_SECRET);
-  await Refresher.create({ refresher: refreshToken });
+  res.cookie('authorization', `Bearer ${refreshToken}`, cookieOptions);
 
-  return { refreshToken };
+  return { accessToken };
 }
 
 export default signToken;

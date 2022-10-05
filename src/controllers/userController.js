@@ -139,10 +139,10 @@ export const getProfilePosts = asyncWrapper(async function (req, res, next) {
   const postQuery = { author: userId, type: 'post' };
 
   const user = await User.findById(currUser.id);
-  const info = checkIfIsFriend(user, userId);
+  const { isFriend, isCurrUser } = checkIfIsFriend(user, userId);
 
-  if (userId !== currUser.id) {
-    if (info.isFriend) postQuery.audience = { $in: ['friends', 'public'] };
+  if (!isCurrUser) {
+    if (isFriend) postQuery.audience = { $in: ['friends', 'public'] };
     else postQuery.audience = 'public';
   }
 
@@ -161,7 +161,7 @@ export const getProfilePosts = asyncWrapper(async function (req, res, next) {
     .populate({
       path: 'authentic',
       select: '-reactions -shared -__v',
-      // transform: (doc, id) => checkIfIsFriendOnEach(user, doc.author._id.toString(), doc),
+      transform: (doc, id) => checkIfIsFriendOnEach(user, doc.author._id.toString(), doc),
       populate: { path: 'author tags', select: 'userName profileImg' },
     });
 
@@ -258,7 +258,7 @@ export const isFriend = asyncWrapper(async function (req, res, next) {
 
   const user = await User.findById(currUser.id);
 
-  const info = await checkIfIsFriend(user, userId);
+  const { info } = checkIfIsFriend(user, userId);
 
   res.status(200).json(info);
 });
@@ -392,7 +392,8 @@ export const fnName = asyncWrapper(async function (req, res, next) {});
 
 function checkIfIsFriend(user, userId) {
   const isFriend = user.friends.some((friend) => friend.friend.toString() === userId);
-  console.log(userId);
+  const isCurrUser = user._id.toString() === userId;
+
   const info = {
     isFriend,
     isPendingRequest: false,
@@ -414,13 +415,16 @@ function checkIfIsFriend(user, userId) {
     }
   }
 
-  return info;
+  return { info, isFriend, isCurrUser };
 }
 
 function checkIfIsFriendOnEach(user, id, doc) {
-  const { isFriend } = checkIfIsFriend(user, id);
+  const { isFriend, isCurrUser } = checkIfIsFriend(user, id);
 
-  if (doc.audience === 'private') return { restricted: true };
-  else if (doc.audience === 'friends' && !isFriend) return { restricted: true };
-  else return doc;
+  if (doc.type === 'blogPost' && user.role === 'user') return doc;
+  else if (isCurrUser) return doc;
+  else if (!isCurrUser && doc.audience === 'private') return { restricted: true };
+  else if (doc.audience === 'friends' && !isCurrUser && !isFriend) return { restricted: true };
+  else if (doc.audience === 'friends' && isFriend) return doc;
+  else return { restricted: true };
 }

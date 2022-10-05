@@ -21,7 +21,7 @@ const App = express();
 App.use(express.json());
 App.use(express.urlencoded({ extended: false }));
 App.use(cookieParser());
-App.use(cors({ origin: '*' }));
+App.use(cors({ credentials: true, origin: 'http://localhost:3000' }));
 App.use(morgan('dev'));
 
 const __filename = fileURLToPath(import.meta.url);
