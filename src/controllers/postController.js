@@ -247,7 +247,7 @@ export const getPostComments = asyncWrapper(async function (req, res, next) {
 
 export const sharePost = asyncWrapper(async function (req, res, next) {
   const { postId } = req.params;
-  const { description, tags } = req.body;
+  const { description, audience, tags } = req.body;
   const currUser = req.user;
 
   const postToShare = await Post.findById(postId);
@@ -258,6 +258,7 @@ export const sharePost = asyncWrapper(async function (req, res, next) {
     type: 'post',
     author: currUser.id,
     description: description,
+    audience: audience,
   };
 
   if (tags && JSON.parse(tags)) body.tags = JSON.parse(tags);
