@@ -36,7 +36,7 @@ export const loginUser = asyncWrapper(async function (req, res, next) {
 
 export const logoutUser = asyncWrapper(async function (req, res, next) {
   res.clearCookie('authorization');
-  res.status(200).json({ loggedOut: true, refreshToken: '' });
+  res.status(200).json({ loggedOut: true, accessToken: '' });
 });
 
 export const checkAuth = asyncWrapper(async function (req, res, next) {

@@ -15,6 +15,7 @@ import {
   getTopRatedBlogPosts,
   getTopRatedPublishers,
   getRelatedPosts,
+  changePostAudience,
 } from '../controllers/postController.js';
 import { addComment } from '../controllers/commentsController.js';
 import { checkAuth, restriction } from '../controllers/authenticationController.js';
@@ -28,6 +29,10 @@ router.route('/:postId/reaction').post(checkAuth, reactOnPost);
 router.route('/:postId/comments').get(checkAuth, getPostComments).post(checkAuth, addComment);
 
 router.route('/:postId/options').get(checkAuth, isUserPost);
+
+router
+  .route('/:postId/audience')
+  .patch(checkAuth, restriction('user', 'administrator'), changePostAudience);
 
 router.route('/blogPosts').get(checkAuth, getBlogPosts);
 

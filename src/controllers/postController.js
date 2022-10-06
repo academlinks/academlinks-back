@@ -25,10 +25,11 @@ export const uploadPostMediaFiles = (imageName) =>
   });
 
 export const createPost = asyncWrapper(async function (req, res, next) {
-  const { type, description, article, categories, tags, title } = req.body;
+  const { type, description, article, categories, tags, title, audience } = req.body;
   const currUser = req.user;
 
   const newPost = new Post({
+    audience,
     type,
     author: currUser.id,
     tags: tags && JSON.parse(tags),
@@ -114,7 +115,7 @@ export const updatePost = asyncWrapper(async function (req, res, next) {
     return next(new AppError(404, 'post does not exists'));
 
   const body = {};
-  const availableKeys = ['description', 'tags', 'article', 'categories', 'title'];
+  const availableKeys = ['description', 'tags', 'article', 'categories', 'title', 'audience'];
   Object.keys(req.body)
     .filter((key) => availableKeys.includes(key))
     .forEach((key) => {
@@ -174,6 +175,23 @@ export const updatePost = asyncWrapper(async function (req, res, next) {
   });
 
   res.status(201).json(post);
+});
+
+export const changePostAudience = asyncWrapper(async function (req, res, next) {
+  const { postId } = req.params;
+  const { audience } = req.body;
+  const currUser = req.user;
+
+  const post = await Post.findById([postId]);
+
+  if (post.author.toString() !== currUser.id)
+    return next(new AppError(403, 'yoy are not authorized for this operation'));
+
+  post.audience = audience;
+
+  await post.save();
+
+  res.status(201).json({ audience: post.audience });
 });
 
 export const reactOnPost = asyncWrapper(async function (req, res, next) {
