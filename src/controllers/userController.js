@@ -161,7 +161,7 @@ export const getProfilePosts = asyncWrapper(async function (req, res, next) {
     .populate({
       path: 'authentic',
       select: '-reactions -shared -__v',
-      transform: (doc, id) => checkIfIsFriendOnEach(user, doc.author._id.toString(), doc),
+      transform: (doc, docId) => checkIfIsFriendOnEach(user, doc, docId),
       populate: { path: 'author tags', select: 'userName profileImg' },
     });
 
@@ -204,7 +204,7 @@ export const getUserFeed = asyncWrapper(async function (req, reqs, next) {
     .populate({
       path: 'authentic',
       select: '-reactions -__v -shared',
-      transform: (doc, id) => checkIfIsFriendOnEach(user, doc.author._id.toString(), doc),
+      transform: (doc, docId) => checkIfIsFriendOnEach(user, doc, docId),
       populate: { path: 'author tags', select: 'userName profileImg' },
     });
 
@@ -234,13 +234,13 @@ export const getBookmarks = asyncWrapper(async function (req, res, next) {
     .populate({
       path: 'post',
       select: '-reactions -__v',
-      transform: (doc, id) => checkIfIsFriendOnEach(user, doc.author._id.toString(), doc),
+      transform: (doc, docId) => checkIfIsFriendOnEach(user, doc, docId),
       populate: [
         { path: 'author tags', select: 'userName profileImg' },
         {
           path: 'authentic',
           select: '-reactions -__v',
-          transform: (doc, id) => checkIfIsFriendOnEach(user, doc.author._id.toString(), doc),
+          transform: (doc, docId) => checkIfIsFriendOnEach(user, doc, docId),
           populate: {
             path: 'tags author',
             select: 'userName profileImg',
@@ -418,13 +418,17 @@ function checkIfIsFriend(user, userId) {
   return { info, isFriend, isCurrUser };
 }
 
-function checkIfIsFriendOnEach(user, id, doc) {
-  const { isFriend, isCurrUser } = checkIfIsFriend(user, id);
+function checkIfIsFriendOnEach(user, doc, docId) {
+  if (doc === null) return { restricted: true, _id: docId };
+
+  const authorId = doc.author._id.toString();
+  const { isFriend, isCurrUser } = checkIfIsFriend(user, authorId);
 
   if (doc.type === 'blogPost' && user.role === 'user') return doc;
   else if (isCurrUser) return doc;
-  else if (!isCurrUser && doc.audience === 'private') return { restricted: true };
-  else if (doc.audience === 'friends' && !isCurrUser && !isFriend) return { restricted: true };
-  else if (doc.audience === 'friends' && isFriend) return doc;
-  else return { restricted: true };
+  else if (!isCurrUser && doc.audience === 'private') return { restricted: true, _id: doc._id };
+  else if (doc.audience === 'friends' && !isCurrUser && !isFriend)
+    return { restricted: true, _id: doc._id };
+  else if ((doc.audience === 'friends' || doc?.audience === 'public') && isFriend) return doc;
+  else return { restricted: true, _id: doc._id };
 }

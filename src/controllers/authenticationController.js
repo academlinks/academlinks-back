@@ -70,7 +70,6 @@ export const restriction = (...roles) =>
 
 export const refresh = asyncWrapper(async function (req, res, next) {
   const { authorization } = req.cookies;
-
   const token = authorization.split(' ');
 
   if (!authorization || token[0] !== 'Bearer' || !token[1])

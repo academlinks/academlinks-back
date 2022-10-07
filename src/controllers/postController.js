@@ -29,11 +29,12 @@ export const createPost = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
 
   const newPost = new Post({
-    audience,
     type,
     author: currUser.id,
     tags: tags && JSON.parse(tags),
   });
+
+  contollAudience(newPost, audience, type);
 
   if (type === 'post') {
     newPost.description = description;
@@ -111,14 +112,18 @@ export const updatePost = asyncWrapper(async function (req, res, next) {
 
   const post = await Post.findById(postId).select('-reactions -__v');
 
-  if (!post || post.author._id.toString() !== currUser.id)
-    return next(new AppError(404, 'post does not exists'));
+  if (!post) return next(new AppError(404, 'post does not exists'));
+
+  if (post.author._id.toString() !== currUser.id)
+    return next(new AppError(404, 'you are not authorised for this operation'));
 
   const body = {};
   const availableKeys = ['description', 'tags', 'article', 'categories', 'title', 'audience'];
+
   Object.keys(req.body)
     .filter((key) => availableKeys.includes(key))
     .forEach((key) => {
+      if (key === 'audience') contollAudience(body, req.body[key], post.type);
       if (key === 'tags' || key === 'categories') body[key] = JSON.parse(req.body[key]);
       else body[key] = req.body[key];
     });
@@ -187,7 +192,7 @@ export const changePostAudience = asyncWrapper(async function (req, res, next) {
   if (post.author.toString() !== currUser.id)
     return next(new AppError(403, 'yoy are not authorized for this operation'));
 
-  post.audience = audience;
+  contollAudience(newPost, audience, post.type);
 
   await post.save();
 
@@ -258,8 +263,9 @@ export const sharePost = asyncWrapper(async function (req, res, next) {
     type: 'post',
     author: currUser.id,
     description: description,
-    audience: audience,
   };
+
+  contollAudience(body, audience, 'post');
 
   if (tags && JSON.parse(tags)) body.tags = JSON.parse(tags);
 
@@ -281,6 +287,7 @@ export const sharePost = asyncWrapper(async function (req, res, next) {
 
 export const getPost = asyncWrapper(async function (req, res, next) {
   const { postId } = req.params;
+  const currUser = req.user;
 
   const post = await Post.findById(postId).select('-reactions -__v').populate({
     path: 'author tags',
@@ -288,6 +295,11 @@ export const getPost = asyncWrapper(async function (req, res, next) {
   });
 
   if (!post) return next(new AppError(404, 'post does not exists'));
+  else if (
+    currUser.role === 'guest' &&
+    (post.audience === 'friends' || post.audience === 'users' || post.audience === 'private')
+  )
+    return next(new AppError(403, 'you are not authorised for this operation'));
 
   res.status(200).json(post);
 });
@@ -335,8 +347,13 @@ export const savePost = asyncWrapper(async function (req, res, next) {
 
 export const getBlogPosts = asyncWrapper(async function (req, res, next) {
   const { page, limit, hasMore } = req.query;
+  const currUser = req.user;
 
   const skip = page * limit - limit;
+
+  const postQuery = { type: 'blogPost' };
+
+  if (currUser.role === 'guest') postQuery.audience = 'public';
 
   let postsLength;
   if (hasMore && !JSON.parse(hasMore))
@@ -512,3 +529,12 @@ export const getAllPosts = asyncWrapper(async function (req, res, next) {
 
 //////////////////////////////////////////////////////////////////////
 export const fnName = asyncWrapper(async function (req, res, next) {});
+
+function contollAudience(post, audience, type) {
+  const audienceForBlogPost = ['public', 'users'];
+  const audienceForPost = ['public', 'friends', 'private'];
+
+  if (type === 'post' && !audienceForPost.includes(audience)) post.audience = 'friends';
+  else if (type === 'blogPost' && !audienceForBlogPost.includes(audience)) post.audience = 'public';
+  else post.audience = audience;
+}

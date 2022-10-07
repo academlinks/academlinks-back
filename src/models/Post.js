@@ -5,7 +5,7 @@ const PostSchema = new Schema(
   {
     audience: {
       type: String,
-      enum: ['public', 'friends', 'private'],
+      enum: ['public', 'friends', 'private', 'users'],
       default: 'friends',
     },
     type: {
