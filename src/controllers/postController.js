@@ -377,8 +377,12 @@ export const getBlogPosts = asyncWrapper(async function (req, res, next) {
 
 export const getTopRatedBlogPosts = asyncWrapper(async function (req, res, next) {
   const { limit } = req.query;
+  const monthAgo = new Date(new Date().setMonth(new Date().getMonth() - 1));
 
-  const posts = await Post.find({ type: 'blogPost' })
+  const posts = await Post.find({
+    type: 'blogPost',
+    createdAt: { $gte: monthAgo },
+  })
     .select('-reactions -__v')
     .sort('-likesAmount')
     .limit(limit)
