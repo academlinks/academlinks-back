@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import AppError from '../lib/AppError.js';
 import { asyncWrapper } from '../lib/asyncWrapper.js';
 
@@ -122,12 +123,51 @@ export const getUserFriends = asyncWrapper(async function (req, res, next) {
   const { userId } = req.params;
   const currUser = req.user;
 
-  const userFriends = await User.findById(userId).select('friends').populate({
-    path: 'friends.friend',
-    select: 'userName profileImg',
-  });
+  // const userFriendsBlock = await User.findById(userId).select('friends');
+  // const userFriendsArr = userFriendsBlock.friends.map((friend) => friend.friend);
 
-  res.status(200).json(userFriends.friends);
+  const currUserFriendsBlock = await User.findById(currUser.id).select('friends');
+  const currUserFriendsArr = currUserFriendsBlock.friends.map((friend) => friend.friend);
+
+  const userFriends = await User.aggregate([
+    {
+      $match: {
+        role: 'user',
+        // _id: { $in: userFriendsArr },
+        friends: { $elemMatch: { friend: mongoose.Types.ObjectId(userId) } },
+      },
+    },
+    {
+      $unwind: '$friends',
+    },
+    {
+      $group: {
+        _id: '$_id',
+        friendsArr: { $push: '$friends.friend' },
+        userName: { $first: '$userName' },
+        profileImg: { $first: '$profileImg' },
+      },
+    },
+    {
+      $addFields: {
+        matched: { $setIntersection: [currUserFriendsArr, '$friendsArr'] },
+      },
+    },
+    {
+      $addFields: {
+        muntuals: { $size: '$matched' },
+      },
+    },
+    {
+      $project: {
+        muntuals: 1,
+        userName: 1,
+        profileImg: 1,
+      },
+    },
+  ]);
+
+  res.status(200).json(userFriends);
 });
 
 export const getUserPendingRequest = asyncWrapper(async function (req, res, next) {
@@ -137,12 +177,52 @@ export const getUserPendingRequest = asyncWrapper(async function (req, res, next
   if (userId !== currUser.id)
     return next(new AppError(403, 'you are not authorised for this operation'));
 
-  const pendingRequests = await User.findById(userId).select('pendingRequests').populate({
-    path: 'pendingRequests.adressat',
-    select: 'userName profileImg',
-  });
+  const { friends, pendingRequests } = await User.findById(currUser.id).select(
+    'friends pendingRequests'
+  );
 
-  res.status(200).json(pendingRequests.pendingRequests);
+  const currUserRequestsArr = pendingRequests.map((request) => request.adressat);
+  const currUserFriendsArr = friends.map((friend) => friend.friend);
+
+  const requests = await User.aggregate([
+    {
+      $match: {
+        role: 'user',
+        _id: { $in: currUserRequestsArr },
+        // friends: { $elemMatch: { friend: mongoose.Types.ObjectId(userId) } },
+      },
+    },
+    {
+      $unwind: '$friends',
+    },
+    {
+      $group: {
+        _id: '$_id',
+        friendsArr: { $push: '$friends.friend' },
+        userName: { $first: '$userName' },
+        profileImg: { $first: '$profileImg' },
+      },
+    },
+    {
+      $addFields: {
+        matched: { $setIntersection: [currUserFriendsArr, '$friendsArr'] },
+      },
+    },
+    {
+      $addFields: {
+        muntuals: { $size: '$matched' },
+      },
+    },
+    {
+      $project: {
+        muntuals: 1,
+        userName: 1,
+        profileImg: 1,
+      },
+    },
+  ]);
+
+  res.status(200).json(requests);
 });
 
 export const getUserSentRequest = asyncWrapper(async function (req, res, next) {
@@ -152,10 +232,48 @@ export const getUserSentRequest = asyncWrapper(async function (req, res, next) {
   if (userId !== currUser.id)
     return next(new AppError(403, 'you are not authorised for this operation'));
 
-  const sentRequests = await User.findById(userId).select('sentRequests').populate({
-    path: 'sentRequests.adressat',
-    select: 'userName profileImg',
-  });
+  const { friends, sentRequests } = await User.findById(currUser.id).select('friends sentRequests');
 
-  res.status(200).json(sentRequests.sentRequests);
+  const currUserRequestsArr = sentRequests.map((request) => request.adressat);
+  const currUserFriendsArr = friends.map((friend) => friend.friend);
+
+  const requests = await User.aggregate([
+    {
+      $match: {
+        role: 'user',
+        _id: { $in: currUserRequestsArr },
+        // friends: { $elemMatch: { friend: mongoose.Types.ObjectId(userId) } },
+      },
+    },
+    {
+      $unwind: '$friends',
+    },
+    {
+      $group: {
+        _id: '$_id',
+        friendsArr: { $push: '$friends.friend' },
+        userName: { $first: '$userName' },
+        profileImg: { $first: '$profileImg' },
+      },
+    },
+    {
+      $addFields: {
+        matched: { $setIntersection: [currUserFriendsArr, '$friendsArr'] },
+      },
+    },
+    {
+      $addFields: {
+        muntuals: { $size: '$matched' },
+      },
+    },
+    {
+      $project: {
+        muntuals: 1,
+        userName: 1,
+        profileImg: 1,
+      },
+    },
+  ]);
+
+  res.status(200).json(requests);
 });
