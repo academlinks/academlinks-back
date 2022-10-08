@@ -346,20 +346,23 @@ export const savePost = asyncWrapper(async function (req, res, next) {
 });
 
 export const getBlogPosts = asyncWrapper(async function (req, res, next) {
-  const { page, limit, hasMore } = req.query;
+  const { page, limit, hasMore, author, category } = req.query;
   const currUser = req.user;
 
   const skip = page * limit - limit;
 
-  const postQuery = { type: 'blogPost' };
+  const postQuery = {
+    type: 'blogPost',
+    [author ? 'author' : '']: author ? author : '',
+    [category ? 'categories' : '']: category ? { $in: category.split(',') } : '',
+  };
 
   if (currUser.role === 'guest') postQuery.audience = 'public';
 
   let postsLength;
-  if (hasMore && !JSON.parse(hasMore))
-    postsLength = await Post.find({ type: 'blogPost' }).countDocuments();
+  if (hasMore && !JSON.parse(hasMore)) postsLength = await Post.find(postQuery).countDocuments();
 
-  const blogPosts = await Post.find({ type: 'blogPost' })
+  const blogPosts = await Post.find(postQuery)
     .select('-reactions -__v')
     .skip(skip)
     .limit(limit)
