@@ -5,6 +5,7 @@ import Post from '../models/Post.js';
 import Comment from '../models/Comment.js';
 
 import { controllCommentAccess } from '../utils/commentControllerUtils.js';
+import { controllAddCommentNotification } from '../utils/notificationControllerUtils.js';
 
 export const addComment = asyncWrapper(async function (req, res, next) {
   const { postId } = req.params;
@@ -13,11 +14,11 @@ export const addComment = asyncWrapper(async function (req, res, next) {
 
   if (!text) return next(new AppError(400, "text field can't be empty"));
 
-  const updatedPost = await Post.findByIdAndUpdate(postId, {
+  const post = await Post.findByIdAndUpdate(postId, {
     $inc: { commentsAmount: 1 },
   });
 
-  if (!updatedPost) return next(new AppError(400, 'there are no such a post'));
+  if (!post) return next(new AppError(400, 'there are no such a post'));
 
   const comment = await Comment.create({ post: postId, text, author: currUser.id, tags });
 
@@ -25,6 +26,8 @@ export const addComment = asyncWrapper(async function (req, res, next) {
     path: 'author tags',
     select: 'userName profileImg',
   });
+
+  await controllAddCommentNotification({ post, comment });
 
   res.status(200).json(comment);
 });
@@ -48,9 +51,15 @@ export const addCommentReply = asyncWrapper(async function (req, res, next) {
   post.commentsAmount = post.commentsAmount += 1;
   await post.save();
 
-  const newCommentReply = comment.replies[comment.replies.length - 1];
+  const commentReply = comment.replies[comment.replies.length - 1];
 
-  res.status(200).json(newCommentReply);
+  await controllAddCommentNotification({
+    post,
+    comment: commentReply,
+    parentCommentAuthorId: comment.author.toString(),
+  });
+
+  res.status(200).json(commentReply);
 });
 
 export const updateComment = asyncWrapper(async function (req, res, next) {

@@ -177,7 +177,7 @@ export const changePostAudience = asyncWrapper(async function (req, res, next) {
   if (post.author.toString() !== currUser.id)
     return next(new AppError(403, 'yoy are not authorized for this operation'));
 
-  contollAudience(newPost, audience, post.type);
+  contollAudience(post, audience, post.type);
 
   await post.save();
 
