@@ -15,6 +15,7 @@ import postRoutes from './src/routes/postRoutes.js';
 import commentRoutes from './src/routes/commentRoutes.js';
 import userRoutes from './src/routes/userRoutes.js';
 import friendsRoutes from './src/routes/friendsRoutes.js';
+import userInfoRoutes from './src/routes/userInfoRoutes.js';
 
 const App = express();
 
@@ -32,6 +33,7 @@ App.use('/api/v1/authentication', authenticationRoutes);
 App.use('/api/v1/posts', postRoutes);
 App.use('/api/v1/comments', commentRoutes);
 App.use('/api/v1/user', userRoutes, friendsRoutes);
+App.use('/api/v1/about', userInfoRoutes);
 
 App.all('*', (req, res, next) => {
   next(new AppError(404, `can't find ${req.originalUrl} on this server`));

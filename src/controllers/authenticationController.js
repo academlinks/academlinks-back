@@ -70,7 +70,7 @@ export const restriction = (...roles) =>
 
 export const refresh = asyncWrapper(async function (req, res, next) {
   const { authorization } = req.cookies;
-  const token = authorization.split(' ');
+  const token = authorization?.split(' ');
 
   if (!authorization || token[0] !== 'Bearer' || !token[1])
     return next(new AppError(401, 'you are not authorized'));

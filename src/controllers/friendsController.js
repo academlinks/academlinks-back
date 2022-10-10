@@ -4,16 +4,12 @@ import { asyncWrapper } from '../lib/asyncWrapper.js';
 
 import User from '../models/User.js';
 
+import { controllUserExistence } from '../utils/friendsControllerUtils.js';
+
 export const sendFriendRequest = asyncWrapper(async function (req, res, next) {
-  const { userId } = req.params;
   const currUser = req.user;
 
-  if (userId === currUser.id) return next(new AppError(400, 'please provide us valid user id'));
-
-  const user = await User.findById(currUser.id);
-  const adressatUser = await User.findById(userId);
-
-  if (!adressatUser) return next(new AppError(404, 'user does not exists'));
+  const { user, adressatUser } = await controllUserExistence({ req, next });
 
   adressatUser.pendingRequests.push({ adressat: currUser.id });
   user.sentRequests.push({ adressat: adressatUser._id });
@@ -25,13 +21,9 @@ export const sendFriendRequest = asyncWrapper(async function (req, res, next) {
 });
 
 export const cancelFriendRequest = asyncWrapper(async function (req, res, next) {
-  const { userId } = req.params;
   const currUser = req.user;
 
-  if (userId === currUser.id) return next(new AppError(400, 'please provide us valid user id'));
-
-  const user = await User.findById(currUser.id);
-  const adressatUser = await User.findById(userId);
+  const { user, adressatUser } = await controllUserExistence({ req, next });
 
   adressatUser.pendingRequests = adressatUser.pendingRequests.filter(
     (request) => request.adressat.toString() !== currUser.id
@@ -48,13 +40,9 @@ export const cancelFriendRequest = asyncWrapper(async function (req, res, next) 
 });
 
 export const deleteFriendRequest = asyncWrapper(async function (req, res, next) {
-  const { userId } = req.params;
   const currUser = req.user;
 
-  if (userId === currUser.id) return next(new AppError(400, 'please provide us valid user id'));
-
-  const user = await User.findById(currUser.id);
-  const adressatUser = await User.findById(userId);
+  const { user, adressatUser } = await controllUserExistence({ req, next });
 
   adressatUser.sentRequests = adressatUser.sentRequests.filter(
     (request) => request.adressat.toString() !== currUser.id
@@ -71,15 +59,9 @@ export const deleteFriendRequest = asyncWrapper(async function (req, res, next) 
 });
 
 export const confirmFriendRequest = asyncWrapper(async function (req, res, next) {
-  const { userId } = req.params;
   const currUser = req.user;
 
-  if (userId === currUser.id) return next(new AppError(400, 'please provide us valid user id'));
-
-  const user = await User.findById(currUser.id);
-  const adressatUser = await User.findById(userId);
-
-  if (!adressatUser) return next(new AppError(404, 'user does not exists'));
+  const { user, adressatUser } = await controllUserExistence({ req, next });
 
   adressatUser.sentRequests = adressatUser.sentRequests.filter(
     (request) => request.adressat.toString() !== currUser.id
@@ -99,15 +81,9 @@ export const confirmFriendRequest = asyncWrapper(async function (req, res, next)
 });
 
 export const deleteFriend = asyncWrapper(async function (req, res, next) {
-  const { userId } = req.params;
   const currUser = req.user;
 
-  if (userId === currUser.id) return next(new AppError(400, 'please provide us valid user id'));
-  console.log(userId);
-  const user = await User.findById(currUser.id);
-  const adressatUser = await User.findById(userId);
-
-  if (!adressatUser) return next(new AppError(404, 'user does not exists'));
+  const { user, adressatUser } = await controllUserExistence({ req, next });
 
   adressatUser.friends = adressatUser.friends.filter((fr) => fr.friend.toString() !== currUser.id);
 
@@ -123,9 +99,6 @@ export const getUserFriends = asyncWrapper(async function (req, res, next) {
   const { userId } = req.params;
   const currUser = req.user;
 
-  // const userFriendsBlock = await User.findById(userId).select('friends');
-  // const userFriendsArr = userFriendsBlock.friends.map((friend) => friend.friend);
-
   const currUserFriendsBlock = await User.findById(currUser.id).select('friends');
   const currUserFriendsArr = currUserFriendsBlock.friends.map((friend) => friend.friend);
 
@@ -133,7 +106,6 @@ export const getUserFriends = asyncWrapper(async function (req, res, next) {
     {
       $match: {
         role: 'user',
-        // _id: { $in: userFriendsArr },
         friends: { $elemMatch: { friend: mongoose.Types.ObjectId(userId) } },
       },
     },
@@ -189,7 +161,6 @@ export const getUserPendingRequest = asyncWrapper(async function (req, res, next
       $match: {
         role: 'user',
         _id: { $in: currUserRequestsArr },
-        // friends: { $elemMatch: { friend: mongoose.Types.ObjectId(userId) } },
       },
     },
     {
@@ -242,7 +213,6 @@ export const getUserSentRequest = asyncWrapper(async function (req, res, next) {
       $match: {
         role: 'user',
         _id: { $in: currUserRequestsArr },
-        // friends: { $elemMatch: { friend: mongoose.Types.ObjectId(userId) } },
       },
     },
     {

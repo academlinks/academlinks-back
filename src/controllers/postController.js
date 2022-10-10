@@ -109,6 +109,64 @@ export const updatePost = asyncWrapper(async function (req, res, next) {
   res.status(201).json(post);
 });
 
+export const sharePost = asyncWrapper(async function (req, res, next) {
+  const { postId } = req.params;
+  const { description, audience, tags } = req.body;
+  const currUser = req.user;
+
+  const postToShare = await Post.findById(postId);
+
+  const body = {
+    shared: true,
+    authentic: postToShare._id,
+    type: 'post',
+    author: currUser.id,
+    description: description,
+  };
+
+  contollAudience(body, audience, 'post');
+
+  if (tags && JSON.parse(tags)) body.tags = JSON.parse(tags);
+
+  const newPost = await Post.create(body);
+
+  await newPost.populate({
+    path: 'author tags',
+    select: 'userName profileImg',
+  });
+
+  await newPost.populate({
+    path: 'authentic',
+    select: '-reactions -shared',
+    populate: { path: 'author tags', select: 'userName profileImg' },
+  });
+
+  res.status(201).json(newPost);
+});
+
+export const savePost = asyncWrapper(async function (req, res, next) {
+  const { postId } = req.params;
+  const currUser = req.user;
+
+  const existingBookmark = await Bookmarks.find({ $or: [{ post: postId }, { cachedId: postId }] });
+
+  const operation = {};
+
+  if (!existingBookmark[0]) {
+    await Bookmarks.create({
+      post: postId,
+      author: currUser.id,
+    });
+
+    operation.saved = true;
+  } else if (existingBookmark[0]) {
+    await Bookmarks.findByIdAndDelete(existingBookmark[0]._id);
+    operation.removed = true;
+  }
+
+  res.status(201).json(operation);
+});
+
 export const changePostAudience = asyncWrapper(async function (req, res, next) {
   const { postId } = req.params;
   const { audience } = req.body;
@@ -145,59 +203,6 @@ export const reactOnPost = asyncWrapper(async function (req, res, next) {
   });
 });
 
-export const getPostComments = asyncWrapper(async function (req, res, next) {
-  const { postId } = req.params;
-
-  const post = await Post.findById(postId);
-
-  if (!post) return next(new AppError(404, 'post does not exists'));
-
-  const comments = await Comment.find({ post: postId })
-    .populate({
-      path: 'author tags replies.author replies.tags',
-      select: 'userName profileImg',
-    })
-    .sort({ createdAt: -1 })
-    .select('-reactions -replies.reactions');
-
-  res.status(200).json(comments);
-});
-
-export const sharePost = asyncWrapper(async function (req, res, next) {
-  const { postId } = req.params;
-  const { description, audience, tags } = req.body;
-  const currUser = req.user;
-
-  const postToShare = await Post.findById(postId);
-
-  const body = {
-    shared: true,
-    authentic: postToShare._id,
-    type: 'post',
-    author: currUser.id,
-    description: description,
-  };
-
-  contollAudience(body, audience, 'post');
-
-  if (tags && JSON.parse(tags)) body.tags = JSON.parse(tags);
-
-  const newPost = await Post.create(body);
-
-  await newPost.populate({
-    path: 'author tags',
-    select: 'userName profileImg',
-  });
-
-  await newPost.populate({
-    path: 'authentic',
-    select: '-reactions -shared',
-    populate: { path: 'author tags', select: 'userName profileImg' },
-  });
-
-  res.status(201).json(newPost);
-});
-
 export const getPost = asyncWrapper(async function (req, res, next) {
   const { postId } = req.params;
   const currUser = req.user;
@@ -212,47 +217,6 @@ export const getPost = asyncWrapper(async function (req, res, next) {
     return next(new AppError(403, 'you are not authorised for this operation'));
 
   res.status(200).json(post);
-});
-
-export const isUserPost = asyncWrapper(async function (req, res, next) {
-  const { postId } = req.params;
-  const currUser = req.user;
-
-  const post = await Post.findById(postId);
-
-  const bookmark = await Bookmarks.find({ $or: [{ post: postId }, { cachedId: postId }] });
-
-  if (!post && !bookmark[0]) return next(new AppError(404, 'post does not exists'));
-
-  const info = {
-    belongsToUser: post?.author.toString() === currUser.id,
-    isBookmarked: bookmark[0]?.cachedId === postId && bookmark[0]?.author === currUser.id,
-  };
-
-  res.status(200).json(info);
-});
-
-export const savePost = asyncWrapper(async function (req, res, next) {
-  const { postId } = req.params;
-  const currUser = req.user;
-
-  const existingBookmark = await Bookmarks.find({ $or: [{ post: postId }, { cachedId: postId }] });
-
-  const operation = {};
-
-  if (!existingBookmark[0]) {
-    await Bookmarks.create({
-      post: postId,
-      author: currUser.id,
-    });
-
-    operation.saved = true;
-  } else if (existingBookmark[0]) {
-    await Bookmarks.findByIdAndDelete(existingBookmark[0]._id);
-    operation.removed = true;
-  }
-
-  res.status(201).json(operation);
 });
 
 export const getBlogPosts = asyncWrapper(async function (req, res, next) {
@@ -283,6 +247,42 @@ export const getBlogPosts = asyncWrapper(async function (req, res, next) {
     });
 
   res.status(200).json({ data: blogPosts, results: postsLength });
+});
+
+export const getPostComments = asyncWrapper(async function (req, res, next) {
+  const { postId } = req.params;
+
+  const post = await Post.findById(postId);
+
+  if (!post) return next(new AppError(404, 'post does not exists'));
+
+  const comments = await Comment.find({ post: postId })
+    .populate({
+      path: 'author tags replies.author replies.tags',
+      select: 'userName profileImg',
+    })
+    .sort({ createdAt: -1 })
+    .select('-reactions -replies.reactions');
+
+  res.status(200).json(comments);
+});
+
+export const isUserPost = asyncWrapper(async function (req, res, next) {
+  const { postId } = req.params;
+  const currUser = req.user;
+
+  const post = await Post.findById(postId);
+
+  const bookmark = await Bookmarks.find({ $or: [{ post: postId }, { cachedId: postId }] });
+
+  if (!post && !bookmark[0]) return next(new AppError(404, 'post does not exists'));
+
+  const info = {
+    belongsToUser: post?.author.toString() === currUser.id,
+    isBookmarked: bookmark[0]?.cachedId === postId && bookmark[0]?.author === currUser.id,
+  };
+
+  res.status(200).json(info);
 });
 
 export const getTopRatedBlogPosts = asyncWrapper(async function (req, res, next) {
