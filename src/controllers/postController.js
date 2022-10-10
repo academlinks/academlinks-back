@@ -1,16 +1,22 @@
+import mongoose from 'mongoose';
+
+import { uploadMedia, editMedia } from '../lib/multer.js';
+
 import AppError from '../lib/AppError.js';
 import { asyncWrapper } from '../lib/asyncWrapper.js';
 
-import User from '../models/User.js';
 import Post from '../models/Post.js';
 import Comment from '../models/Comment.js';
 import Bookmarks from '../models/Bookmarks.js';
 
-import fs from 'fs';
-import { promisify } from 'util';
-
-import { uploadMedia, editMedia } from '../lib/multer.js';
-import mongoose from 'mongoose';
+import {
+  contollAudience,
+  controllPostCreation,
+  controllPostMediaDeletion,
+  controllPostUpdateBody,
+  controllPostMediaOnUpdate,
+  controllPostReaction,
+} from '../utils/postControllerUtils.js';
 
 export const resizeAndOptimiseMedia = editMedia({
   multy: true,
@@ -25,24 +31,7 @@ export const uploadPostMediaFiles = (imageName) =>
   });
 
 export const createPost = asyncWrapper(async function (req, res, next) {
-  const { type, description, article, categories, tags, title, audience } = req.body;
-  const currUser = req.user;
-
-  const newPost = new Post({
-    type,
-    author: currUser.id,
-    tags: tags && JSON.parse(tags),
-  });
-
-  contollAudience(newPost, audience, type);
-
-  if (type === 'post') {
-    newPost.description = description;
-  } else if (type === 'blogPost') {
-    newPost.article = article;
-    newPost.categories = categories && JSON.parse(categories);
-    newPost.title = title;
-  }
+  const newPost = await controllPostCreation(req);
 
   if (req.files) {
     // If multer storage is diskStorage use this
@@ -74,25 +63,7 @@ export const deletePost = asyncWrapper(async function (req, res, next) {
 
   const postMedia = postToDelete.media;
 
-  if (!postToDelete.shared && postMedia && postMedia.length > 0) {
-    const deletion = promisify(fs.unlink);
-
-    Promise.all(
-      postMedia.map(async (media) => {
-        try {
-          const originalFileName = media.split('/')?.slice(3)[0];
-          await deletion(`public/images/${originalFileName}`);
-        } catch (error) {
-          return next(
-            new AppError(
-              406,
-              "something went wrong, cant't find and delete post media files which are attached to your post. please report the problem or try later"
-            )
-          );
-        }
-      })
-    );
-  }
+  if (!postMedia.shared && postMedia?.[0]) await controllPostMediaDeletion(postMedia, next);
 
   await postToDelete.delete();
 
@@ -107,7 +78,6 @@ export const deletePost = asyncWrapper(async function (req, res, next) {
 
 export const updatePost = asyncWrapper(async function (req, res, next) {
   const { postId } = req.params;
-  const { media } = req.body;
   const currUser = req.user;
 
   const post = await Post.findById(postId).select('-reactions -__v');
@@ -117,52 +87,9 @@ export const updatePost = asyncWrapper(async function (req, res, next) {
   if (post.author._id.toString() !== currUser.id)
     return next(new AppError(404, 'you are not authorised for this operation'));
 
-  const body = {};
-  const availableKeys = ['description', 'tags', 'article', 'categories', 'title', 'audience'];
+  const body = await controllPostUpdateBody({ req, postType: post.type });
 
-  Object.keys(req.body)
-    .filter((key) => availableKeys.includes(key))
-    .forEach((key) => {
-      if (key === 'audience') contollAudience(body, req.body[key], post.type);
-      if (key === 'tags' || key === 'categories') body[key] = JSON.parse(req.body[key]);
-      else body[key] = req.body[key];
-    });
-
-  const deletion = promisify(fs.unlink);
-
-  const existingFiles = post.media;
-  const filteredMedia = [];
-  if (!post.shared && existingFiles?.[0])
-    Promise.all(
-      existingFiles.map(async (file) => {
-        try {
-          if (!media?.includes(file)) {
-            const originalFileName = file.split('/')?.slice(3)[0];
-            await deletion(`public/images/${originalFileName}`);
-          } else filteredMedia.push(file);
-        } catch (error) {
-          return next(
-            new AppError(
-              403,
-              "something went wrong, cant't find and delete removed post media files which are attached to your post.  please report the problem or try later"
-            )
-          );
-        }
-      })
-    );
-
-  if (!post.shared && req.files) {
-    const newFiles = req.xOriginal.map(
-      (fileName) => `${req.protocol}://${'localhost:4000'}/${fileName}`
-    );
-
-    const modifiedExistingFiles = filteredMedia[0] ? filteredMedia : [];
-
-    // const matchModifiedFilesToExisting = promisify(fs.existsSync);
-    // const match = await matchModifiedFilesToExisting(`public/images/${originalFileName}`);
-
-    post.media = [...modifiedExistingFiles, ...newFiles];
-  } else if (!post.shared) post.media = media;
+  await controllPostMediaOnUpdate({ req, next, post });
 
   Object.keys(body).forEach((key) => (post[key] = body[key]));
 
@@ -208,21 +135,7 @@ export const reactOnPost = asyncWrapper(async function (req, res, next) {
 
   if (!post) return next(new AppError(404, 'post does not exists'));
 
-  const existingReaction = post.reactions.find(
-    (reaction) => reaction.author.toString() === currUser.id
-  );
-
-  if (existingReaction) {
-    if (existingReaction.reaction === reaction)
-      post.reactions = post.reactions.filter(
-        (reaction) => reaction.author.toString() !== currUser.id
-      );
-    else if (existingReaction.reaction !== reaction) existingReaction.reaction = reaction;
-  } else
-    post.reactions.push({
-      reaction,
-      author: currUser.id,
-    });
+  await controllPostReaction({ post, currUserId: currUser.id, reaction });
 
   await post.save();
 
@@ -295,10 +208,7 @@ export const getPost = asyncWrapper(async function (req, res, next) {
   });
 
   if (!post) return next(new AppError(404, 'post does not exists'));
-  else if (
-    currUser.role === 'guest' &&
-    (post.audience === 'friends' || post.audience === 'users' || post.audience === 'private')
-  )
+  else if (currUser.role === 'guest' && post.audience !== 'public')
     return next(new AppError(403, 'you are not authorised for this operation'));
 
   res.status(200).json(post);
@@ -537,11 +447,4 @@ export const getAllPosts = asyncWrapper(async function (req, res, next) {
 //////////////////////////////////////////////////////////////////////
 export const fnName = asyncWrapper(async function (req, res, next) {});
 
-function contollAudience(post, audience, type) {
-  const audienceForBlogPost = ['public', 'users'];
-  const audienceForPost = ['public', 'friends', 'private'];
-
-  if (type === 'post' && !audienceForPost.includes(audience)) post.audience = 'friends';
-  else if (type === 'blogPost' && !audienceForBlogPost.includes(audience)) post.audience = 'public';
-  else post.audience = audience;
-}
+// check separated populatio on share post and updatePost
