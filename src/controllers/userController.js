@@ -122,7 +122,7 @@ export const getProfilePosts = asyncWrapper(async function (req, res, next) {
   const postQuery = { author: userId, type: 'post' };
 
   const user = await User.findById(currUser.id);
-  const { isFriend, isCurrUser } = await checkIfIsFriend(user, userId);
+  const { isFriend, isCurrUser } = checkIfIsFriend(user, userId);
 
   if (!isCurrUser) {
     if (isFriend) postQuery.audience = { $in: ['friends', 'public'] };

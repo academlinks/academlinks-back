@@ -10,7 +10,7 @@ export async function deleteExistingImage(originalFileNameFragments) {
   }
 }
 
-export async function checkIfIsFriend(user, userId) {
+export function checkIfIsFriend(user, userId) {
   const isFriend = user.friends.some((friend) => friend.friend.toString() === userId);
   const isCurrUser = user._id.toString() === userId;
 
