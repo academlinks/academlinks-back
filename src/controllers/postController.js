@@ -408,6 +408,22 @@ export const getRelatedPosts = asyncWrapper(async function (req, res, next) {
               ],
             },
           },
+          {
+            $lookup: {
+              as: 'tags',
+              from: 'users',
+              foreignField: '_id',
+              localField: 'tags',
+              pipeline: [
+                {
+                  $project: {
+                    userName: 1,
+                    profileImg: 1,
+                  },
+                },
+              ],
+            },
+          },
         ],
       },
     },
