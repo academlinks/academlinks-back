@@ -4,13 +4,23 @@ const { Schema, model } = mongoose;
 
 const NotificationSchema = new Schema(
   {
-    message: String,
-    adressat: String,
-    from: String,
     location: String,
+    message: String,
+    adressat: {
+      type: Schema.ObjectId,
+      ref: 'User',
+    },
+    from: {
+      type: Schema.ObjectId,
+      ref: 'User',
+    },
     read: {
       type: Boolean,
       default: false,
+    },
+    target: {
+      enum: ['post', 'blogPost', 'request'],
+      type: String,
     },
   },
   { timestamps: true }

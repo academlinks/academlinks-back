@@ -24,29 +24,21 @@ export async function controllAddCommentNotification({ post, comment, parentComm
     operations.push({
       message: 'comment on your post',
       adressats: [postAuthor],
-      from: comment.author._id,
-      location: post._id,
     });
   if (usersTaggedOnPost[0])
     operations.push({
       message: 'comment on the post on which you are tagged',
       adressats: usersTaggedOnPost,
-      from: comment.author._id,
-      location: post._id,
     });
   if (usersTaggedOnComment[0])
     operations.push({
       message: 'mentioned you in the comment',
       adressats: usersTaggedOnComment,
-      from: comment.author._id,
-      location: post._id,
     });
   if (parentCommentAuthor && parentCommentAuthor !== commentAuthor)
     operations.push({
       message: 'replied on your comment',
       adressats: [parentCommentAuthor],
-      from: comment.author._id,
-      location: post._id,
     });
 
   if (operations[0])
@@ -57,8 +49,9 @@ export async function controllAddCommentNotification({ post, comment, parentComm
             await createNotification({
               adressat,
               message: task.message,
-              from: task.from,
-              location: task.location,
+              from: comment.author._id,
+              location: post._id,
+              target: post.type,
             });
           })
         );
