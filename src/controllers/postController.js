@@ -273,16 +273,36 @@ export const isUserPost = asyncWrapper(async function (req, res, next) {
 
   const post = await Post.findById(postId);
 
-  const bookmark = await Bookmarks.find({ $or: [{ post: postId }, { cachedId: postId }] });
+  const bookmark = await Bookmarks.find({
+    $or: [{ post: postId }, { cachedId: postId }],
+    author: currUser.id,
+  });
 
   if (!post && !bookmark[0]) return next(new AppError(404, 'post does not exists'));
 
   const info = {
     belongsToUser: post?.author.toString() === currUser.id,
-    isBookmarked: bookmark[0]?.cachedId === postId && bookmark[0]?.author === currUser.id,
+    // isBookmarked: bookmark[0]?.cachedId === postId && bookmark[0]?.author === currUser.id,
+    isBookmarked: (bookmark[0] && true) || false,
+    isTagged: post.tags.includes(currUser.id),
   };
 
   res.status(200).json(info);
+});
+
+export const removeTagFromPost = asyncWrapper(async function (req, res, next) {
+  const { postId } = req.params;
+  const currUser = req.user;
+
+  const post = await Post.findOneAndUpdate(
+    { _id: mongoose.Types.ObjectId(postId), tags: currUser.id },
+    { $pull: { tags: currUser.id } },
+    { new: true }
+  );
+
+  if (!post) return next(new AppError(404, 'post does not exists'));
+
+  res.status(200).json(post);
 });
 
 export const getTopRatedBlogPosts = asyncWrapper(async function (req, res, next) {

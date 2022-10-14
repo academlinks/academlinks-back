@@ -16,6 +16,7 @@ import {
   getTopRatedPublishers,
   getRelatedPosts,
   changePostAudience,
+  removeTagFromPost,
 } from '../controllers/postController.js';
 import { addComment } from '../controllers/commentsController.js';
 import { checkAuth, restriction } from '../controllers/authenticationController.js';
@@ -29,6 +30,8 @@ router.route('/:postId/reaction').post(checkAuth, reactOnPost);
 router.route('/:postId/comments').get(checkAuth, getPostComments).post(checkAuth, addComment);
 
 router.route('/:postId/options').get(checkAuth, isUserPost);
+
+router.route('/:postId/tag').delete(checkAuth, removeTagFromPost);
 
 router
   .route('/:postId/audience')

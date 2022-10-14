@@ -119,7 +119,10 @@ export const getProfilePosts = asyncWrapper(async function (req, res, next) {
 
   const skip = page * limit - limit;
 
-  const postQuery = { author: userId, type: 'post' };
+  const postQuery = {
+    type: 'post',
+    $and: [{ $or: [{ author: userId }, { tags: userId }] }],
+  };
 
   const user = await User.findById(currUser.id);
   const { isFriend, isCurrUser } = checkIfIsFriend(user, userId);
