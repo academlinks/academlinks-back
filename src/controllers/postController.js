@@ -43,7 +43,7 @@ export const createPost = asyncWrapper(async function (req, res, next) {
   }
 
   newPost.populate({
-    path: 'author tags',
+    path: 'author tags.user',
     select: 'userName profileImg',
   });
 
@@ -83,11 +83,14 @@ export const updatePost = asyncWrapper(async function (req, res, next) {
   const post = await Post.findById(postId).select('-reactions -__v');
 
   if (!post) return next(new AppError(404, 'post does not exists'));
-
-  if (post.author._id.toString() !== currUser.id)
+  else if (post.author._id.toString() !== currUser.id)
     return next(new AppError(404, 'you are not authorised for this operation'));
 
-  const body = await controllPostUpdateBody({ req, postType: post.type });
+  const body = await controllPostUpdateBody({
+    req,
+    postType: post.type,
+    existingTags: post.tags,
+  });
 
   await controllPostMediaOnUpdate({ req, next, post });
 
@@ -96,7 +99,7 @@ export const updatePost = asyncWrapper(async function (req, res, next) {
   await post.save();
 
   await post.populate({
-    path: 'author tags',
+    path: 'author tags.user',
     select: 'userName profileImg',
   });
 
@@ -126,7 +129,7 @@ export const sharePost = asyncWrapper(async function (req, res, next) {
 
   contollAudience(body, audience, 'post');
 
-  if (tags && JSON.parse(tags)) body.tags = JSON.parse(tags);
+  if (tags && JSON.parse(tags)) body.tags = JSON.parse(tags).map((tag) => ({ user: tag }));
 
   const newPost = await Post.create(body);
 
@@ -303,6 +306,24 @@ export const removeTagFromPost = asyncWrapper(async function (req, res, next) {
   if (!post) return next(new AppError(404, 'post does not exists'));
 
   res.status(200).json(post);
+});
+
+export const reviewTaggedPosts = asyncWrapper(async function (req, res, next) {
+  const { postId } = req.params;
+  const { show } = req.body;
+  const currUser = req.user;
+
+  const post = await Post.findOne({ _id: postId, 'tags.user': currUser.id });
+
+  if (!post) return next(new AppError(404, 'there are no such a post'));
+
+  const i = post.tags.findIndex((tag) => tag.user.toString() === currUser.id);
+  post.tags[i].review = true;
+  post.tags[i].hidden = !show;
+
+  await post.save();
+
+  res.status(201).json({ updated: true });
 });
 
 export const getTopRatedBlogPosts = asyncWrapper(async function (req, res, next) {

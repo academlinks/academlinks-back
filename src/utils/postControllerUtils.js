@@ -21,7 +21,7 @@ export async function controllPostCreation(req) {
   const newPost = new Post({
     type,
     author: currUser.id,
-    tags: tags && JSON.parse(tags),
+    tags: tags && JSON.parse(tags).map((tag) => ({ user: tag })),
   });
 
   contollAudience(newPost, audience, type);
@@ -57,7 +57,7 @@ export async function controllPostMediaDeletion(media, next) {
   );
 }
 
-export async function controllPostUpdateBody({ req, postType }) {
+export async function controllPostUpdateBody({ req, postType, existingTags }) {
   const body = {};
   const availableKeys = ['description', 'tags', 'article', 'categories', 'title', 'audience'];
 
@@ -68,6 +68,15 @@ export async function controllPostUpdateBody({ req, postType }) {
       if (key === 'tags' || key === 'categories') body[key] = JSON.parse(req.body[key]);
       else body[key] = req.body[key];
     });
+
+  if (body.tags) {
+    const filteredExisting = existingTags.filter((tag) => body.tags.includes(tag.user.toString()));
+    const filteredExistingIds = filteredExisting.map((tag) => tag.user.toString());
+    const filteredBodyTags = body.tags
+      .filter((tag) => !filteredExistingIds.includes(tag))
+      .map((tag) => ({ user: tag }));
+    body.tags = [...filteredExisting, ...filteredBodyTags];
+  }
 
   return body;
 }

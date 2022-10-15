@@ -17,6 +17,7 @@ import {
   getRelatedPosts,
   changePostAudience,
   removeTagFromPost,
+  reviewTaggedPosts,
 } from '../controllers/postController.js';
 import { addComment } from '../controllers/commentsController.js';
 import { checkAuth, restriction } from '../controllers/authenticationController.js';
@@ -32,6 +33,8 @@ router.route('/:postId/comments').get(checkAuth, getPostComments).post(checkAuth
 router.route('/:postId/options').get(checkAuth, isUserPost);
 
 router.route('/:postId/tag').delete(checkAuth, removeTagFromPost);
+
+router.route('/:postId/aprove-post').patch(checkAuth, reviewTaggedPosts);
 
 router
   .route('/:postId/audience')

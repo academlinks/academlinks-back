@@ -10,6 +10,7 @@ import {
   updateCoverImage,
   getBookmarks,
   isFriend,
+  getPendingPosts,
 } from '../controllers/userController.js';
 import { checkAuth, restriction } from '../controllers/authenticationController.js';
 
@@ -22,6 +23,8 @@ router
   .get(checkAuth, restriction('user', 'guest', 'administrator'), getProfilePosts);
 
 router.route('/:userId/profile/bookmarks').get(checkAuth, getBookmarks);
+
+router.route('/:userId/profile/pending-posts').get(checkAuth, getPendingPosts);
 
 router
   .route('/:userId/profile/profileImg')

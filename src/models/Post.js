@@ -25,8 +25,18 @@ const PostSchema = new Schema(
     },
     tags: [
       {
-        type: Schema.ObjectId,
-        ref: 'User',
+        user: {
+          type: Schema.ObjectId,
+          ref: 'User',
+        },
+        hidden: {
+          type: Boolean,
+          default: true,
+        },
+        review: {
+          type: Boolean,
+          default: false,
+        },
       },
     ],
     reactions: {

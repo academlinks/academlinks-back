@@ -103,6 +103,8 @@ export const getUserProfile = asyncWrapper(async function (req, res, next) {
       options: { limit: 9 },
     });
 
+  if (!user) return next(new AppError(404, 'there are no such an user'));
+
   const userProfile = {
     ...user._doc,
     workplace: user._doc.workplace[0],
@@ -121,7 +123,7 @@ export const getProfilePosts = asyncWrapper(async function (req, res, next) {
 
   const postQuery = {
     type: 'post',
-    $and: [{ $or: [{ author: userId }, { tags: userId }] }],
+    $and: [{ $or: [{ author: userId }, { 'tags.user': userId, 'tags.hidden': false }] }],
   };
 
   const user = await User.findById(currUser.id);
@@ -141,7 +143,7 @@ export const getProfilePosts = asyncWrapper(async function (req, res, next) {
     .limit(limit)
     .sort('-createdAt')
     .populate({
-      path: 'author reactions.author tags',
+      path: 'author reactions.author tags.user',
       select: 'userName profileImg',
     })
     .populate({
@@ -152,6 +154,25 @@ export const getProfilePosts = asyncWrapper(async function (req, res, next) {
     });
 
   res.status(200).json({ data: posts, results: postsLength });
+});
+
+export const getPendingPosts = asyncWrapper(async function (req, res, next) {
+  const { userId } = req.params;
+  const currUser = req.user;
+
+  if (userId !== currUser.id)
+    return next(new AppError(403, 'you are not authorised for this operation'));
+
+  const pendingPosts = await Post.find({
+    'tags.user': userId,
+    'tags.hidden': true,
+    'tags.review': false,
+  }).populate({
+    path: 'author tags.user',
+    select: 'userName profileImg',
+  });
+
+  res.status(200).json(pendingPosts);
 });
 
 export const getUserFeed = asyncWrapper(async function (req, reqs, next) {
