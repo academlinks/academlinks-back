@@ -134,14 +134,14 @@ export const sharePost = asyncWrapper(async function (req, res, next) {
   const newPost = await Post.create(body);
 
   await newPost.populate({
-    path: 'author tags',
+    path: 'author tags.user',
     select: 'userName profileImg',
   });
 
   await newPost.populate({
     path: 'authentic',
     select: '-reactions -shared',
-    populate: { path: 'author tags', select: 'userName profileImg' },
+    populate: { path: 'author tags.user', select: 'userName profileImg' },
   });
 
   res.status(201).json(newPost);
@@ -211,7 +211,7 @@ export const getPost = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
 
   const post = await Post.findById(postId).select('-reactions -__v').populate({
-    path: 'author tags',
+    path: 'author tags.user',
     select: 'userName profileImg',
   });
 
@@ -245,7 +245,7 @@ export const getBlogPosts = asyncWrapper(async function (req, res, next) {
     .limit(limit)
     .sort('-createdAt')
     .populate({
-      path: 'author tags reactions.author',
+      path: 'author tags.user reactions.author',
       select: 'userName profileImg',
     });
 
@@ -287,7 +287,7 @@ export const isUserPost = asyncWrapper(async function (req, res, next) {
     belongsToUser: post?.author.toString() === currUser.id,
     // isBookmarked: bookmark[0]?.cachedId === postId && bookmark[0]?.author === currUser.id,
     isBookmarked: (bookmark[0] && true) || false,
-    isTagged: post.tags.includes(currUser.id),
+    isTagged: post.tags.map((tag) => tag.user.toString()).includes(currUser.id),
   };
 
   res.status(200).json(info);
@@ -298,14 +298,14 @@ export const removeTagFromPost = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
 
   const post = await Post.findOneAndUpdate(
-    { _id: mongoose.Types.ObjectId(postId), tags: currUser.id },
-    { $pull: { tags: currUser.id } },
+    { _id: mongoose.Types.ObjectId(postId), 'tags.user': mongoose.Types.ObjectId(currUser.id) },
+    { $pull: { tags: { user: mongoose.Types.ObjectId(currUser.id) } } },
     { new: true }
-  );
+  ).populate({ path: 'tags.user', select: 'userName profileImg' });
 
   if (!post) return next(new AppError(404, 'post does not exists'));
 
-  res.status(200).json(post);
+  res.status(200).json({ removed: true, postId, tags: post.tags });
 });
 
 export const reviewTaggedPosts = asyncWrapper(async function (req, res, next) {
@@ -338,7 +338,7 @@ export const getTopRatedBlogPosts = asyncWrapper(async function (req, res, next)
     .sort('-likesAmount')
     .limit(limit)
     .populate({
-      path: 'author tags',
+      path: 'author tags.user',
       select: 'userName profileImg',
     });
 
@@ -454,7 +454,7 @@ export const getRelatedPosts = asyncWrapper(async function (req, res, next) {
               as: 'tags',
               from: 'users',
               foreignField: '_id',
-              localField: 'tags',
+              localField: 'tags.user',
               pipeline: [
                 {
                   $project: {

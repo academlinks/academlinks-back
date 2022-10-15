@@ -205,7 +205,7 @@ export const getUserFeed = asyncWrapper(async function (req, reqs, next) {
     .limit(limit)
     .sort('-createdAt')
     .populate({
-      path: 'author tags',
+      path: 'author tags.user',
       select: 'userName profileImg',
     })
     .populate({
@@ -243,13 +243,13 @@ export const getBookmarks = asyncWrapper(async function (req, res, next) {
       select: '-reactions -__v',
       transform: (doc, docId) => checkIfIsFriendOnEach(user, doc, docId),
       populate: [
-        { path: 'author tags', select: 'userName profileImg' },
+        { path: 'author tags.user', select: 'userName profileImg' },
         {
           path: 'authentic',
           select: '-reactions -__v',
           transform: (doc, docId) => checkIfIsFriendOnEach(user, doc, docId),
           populate: {
-            path: 'tags author',
+            path: 'tags.user author',
             select: 'userName profileImg',
           },
         },
