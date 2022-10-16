@@ -11,6 +11,7 @@ import {
   getBookmarks,
   isFriend,
   getPendingPosts,
+  getHiddenPosts,
 } from '../controllers/userController.js';
 import { checkAuth, restriction } from '../controllers/authenticationController.js';
 
@@ -25,6 +26,8 @@ router
 router.route('/:userId/profile/bookmarks').get(checkAuth, getBookmarks);
 
 router.route('/:userId/profile/pending-posts').get(checkAuth, getPendingPosts);
+
+router.route('/:userId/profile/hidden-posts').get(checkAuth, getHiddenPosts);
 
 router
   .route('/:userId/profile/profileImg')

@@ -140,3 +140,20 @@ export async function controllPostReaction({ post, currUserId, reaction }) {
       author: currUserId,
     });
 }
+
+export async function controllUserRelationToPost({ post, currUser }) {
+  const isAuthor = post.author.toString() === currUser.id;
+  const isTagged = post.tags.some((tag) => tag.user.toString() === currUser.id);
+
+  return { isAuthor, isTagged };
+}
+
+export async function controllShowOnProfile({ currUser, post, task }) {
+  const { isAuthor, isTagged } = await controllUserRelationToPost({ post, currUser });
+
+  if (isAuthor) post.hidden = task === 'add' ? false : task === 'hide' ? true : undefined;
+  else if (isTagged) {
+    const i = post.tags.findIndex((tag) => tag.user.toString() === currUser.id);
+    post.tags[i].hidden = task === 'add' ? false : task === 'hide' ? true : undefined;
+  }
+}

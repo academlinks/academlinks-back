@@ -16,6 +16,7 @@ import {
   controllPostUpdateBody,
   controllPostMediaOnUpdate,
   controllPostReaction,
+  controllShowOnProfile,
 } from '../utils/postControllerUtils.js';
 
 export const resizeAndOptimiseMedia = editMedia({
@@ -290,6 +291,11 @@ export const isUserPost = asyncWrapper(async function (req, res, next) {
     isTagged: post.tags.map((tag) => tag.user.toString()).includes(currUser.id),
   };
 
+  if (info.isTagged)
+    info.isTaggedAndIsVisible = !post.tags.find((tag) => tag.user.toString() === currUser.id)
+      .hidden;
+  else if (info.belongsToUser) info.belongsToUserAndIsVisible = !post.hidden;
+
   res.status(200).json(info);
 });
 
@@ -320,6 +326,56 @@ export const reviewTaggedPosts = asyncWrapper(async function (req, res, next) {
   const i = post.tags.findIndex((tag) => tag.user.toString() === currUser.id);
   post.tags[i].review = true;
   post.tags[i].hidden = !show;
+
+  await post.save();
+
+  res.status(201).json({ updated: true });
+});
+
+export const addPostToProfile = asyncWrapper(async function (req, res, next) {
+  const { postId } = req.params;
+  const currUser = req.user;
+
+  const post = await Post.findOne({
+    _id: postId,
+    $and: [
+      {
+        $or: [
+          { author: currUser.id, hidden: true },
+          { 'tags.user': currUser.id, 'tags.review': true, 'tags.hidden': true },
+        ],
+      },
+    ],
+  });
+
+  if (!post) return next(new AppError(404, 'post does not exists'));
+
+  await controllShowOnProfile({ currUser, post, task: 'add' });
+
+  await post.save();
+
+  res.status(201).json({ updated: true });
+});
+
+export const hidePostFromProfile = asyncWrapper(async function (req, res, next) {
+  const { postId } = req.params;
+  const currUser = req.user;
+
+  const post = await Post.findOne({
+    _id: postId,
+    $and: [
+      {
+        $or: [
+          { author: currUser.id, hidden: false },
+          { 'tags.user': currUser.id, 'tags.review': true, 'tags.hidden': false },
+        ],
+      },
+    ],
+  });
+
+  if (!post) return next(new AppError(404, 'post does not exists'));
+
+  await controllShowOnProfile({ currUser, post, task: 'hide' });
 
   await post.save();
 

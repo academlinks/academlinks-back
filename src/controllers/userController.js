@@ -123,7 +123,14 @@ export const getProfilePosts = asyncWrapper(async function (req, res, next) {
 
   const postQuery = {
     type: 'post',
-    $and: [{ $or: [{ author: userId }, { 'tags.user': userId, 'tags.hidden': false }] }],
+    $and: [
+      {
+        $or: [
+          { author: userId, hidden: false },
+          { 'tags.user': userId, 'tags.hidden': false },
+        ],
+      },
+    ],
   };
 
   const user = await User.findById(currUser.id);
@@ -173,6 +180,22 @@ export const getPendingPosts = asyncWrapper(async function (req, res, next) {
   });
 
   res.status(200).json(pendingPosts);
+});
+
+export const getHiddenPosts = asyncWrapper(async function (req, res, next) {
+  const { userId } = req.params;
+  const currUser = req.user;
+
+  if (userId !== currUser.id) return next(new AppError(403, 'you are not authorised'));
+
+  const hiddenPosts = await Post.find({
+    $or: [
+      { author: userId, hidden: true },
+      { 'tags.user': userId, 'tags.review': true, 'tags.hidden': true },
+    ],
+  }).populate({ path: 'author tags.user', select: 'userName profileImg' });
+
+  res.status(200).json(hiddenPosts);
 });
 
 export const getUserFeed = asyncWrapper(async function (req, reqs, next) {

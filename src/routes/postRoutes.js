@@ -18,6 +18,8 @@ import {
   changePostAudience,
   removeTagFromPost,
   reviewTaggedPosts,
+  addPostToProfile,
+  hidePostFromProfile,
 } from '../controllers/postController.js';
 import { addComment } from '../controllers/commentsController.js';
 import { checkAuth, restriction } from '../controllers/authenticationController.js';
@@ -35,6 +37,10 @@ router.route('/:postId/options').get(checkAuth, isUserPost);
 router.route('/:postId/tag').delete(checkAuth, removeTagFromPost);
 
 router.route('/:postId/aprove-post').patch(checkAuth, reviewTaggedPosts);
+
+router.route('/:postId/show-post').patch(checkAuth, addPostToProfile);
+
+router.route('/:postId/hide-post').patch(checkAuth, hidePostFromProfile);
 
 router
   .route('/:postId/audience')
