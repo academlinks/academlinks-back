@@ -42,7 +42,21 @@ export const markAsRead = asyncWrapper(async function (req, res, next) {
   res.status(200).json(notify);
 });
 
-export const deleteAllUserNotification = asyncWrapper(async function (req, res, next) {});
+export const markAllUserNotificationAsRead = asyncWrapper(async function (req, res, next) {
+  const currUser = req.user;
+
+  await Notification.updateMany({ adressat: currUser.id, read: false }, { $set: { read: true } });
+
+  res.status(201).json({ updated: true });
+});
+
+export const deleteAllUserNotification = asyncWrapper(async function (req, res, next) {
+  const currUser = req.user;
+
+  await Notification.deleteMany({ adressat: currUser.id });
+
+  res.status(204).json({ deleted: true });
+});
 
 export const deleteUserNotification = asyncWrapper(async function (req, res, next) {
   const { notifyId } = req.params;

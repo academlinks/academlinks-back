@@ -1,8 +1,10 @@
 import express from 'express';
 import {
   getAllNotifications,
-  markAsRead,
   deleteUserNotification,
+  deleteAllUserNotification,
+  markAsRead,
+  markAllUserNotificationAsRead,
 } from '../controllers/notificationController.js';
 import { checkAuth, restriction } from '../controllers/authenticationController.js';
 
@@ -14,5 +16,10 @@ router
   .patch(checkAuth, markAsRead);
 
 router.route('/:userId').get(checkAuth, getAllNotifications);
+
+router
+  .route('')
+  .delete(checkAuth, deleteAllUserNotification)
+  .patch(checkAuth, markAllUserNotificationAsRead);
 
 export default router;

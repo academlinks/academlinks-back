@@ -7,7 +7,7 @@ export async function controllAddCommentNotification({ post, comment, parentComm
   const commentAuthor = comment.author._id.toString();
 
   const usersTaggedOnPost = post.tags
-    .map((user) => user.toString())
+    .map((tag) => tag.user.toString())
     .filter((user) => user !== postAuthor && user !== commentAuthor);
 
   const usersTaggedOnComment = comment.tags
