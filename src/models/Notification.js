@@ -4,13 +4,12 @@ const { Schema, model } = mongoose;
 
 const NotificationSchema = new Schema(
   {
-    location: String,
     message: String,
-    adressat: {
+    from: {
       type: Schema.ObjectId,
       ref: 'User',
     },
-    from: {
+    adressat: {
       type: Schema.ObjectId,
       ref: 'User',
     },
@@ -18,9 +17,16 @@ const NotificationSchema = new Schema(
       type: Boolean,
       default: false,
     },
+    location: String,
     target: {
-      enum: ['post', 'blogPost', 'request'],
-      type: String,
+      targetType: {
+        enum: ['post', 'blogPost', 'user'],
+        type: String,
+      },
+      options: {
+        commentId: String,
+        replyId: String,
+      },
     },
   },
   { timestamps: true }

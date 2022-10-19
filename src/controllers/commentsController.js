@@ -5,7 +5,10 @@ import Post from '../models/Post.js';
 import Comment from '../models/Comment.js';
 
 import { controllCommentAccess } from '../utils/commentControllerUtils.js';
-import { controllAddCommentNotification } from '../utils/notificationControllerUtils.js';
+import {
+  controllAddCommentNotification,
+  controllUpdateCommentNotification,
+} from '../utils/notificationControllerUtils.js';
 
 export const addComment = asyncWrapper(async function (req, res, next) {
   const { postId } = req.params;
@@ -56,6 +59,7 @@ export const addCommentReply = asyncWrapper(async function (req, res, next) {
   await controllAddCommentNotification({
     post,
     comment: commentReply,
+    parentCommentId: comment._id,
     parentCommentAuthorId: comment.author.toString(),
   });
 
@@ -71,12 +75,14 @@ export const updateComment = asyncWrapper(async function (req, res, next) {
   if (comment.author.toString() !== currUser.id)
     return next(new AppError(404, 'you are not authorized for this operation'));
 
+  const newTags = tags.filter((tag) => !comment.tags.includes(tag));
+
   comment.text = text;
   comment.tags = tags;
 
   await comment.populate({
     path: 'tags',
-    select: 'userName profileImg',
+    select: 'userName',
   });
 
   await comment.save();
@@ -85,6 +91,9 @@ export const updateComment = asyncWrapper(async function (req, res, next) {
     text: comment.text,
     tags: comment.tags,
   };
+
+  if (newTags[0])
+    await controllUpdateCommentNotification({ comment, newTags, postId: comment.post });
 
   res.status(200).json(updatedComment);
 });
@@ -102,6 +111,8 @@ export const updateCommentReply = asyncWrapper(async function (req, res, next) {
   if (commentReply.author.toString() !== currUser.id)
     return next(new AppError(404, 'you are not authorized for this operation'));
 
+  const newTags = tags.filter((tag) => !commentReply.tags.includes(tag));
+
   commentReply.text = text;
   commentReply.tags = tags;
 
@@ -116,6 +127,14 @@ export const updateCommentReply = asyncWrapper(async function (req, res, next) {
     text: commentReply.text,
     tags: commentReply.tags,
   };
+
+  if (newTags[0])
+    await controllUpdateCommentNotification({
+      postId: comment.post,
+      parentCommentId: comment._id,
+      comment: commentReply,
+      newTags,
+    });
 
   res.status(200).json(updatedCommentReply);
 });
