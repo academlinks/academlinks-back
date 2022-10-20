@@ -13,10 +13,12 @@ export const getAllNotifications = asyncWrapper(async function (req, res, next) 
   if (userId !== currUser.id)
     return next(new AppError(403, 'you are not authorized for this operation'));
 
-  const notifies = await Notification.find({ adressat: ObjectId(userId) }).populate({
-    path: 'from adressat',
-    select: 'userName profileImg',
-  });
+  const notifies = await Notification.find({ adressat: ObjectId(userId) })
+    .populate({
+      path: 'from adressat',
+      select: 'userName profileImg',
+    })
+    .sort('-createdAt');
 
   res.status(200).json(notifies);
 });

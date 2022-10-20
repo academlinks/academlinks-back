@@ -26,6 +26,7 @@ const NotificationSchema = new Schema(
       options: {
         commentId: String,
         replyId: String,
+        isNewTag: Boolean,
       },
     },
   },

@@ -157,7 +157,7 @@ export const getProfilePosts = asyncWrapper(async function (req, res, next) {
       path: 'authentic',
       select: '-reactions -shared -__v',
       transform: (doc, docId) => checkIfIsFriendOnEach(user, doc, docId),
-      populate: { path: 'author tags', select: 'userName profileImg' },
+      populate: { path: 'author tags.user', select: 'userName profileImg' },
     });
 
   res.status(200).json({ data: posts, results: postsLength });
@@ -170,14 +170,25 @@ export const getPendingPosts = asyncWrapper(async function (req, res, next) {
   if (userId !== currUser.id)
     return next(new AppError(403, 'you are not authorised for this operation'));
 
+  const user = await User.findById(currUser.id);
+
   const pendingPosts = await Post.find({
     'tags.user': userId,
     'tags.hidden': true,
     'tags.review': false,
-  }).populate({
-    path: 'author tags.user',
-    select: 'userName profileImg',
-  });
+    audience: { $ne: 'private' },
+  })
+    .populate({
+      path: 'author tags.user',
+      select: 'userName profileImg',
+    })
+    .populate({
+      path: 'authentic',
+      select: '-reactions -shared -__v',
+      transform: (doc, docId) => checkIfIsFriendOnEach(user, doc, docId),
+      populate: { path: 'author tags.user', select: 'userName profileImg' },
+    })
+    .sort('-createdAt');
 
   res.status(200).json(pendingPosts);
 });
@@ -188,12 +199,23 @@ export const getHiddenPosts = asyncWrapper(async function (req, res, next) {
 
   if (userId !== currUser.id) return next(new AppError(403, 'you are not authorised'));
 
+  const user = await User.findById(currUser.id);
+
   const hiddenPosts = await Post.find({
     $or: [
       { author: userId, hidden: true },
       { 'tags.user': userId, 'tags.review': true, 'tags.hidden': true },
     ],
-  }).populate({ path: 'author tags.user', select: 'userName profileImg' });
+    audience: { $ne: 'private' },
+  })
+    .populate({ path: 'author tags.user', select: 'userName profileImg' })
+    .populate({
+      path: 'authentic',
+      select: '-reactions -shared -__v',
+      transform: (doc, docId) => checkIfIsFriendOnEach(user, doc, docId),
+      populate: { path: 'author tags.user', select: 'userName profileImg' },
+    })
+    .sort('-createdAt');
 
   res.status(200).json(hiddenPosts);
 });
@@ -235,7 +257,7 @@ export const getUserFeed = asyncWrapper(async function (req, reqs, next) {
       path: 'authentic',
       select: '-reactions -__v -shared',
       transform: (doc, docId) => checkIfIsFriendOnEach(user, doc, docId),
-      populate: { path: 'author tags', select: 'userName profileImg' },
+      populate: { path: 'author tags.user', select: 'userName profileImg' },
     });
 
   reqs.status(200).json({ data: feedPosts, results: postsLength });

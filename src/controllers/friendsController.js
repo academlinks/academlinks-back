@@ -137,6 +137,9 @@ export const getUserFriends = asyncWrapper(async function (req, res, next) {
         profileImg: 1,
       },
     },
+    {
+      $sort: { userName: 1 },
+    },
   ]);
 
   res.status(200).json(userFriends);
@@ -191,6 +194,9 @@ export const getUserPendingRequest = asyncWrapper(async function (req, res, next
         profileImg: 1,
       },
     },
+    {
+      $sort: { userName: 1 },
+    },
   ]);
 
   res.status(200).json(requests);
@@ -242,6 +248,9 @@ export const getUserSentRequest = asyncWrapper(async function (req, res, next) {
         userName: 1,
         profileImg: 1,
       },
+    },
+    {
+      $sort: { userName: 1 },
     },
   ]);
 

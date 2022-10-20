@@ -104,11 +104,71 @@ export async function controllUpdateCommentNotification({
   await generateNotifications(operations);
 }
 
-export async function controllReactOnCommentNotification({
-  post,
-  comment,
-  parentCommentAuthorId,
-}) {}
+export async function controllCreatePostNotification({ post, tags, newTags }) {
+  const postAuthor = post.author._id.toString();
+
+  const existingTags = post.tags
+    .map((tag) => tag.user.toString())
+    .filter((user) => user !== postAuthor);
+
+  const usersTaggedOnPost = tags.filter((tag) => tag !== postAuthor && !existingTags.includes(tag));
+
+  const postType = post.type === 'blogPost' ? 'blog post' : 'post';
+
+  const operations = [
+    {
+      message: `tag you in the ${postType}`,
+      adressats: newTags || usersTaggedOnPost,
+      from: postAuthor,
+      location: post._id,
+      target: {
+        targetType: postType,
+        options: {
+          isNewTag: true,
+        },
+      },
+    },
+  ];
+
+  await generateNotifications(operations);
+}
+
+export async function controllSharePostNotification({ post, tags }) {
+  const postAuthor = post.author._id.toString();
+  const authenticPostAuthor = post.authentic.author._id.toString();
+  const postType = post.authentic.type === 'blogPost' ? 'blog post' : 'post';
+  let postTags = [];
+
+  if (tags && JSON.parse(tags)[0]) postTags = JSON.parse(tags);
+
+  const operations = [
+    {
+      message: `share your ${postType}`,
+      adressats: [authenticPostAuthor],
+      from: postAuthor,
+      location: post._id,
+      target: {
+        targetType: 'post',
+      },
+    },
+  ];
+
+  if (postTags[0])
+    operations.push({
+      message: `tag you in the post`,
+      adressats: postTags,
+      from: postAuthor,
+      location: post._id,
+      target: {
+        targetType: 'post',
+        options: {
+          isNewTag: true,
+        },
+      },
+    });
+
+  await generateNotifications(operations);
+}
 
 //////////////////////////////
 ////////// HELPERS //////////

@@ -8,6 +8,7 @@ import { asyncWrapper } from '../lib/asyncWrapper.js';
 import Post from '../models/Post.js';
 import Comment from '../models/Comment.js';
 import Bookmarks from '../models/Bookmarks.js';
+import User from '../models/User.js';
 
 import {
   contollAudience,
@@ -18,6 +19,11 @@ import {
   controllPostReaction,
   controllShowOnProfile,
 } from '../utils/postControllerUtils.js';
+import {
+  controllCreatePostNotification,
+  controllSharePostNotification,
+} from '../utils/notificationControllerUtils.js';
+import { checkIfIsFriendOnEach } from '../utils/userControllerUtils.js';
 
 export const resizeAndOptimiseMedia = editMedia({
   multy: true,
@@ -32,7 +38,7 @@ export const uploadPostMediaFiles = (imageName) =>
   });
 
 export const createPost = asyncWrapper(async function (req, res, next) {
-  const newPost = await controllPostCreation(req);
+  const { newPost, tags } = await controllPostCreation(req);
 
   if (req.files) {
     // If multer storage is diskStorage use this
@@ -49,6 +55,9 @@ export const createPost = asyncWrapper(async function (req, res, next) {
   });
 
   await newPost.save();
+
+  if (tags && JSON.parse(tags)[0])
+    await controllCreatePostNotification({ post: newPost, tags: JSON.parse(tags) });
 
   res.status(201).json(newPost);
 });
@@ -84,10 +93,10 @@ export const updatePost = asyncWrapper(async function (req, res, next) {
   const post = await Post.findById(postId).select('-reactions -__v');
 
   if (!post) return next(new AppError(404, 'post does not exists'));
-  else if (post.author._id.toString() !== currUser.id)
+  else if (post.author.toString() !== currUser.id)
     return next(new AppError(404, 'you are not authorised for this operation'));
 
-  const body = await controllPostUpdateBody({
+  const { body, newTags } = await controllPostUpdateBody({
     req,
     postType: post.type,
     existingTags: post.tags,
@@ -109,6 +118,8 @@ export const updatePost = asyncWrapper(async function (req, res, next) {
     select: '-reactions -shared',
     populate: { path: 'author tags', select: 'userName profileImg' },
   });
+
+  if (newTags?.[0]) await controllCreatePostNotification({ post: post, tags: newTags });
 
   res.status(201).json(post);
 });
@@ -144,6 +155,8 @@ export const sharePost = asyncWrapper(async function (req, res, next) {
     select: '-reactions -shared',
     populate: { path: 'author tags.user', select: 'userName profileImg' },
   });
+
+  await controllSharePostNotification({ post: newPost, tags });
 
   res.status(201).json(newPost);
 });
@@ -211,10 +224,20 @@ export const getPost = asyncWrapper(async function (req, res, next) {
   const { postId } = req.params;
   const currUser = req.user;
 
-  const post = await Post.findById(postId).select('-reactions -__v').populate({
-    path: 'author tags.user',
-    select: 'userName profileImg',
-  });
+  const user = await User.findById(currUser.id);
+
+  const post = await Post.findById(postId)
+    .select('-reactions -__v')
+    .populate({
+      path: 'author tags.user',
+      select: 'userName profileImg',
+    })
+    .populate({
+      path: 'authentic',
+      select: '-reactions -shared -__v',
+      transform: (doc, docId) => checkIfIsFriendOnEach(user, doc, docId),
+      populate: { path: 'author tags.user', select: 'userName profileImg' },
+    });
 
   if (!post) return next(new AppError(404, 'post does not exists'));
   else if (currUser.role === 'guest' && post.audience !== 'public')

@@ -34,7 +34,7 @@ export async function controllPostCreation(req) {
     newPost.title = title;
   }
 
-  return newPost;
+  return { newPost, tags };
 }
 
 export async function controllPostMediaDeletion(media, next) {
@@ -60,6 +60,7 @@ export async function controllPostMediaDeletion(media, next) {
 export async function controllPostUpdateBody({ req, postType, existingTags }) {
   const body = {};
   const availableKeys = ['description', 'tags', 'article', 'categories', 'title', 'audience'];
+  let newTags;
 
   Object.keys(req.body)
     .filter((key) => availableKeys.includes(key))
@@ -69,16 +70,20 @@ export async function controllPostUpdateBody({ req, postType, existingTags }) {
       else body[key] = req.body[key];
     });
 
-  if (body.tags) {
-    const filteredExisting = existingTags.filter((tag) => body.tags.includes(tag.user.toString()));
-    const filteredExistingIds = filteredExisting.map((tag) => tag.user.toString());
-    const filteredBodyTags = body.tags
-      .filter((tag) => !filteredExistingIds.includes(tag))
-      .map((tag) => ({ user: tag }));
-    body.tags = [...filteredExisting, ...filteredBodyTags];
+  const filteredExistingTags = existingTags.filter((tag) =>
+    body.tags.includes(tag.user.toString())
+  );
+  const filteredExistingTagsIds = filteredExistingTags.map((tag) => tag.user.toString());
+  const filteredNewTags = body.tags
+    .filter((tag) => !filteredExistingTagsIds.includes(tag))
+    .map((tag) => ({ user: tag }));
+
+  if (filteredNewTags?.[0]) {
+    body.tags = [...filteredExistingTags, ...filteredNewTags];
+    newTags = filteredNewTags.map((tag) => tag.user);
   }
 
-  return body;
+  return { body, newTags };
 }
 
 export async function controllPostMediaOnUpdate({ req, next, post }) {
