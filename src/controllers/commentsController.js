@@ -144,7 +144,7 @@ export const deleteComment = asyncWrapper(async function (req, res, next) {
 
   const { post, comment } = await controllCommentAccess({ req, next, checkBody: false });
 
-  if (comment.author.toString() !== currUser.id)
+  if (currUser.id !== comment.author.toString() && currUser.id !== post.author.toString())
     return next(new AppError(404, 'you are not authorized for this operation'));
 
   post.commentsAmount = post.commentsAmount - (comment.repliesAmount + 1);
@@ -165,7 +165,7 @@ export const deleteCommentReply = asyncWrapper(async function (req, res, next) {
     checkReplyAccess: true,
   });
 
-  if (commentReply.author.toString() !== currUser.id)
+  if (currUser.id !== commentReply.author.toString() && currUser.id !== post.author.toString())
     return next(new AppError(404, 'you are not authorized for this operation'));
 
   comment.replies = comment.replies.filter(
@@ -206,7 +206,7 @@ export const reactOnComment = asyncWrapper(async function (req, res, next) {
 
   await comment.save();
 
-  res.status(200).json({ likesAmount: comment.likesAmount });
+  res.status(200).json({ likesAmount: comment.likesAmount, reactions: comment.reactions });
 });
 
 export const reactOnCommentReply = asyncWrapper(async function (req, res, next) {
@@ -237,7 +237,9 @@ export const reactOnCommentReply = asyncWrapper(async function (req, res, next) 
 
   await comment.save();
 
-  res.status(200).json({ likesAmount: commentReply.likesAmount });
+  res
+    .status(200)
+    .json({ likesAmount: commentReply.likesAmount, reactions: commentReply.reactions });
 });
 
 export const pinComment = asyncWrapper(async function (req, res, next) {

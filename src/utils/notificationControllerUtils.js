@@ -141,31 +141,49 @@ export async function controllSharePostNotification({ post, tags }) {
 
   if (tags && JSON.parse(tags)[0]) postTags = JSON.parse(tags);
 
-  const operations = [
-    {
-      message: `share your ${postType}`,
-      adressats: [authenticPostAuthor],
+  const operations = [];
+
+  function generateTaskBody({ message, adressats, options }) {
+    const task = {
+      message,
+      adressats,
       from: postAuthor,
       location: post._id,
       target: {
         targetType: 'post',
       },
-    },
-  ];
+    };
+
+    if (options) task.target.options = options;
+
+    return task;
+  }
 
   if (postTags[0])
-    operations.push({
-      message: `tag you in the post`,
-      adressats: postTags,
-      from: postAuthor,
-      location: post._id,
-      target: {
-        targetType: 'post',
-        options: {
-          isNewTag: true,
-        },
-      },
-    });
+    operations.push(
+      generateTaskBody({
+        message: `tag you in the post`,
+        adressats: postTags.filter((tag) => tag !== authenticPostAuthor),
+        options: { isNewTag: true },
+      })
+    );
+
+  if (postTags[0] && postTags.includes(authenticPostAuthor))
+    operations.push(
+      generateTaskBody({
+        message: `share your ${postType} and tag you on the post`,
+        adressats: [authenticPostAuthor],
+        options: { isNewTag: true },
+      })
+    );
+
+  if ((postTags[0] && !postTags.includes(authenticPostAuthor)) || !postTags[0])
+    operations.push(
+      generateTaskBody({
+        message: `share your ${postType}`,
+        adressats: [authenticPostAuthor],
+      })
+    );
 
   await generateNotifications(operations);
 }

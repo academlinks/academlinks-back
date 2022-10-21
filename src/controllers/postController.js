@@ -217,6 +217,7 @@ export const reactOnPost = asyncWrapper(async function (req, res, next) {
   res.status(200).json({
     likesAmount: post.likesAmount,
     dislikesAmount: post.dislikesAmount,
+    reactions: post.reactions,
   });
 });
 
@@ -288,8 +289,8 @@ export const getPostComments = asyncWrapper(async function (req, res, next) {
       path: 'author tags replies.author replies.tags',
       select: 'userName profileImg',
     })
-    .sort({ createdAt: -1 })
-    .select('-reactions -replies.reactions');
+    .sort({ createdAt: -1 });
+  // .select('-reactions -replies.reactions');
 
   res.status(200).json(comments);
 });

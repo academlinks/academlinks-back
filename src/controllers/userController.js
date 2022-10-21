@@ -144,18 +144,18 @@ export const getProfilePosts = asyncWrapper(async function (req, res, next) {
   let postsLength;
   if (hasMore && !JSON.parse(hasMore)) postsLength = await Post.find(postQuery).countDocuments();
 
+  // .select('-reactions -__v')
   const posts = await Post.find(postQuery)
-    .select('-reactions -__v')
     .skip(skip)
     .limit(limit)
     .sort('-createdAt')
     .populate({
-      path: 'author reactions.author tags.user',
+      path: 'author tags.user',
       select: 'userName profileImg',
     })
     .populate({
       path: 'authentic',
-      select: '-reactions -shared -__v',
+      select: '-shared -__v',
       transform: (doc, docId) => checkIfIsFriendOnEach(user, doc, docId),
       populate: { path: 'author tags.user', select: 'userName profileImg' },
     });
@@ -244,8 +244,8 @@ export const getUserFeed = asyncWrapper(async function (req, reqs, next) {
   let postsLength;
   if (hasMore && !JSON.parse(hasMore)) postsLength = await Post.find(postQuery).countDocuments();
 
+  // .select('-reactions -__v')
   const feedPosts = await Post.find(postQuery)
-    .select('-reactions -__v')
     .skip(skip)
     .limit(limit)
     .sort('-createdAt')
@@ -255,7 +255,7 @@ export const getUserFeed = asyncWrapper(async function (req, reqs, next) {
     })
     .populate({
       path: 'authentic',
-      select: '-reactions -__v -shared',
+      select: '-__v -shared',
       transform: (doc, docId) => checkIfIsFriendOnEach(user, doc, docId),
       populate: { path: 'author tags.user', select: 'userName profileImg' },
     });
@@ -285,13 +285,13 @@ export const getBookmarks = asyncWrapper(async function (req, res, next) {
     .sort('-createdAt')
     .populate({
       path: 'post',
-      select: '-reactions -__v',
+      select: '-__v',
       transform: (doc, docId) => checkIfIsFriendOnEach(user, doc, docId),
       populate: [
         { path: 'author tags.user', select: 'userName profileImg' },
         {
           path: 'authentic',
-          select: '-reactions -__v',
+          select: '-__v',
           transform: (doc, docId) => checkIfIsFriendOnEach(user, doc, docId),
           populate: {
             path: 'tags.user author',
