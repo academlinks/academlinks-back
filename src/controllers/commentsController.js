@@ -284,3 +284,7 @@ export const pinCommentReply = asyncWrapper(async function (req, res, next) {
 
   res.status(200).json({ pin: commentReply.pin });
 });
+
+// (async function del() {
+//   await Comment.deleteMany();
+// })();

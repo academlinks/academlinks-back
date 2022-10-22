@@ -585,3 +585,7 @@ export const getAllPosts = asyncWrapper(async function (req, res, next) {
 export const fnName = asyncWrapper(async function (req, res, next) {});
 
 // check separated populatio on share post and updatePost
+
+// (async function up() {
+//   await Post.updateMany({ $set: { commentsAmount: 0 } });
+// })();

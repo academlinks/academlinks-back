@@ -46,7 +46,7 @@ export async function controllAddCommentNotification({
 
     if (options) operation.target.options = { ...operation.target.options, ...options };
 
-    console.log(operation);
+    // console.log(operation);
 
     operations.push(operation);
   }
@@ -67,13 +67,13 @@ export async function controllAddCommentNotification({
     ////////// to post author //////////
     ///////////////////////////////////
     if (postAuthor !== commentAuthor && !commentTagsIncludesPostAuthor) {
-      console.log(13, ' - !parentCommentAuthor - ', 1);
+      // console.log(13, ' - !parentCommentAuthor - ', 1);
       createOperation({
         message: `comment on your ${postType}`,
         adressats: [postAuthor],
       });
     } else if (postAuthor !== commentAuthor && commentTagsIncludesPostAuthor) {
-      console.log(13, ' - !parentCommentAuthor - ', 2);
+      // console.log(13, ' - !parentCommentAuthor - ', 2);
       createOperation({
         message: `mentioned you in the comment on your ${postType}`,
         adressats: [postAuthor],
@@ -91,8 +91,7 @@ export async function controllAddCommentNotification({
     ////////// to post author //////////
     ///////////////////////////////////
     if (postAuthor === parentCommentAuthor && parentCommentAuthor !== commentAuthor) {
-      console.log(13, ' - parentCommentAuthor - ', 1);
-
+      // console.log(13, ' - parentCommentAuthor - ', 1);
       createOperation({
         message: 'replied your comment on your post',
         adressats: [postAuthor],
@@ -102,8 +101,7 @@ export async function controllAddCommentNotification({
       postAuthor !== commentAuthor &&
       commentTagsIncludesPostAuthor
     ) {
-      console.log(13, ' - parentCommentAuthor - ', 2);
-
+      // console.log(13, ' - parentCommentAuthor - ', 2);
       createOperation({
         message: `mentioned you in the comment on your ${postType}`,
         adressats: [postAuthor],
@@ -115,8 +113,7 @@ export async function controllAddCommentNotification({
       postAuthor !== commentAuthor &&
       !commentTagsIncludesPostAuthor
     ) {
-      console.log(13, ' - parentCommentAuthor - ', 3);
-
+      // console.log(13, ' - parentCommentAuthor - ', 3);
       createOperation({
         message: `comment on your ${postType}`,
         adressats: [postAuthor],
@@ -131,8 +128,7 @@ export async function controllAddCommentNotification({
       parentCommentAuthor !== commentAuthor &&
       !isReplyToUserTaggedOnPost
     ) {
-      console.log(13, ' - parentCommentAuthor - ', 4);
-
+      // console.log(13, ' - parentCommentAuthor - ', 4);
       createOperation({
         message: `replied your comment on ${'PostAuthorPlaceholder'}'s ${postType}`,
         options: { postAuthorUserName },
@@ -143,8 +139,7 @@ export async function controllAddCommentNotification({
     }
 
     if (usersTaggedOnPost[0] && isReplyToUserTaggedOnPost) {
-      console.log(13, ' - parentCommentAuthor - ', 5);
-
+      // console.log(13, ' - parentCommentAuthor - ', 5);
       createOperation({
         message: `replied your comment on the ${'PostAuthorPlaceholder'}'s ${postType} on which you are tagged in`,
         options: { postAuthorUserName },
@@ -165,8 +160,7 @@ export async function controllAddCommentNotification({
   ///////////////////////////////////////////////////////
   if (usersTaggedOnPost[0]) {
     if (commentTagsIncludesUsersTaggedOnPost) {
-      console.log(13, ' - commentTagsIncludesUsersTaggedOnPost - ', 1);
-
+      // console.log(13, ' - commentTagsIncludesUsersTaggedOnPost - ', 1);
       createOperation({
         message: `mentioned you in the comment on the ${'PostAuthorPlaceholder'}'s ${postType} on which you are tagged in`,
         options: { postAuthorUserName },
@@ -178,8 +172,7 @@ export async function controllAddCommentNotification({
         adressats: usersTaggedOnPost.filter((tag) => !usersTaggedOnComment.includes(tag)),
       });
     } else {
-      console.log(13, ' - commentTagsIncludesUsersTaggedOnPost - ', 2);
-
+      // console.log(13, ' - commentTagsIncludesUsersTaggedOnPost - ', 2);
       createOperation({
         message: `comment on the ${'PostAuthorPlaceholder'}'s ${postType} on which you are tagged in`,
         options: { postAuthorUserName },
@@ -194,8 +187,7 @@ export async function controllAddCommentNotification({
   ////////// to users who are tagged on the comment /////////
   //////////////////////////////////////////////////////////
   if (usersTaggedOnComment[0]) {
-    console.log(13, ' - usersTaggedOnComment - ', 1);
-
+    // console.log(13, ' - usersTaggedOnComment - ', 1);
     createOperation({
       message: `mentioned you in the comment on the ${'PostAuthorPlaceholder'}'s ${postType}`,
       options: { postAuthorUserName },
@@ -203,7 +195,7 @@ export async function controllAddCommentNotification({
     });
   }
 
-  // if (operations[0]) await generateNotifications(operations);
+  if (operations[0]) await generateNotifications(operations);
 }
 
 export async function controllUpdateCommentNotification({
@@ -213,6 +205,13 @@ export async function controllUpdateCommentNotification({
   parentCommentId,
 }) {
   const post = await Post.findById(postId).select('type');
+
+  // !!) concentrate on new Tags - on mentions not on replies
+
+  // 0.1) get post author id and name, and post type
+
+  // 1.1) check if new tags contains users who are tagged on the post
+  // 1.2) check if is comment reply and parentAuthor is one of the tagged user on post
 
   const operations = [
     {
@@ -384,3 +383,7 @@ async function createNotification(body) {
     console.log(error);
   }
 }
+
+// (async function del() {
+//   await Notification.deleteMany();
+// })();
