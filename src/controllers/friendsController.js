@@ -5,6 +5,7 @@ import { asyncWrapper } from '../lib/asyncWrapper.js';
 import User from '../models/User.js';
 
 import { controllUserExistence } from '../utils/friendsControllerUtils.js';
+import { controllFriendRequestNotification } from '../utils/notificationControllerUtils.js';
 
 export const sendFriendRequest = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
@@ -16,6 +17,12 @@ export const sendFriendRequest = asyncWrapper(async function (req, res, next) {
 
   await user.save();
   await adressatUser.save();
+
+  await controllFriendRequestNotification({
+    currUser: user._id.toString(),
+    adressat: adressatUser._id.toString(),
+    send: true,
+  });
 
   res.status(200).json({ sent: true });
 });
@@ -76,6 +83,12 @@ export const confirmFriendRequest = asyncWrapper(async function (req, res, next)
 
   await user.save();
   await adressatUser.save();
+
+  await controllFriendRequestNotification({
+    currUser: user._id.toString(),
+    adressat: adressatUser._id.toString(),
+    confirm: true,
+  });
 
   res.status(200).json({ confirmed: true });
 });

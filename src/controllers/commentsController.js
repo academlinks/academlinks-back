@@ -19,7 +19,7 @@ export const addComment = asyncWrapper(async function (req, res, next) {
 
   const post = await Post.findByIdAndUpdate(postId, {
     $inc: { commentsAmount: 1 },
-  });
+  }).populate({ path: 'author', select: 'userName' });
 
   if (!post) return next(new AppError(400, 'there are no such a post'));
 
@@ -43,6 +43,11 @@ export const addCommentReply = asyncWrapper(async function (req, res, next) {
 
   comment.replies = [...comment.replies, { tags, text, author: currUser.id }];
   comment.repliesAmount += 1;
+
+  await post.populate({
+    path: 'author',
+    select: 'userName',
+  });
 
   await comment.populate({
     path: 'replies.author replies.tags',

@@ -24,9 +24,12 @@ const NotificationSchema = new Schema(
         type: String,
       },
       options: {
+        postAuthorUserName: String,
         commentId: String,
         replyId: String,
         isNewTag: Boolean,
+        isRequested: Boolean,
+        isConfirmed: Boolean,
       },
     },
   },

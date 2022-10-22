@@ -7,27 +7,30 @@ export async function controllAddCommentNotification({
   parentCommentId,
   parentCommentAuthorId,
 }) {
-  const postAuthor = post.author.toString();
+  const postAuthor = post.author._id.toString();
+  const postAuthorUserName = post.author.userName
+    .split(' ')
+    .map((fragment) => fragment[0].toUpperCase() + fragment.slice(1))
+    .join(' ');
+
   const postType = post.type === 'blogPost' ? 'blog post' : 'post';
 
   const commentAuthor = comment.author._id.toString();
 
-  const usersTaggedOnPost = post.tags
+  let usersTaggedOnPost = post.tags
     .map((tag) => tag.user.toString())
-    .filter((user) => user !== postAuthor && user !== commentAuthor);
+    .filter((user) => user !== postAuthor);
 
-  const usersTaggedOnComment = comment.tags
+  let usersTaggedOnComment = comment.tags
     .map((user) => user._id.toString())
-    .filter(
-      (user) => user !== postAuthor && user !== commentAuthor && !usersTaggedOnPost.includes(user)
-    );
+    .filter((user) => user !== commentAuthor);
 
   const parentCommentAuthor = parentCommentAuthorId;
 
   const operations = [];
 
-  function generateTaskBody({ message, adressats }) {
-    return {
+  function createOperation({ message, adressats, options }) {
+    const operation = {
       message: message,
       adressats: adressats,
       from: comment.author._id,
@@ -40,41 +43,167 @@ export async function controllAddCommentNotification({
         },
       },
     };
+
+    if (options) operation.target.options = { ...operation.target.options, ...options };
+
+    console.log(operation);
+
+    operations.push(operation);
   }
 
-  if (postAuthor !== commentAuthor)
-    operations.push(
-      generateTaskBody({
+  const commentTagsIncludesPostAuthor = usersTaggedOnComment.some((tag) => tag === postAuthor);
+  const isReplyToUserTaggedOnPost = usersTaggedOnPost.some(
+    (tag) => parentCommentAuthor === tag && commentAuthor !== tag
+  );
+  const commentTagsIncludesUsersTaggedOnPost = usersTaggedOnPost.some((tag) =>
+    usersTaggedOnComment.includes(tag)
+  );
+
+  //////////////////////////////////////////////////
+  ////////// is comment from main thread //////////
+  ////////////////////////////////////////////////
+  if (!parentCommentAuthor) {
+    /////////////////////////////////////
+    ////////// to post author //////////
+    ///////////////////////////////////
+    if (postAuthor !== commentAuthor && !commentTagsIncludesPostAuthor) {
+      console.log(13, ' - !parentCommentAuthor - ', 1);
+      createOperation({
         message: `comment on your ${postType}`,
         adressats: [postAuthor],
-      })
-    );
+      });
+    } else if (postAuthor !== commentAuthor && commentTagsIncludesPostAuthor) {
+      console.log(13, ' - !parentCommentAuthor - ', 2);
+      createOperation({
+        message: `mentioned you in the comment on your ${postType}`,
+        adressats: [postAuthor],
+      });
 
-  if (usersTaggedOnPost[0])
-    operations.push(
-      generateTaskBody({
-        message: `comment on the ${postType} on which you are tagged`,
-        adressats: usersTaggedOnPost,
-      })
-    );
+      usersTaggedOnComment = usersTaggedOnComment.filter((tag) => tag !== postAuthor);
+    }
+  }
 
-  if (usersTaggedOnComment[0])
-    operations.push(
-      generateTaskBody({
-        message: 'mentioned you in the comment',
-        adressats: usersTaggedOnComment,
-      })
-    );
+  ///////////////////////////////////////
+  ////////// is comment reply //////////
+  /////////////////////////////////////
+  if (parentCommentAuthor) {
+    /////////////////////////////////////
+    ////////// to post author //////////
+    ///////////////////////////////////
+    if (postAuthor === parentCommentAuthor && parentCommentAuthor !== commentAuthor) {
+      console.log(13, ' - parentCommentAuthor - ', 1);
 
-  if (parentCommentAuthor && parentCommentAuthor !== commentAuthor)
-    operations.push(
-      generateTaskBody({
-        message: 'replied on your comment',
+      createOperation({
+        message: 'replied your comment on your post',
+        adressats: [postAuthor],
+      });
+    } else if (
+      postAuthor !== parentCommentAuthor &&
+      postAuthor !== commentAuthor &&
+      commentTagsIncludesPostAuthor
+    ) {
+      console.log(13, ' - parentCommentAuthor - ', 2);
+
+      createOperation({
+        message: `mentioned you in the comment on your ${postType}`,
+        adressats: [postAuthor],
+      });
+
+      usersTaggedOnComment = usersTaggedOnComment.filter((tag) => tag !== postAuthor);
+    } else if (
+      postAuthor !== parentCommentAuthor &&
+      postAuthor !== commentAuthor &&
+      !commentTagsIncludesPostAuthor
+    ) {
+      console.log(13, ' - parentCommentAuthor - ', 3);
+
+      createOperation({
+        message: `comment on your ${postType}`,
+        adressats: [postAuthor],
+      });
+    }
+
+    ///////////////////////////////////////////////
+    ////////// to parent comment author //////////
+    /////////////////////////////////////////////
+    if (
+      postAuthor !== parentCommentAuthor &&
+      parentCommentAuthor !== commentAuthor &&
+      !isReplyToUserTaggedOnPost
+    ) {
+      console.log(13, ' - parentCommentAuthor - ', 4);
+
+      createOperation({
+        message: `replied your comment on ${'PostAuthorPlaceholder'}'s ${postType}`,
+        options: { postAuthorUserName },
         adressats: [parentCommentAuthor],
-      })
-    );
+      });
 
-  if (operations[0]) await generateNotifications(operations);
+      usersTaggedOnComment = usersTaggedOnComment.filter((tag) => tag !== parentCommentAuthor);
+    }
+
+    if (usersTaggedOnPost[0] && isReplyToUserTaggedOnPost) {
+      console.log(13, ' - parentCommentAuthor - ', 5);
+
+      createOperation({
+        message: `replied your comment on the ${'PostAuthorPlaceholder'}'s ${postType} on which you are tagged in`,
+        options: { postAuthorUserName },
+        adressats: [
+          usersTaggedOnPost.find(
+            (tag) => usersTaggedOnComment.includes(tag) && parentCommentAuthor === tag
+          ),
+        ],
+      });
+
+      usersTaggedOnPost = usersTaggedOnPost.filter((tag) => tag !== parentCommentAuthor);
+      usersTaggedOnComment = usersTaggedOnComment.filter((tag) => tag !== parentCommentAuthor);
+    }
+  }
+
+  /////////////////////////////////////////////////////////
+  ////////// to users who are tagged on the post /////////
+  ///////////////////////////////////////////////////////
+  if (usersTaggedOnPost[0]) {
+    if (commentTagsIncludesUsersTaggedOnPost) {
+      console.log(13, ' - commentTagsIncludesUsersTaggedOnPost - ', 1);
+
+      createOperation({
+        message: `mentioned you in the comment on the ${'PostAuthorPlaceholder'}'s ${postType} on which you are tagged in`,
+        options: { postAuthorUserName },
+        adressats: usersTaggedOnPost.filter((tag) => usersTaggedOnComment.includes(tag)),
+      });
+      createOperation({
+        message: `comment on the ${'PostAuthorPlaceholder'}'s ${postType} on which you are tagged in`,
+        options: { postAuthorUserName },
+        adressats: usersTaggedOnPost.filter((tag) => !usersTaggedOnComment.includes(tag)),
+      });
+    } else {
+      console.log(13, ' - commentTagsIncludesUsersTaggedOnPost - ', 2);
+
+      createOperation({
+        message: `comment on the ${'PostAuthorPlaceholder'}'s ${postType} on which you are tagged in`,
+        options: { postAuthorUserName },
+        adressats: usersTaggedOnPost,
+      });
+    }
+
+    usersTaggedOnComment = usersTaggedOnComment.filter((tag) => !usersTaggedOnPost.includes(tag));
+  }
+
+  ////////////////////////////////////////////////////////////
+  ////////// to users who are tagged on the comment /////////
+  //////////////////////////////////////////////////////////
+  if (usersTaggedOnComment[0]) {
+    console.log(13, ' - usersTaggedOnComment - ', 1);
+
+    createOperation({
+      message: `mentioned you in the comment on the ${'PostAuthorPlaceholder'}'s ${postType}`,
+      options: { postAuthorUserName },
+      adressats: usersTaggedOnComment,
+    });
+  }
+
+  // if (operations[0]) await generateNotifications(operations);
 }
 
 export async function controllUpdateCommentNotification({
@@ -182,6 +311,45 @@ export async function controllSharePostNotification({ post, tags }) {
       generateTaskBody({
         message: `share your ${postType}`,
         adressats: [authenticPostAuthor],
+      })
+    );
+
+  await generateNotifications(operations);
+}
+
+export async function controllFriendRequestNotification({ currUser, adressat, send, confirm }) {
+  function generateTaskBody({ message, options, location }) {
+    const task = {
+      message,
+      location,
+      adressats: [adressat],
+      from: currUser,
+      target: {
+        targetType: 'user',
+      },
+    };
+
+    if (options) task.target.options = options;
+
+    return task;
+  }
+
+  const operations = [];
+
+  if (send)
+    operations.push(
+      generateTaskBody({
+        message: `send you friend request`,
+        location: adressat,
+        options: { isRequested: true },
+      })
+    );
+  else if (confirm)
+    operations.push(
+      generateTaskBody({
+        message: `confirm your friend request`,
+        location: currUser,
+        options: { isConfirmed: true },
       })
     );
 
