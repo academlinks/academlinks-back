@@ -7,49 +7,22 @@ export async function controllAddCommentNotification({
   parentCommentId,
   parentCommentAuthorId,
 }) {
-  const postAuthor = post.author._id.toString();
-  const postAuthorUserName = post.author.userName
-    .split(' ')
-    .map((fragment) => fragment[0].toUpperCase() + fragment.slice(1))
-    .join(' ');
+  let {
+    postType,
+    postAuthor,
+    postAuthorUserName,
+    commentAuthor,
+    parentCommentAuthor,
+    usersTaggedOnPost,
+    usersTaggedOnComment,
+  } = await getGeneralUsers({ post, comment, parentCommentAuthorId });
 
-  const postType = post.type === 'blogPost' ? 'blog post' : 'post';
-
-  const commentAuthor = comment.author._id.toString();
-
-  let usersTaggedOnPost = post.tags
-    .map((tag) => tag.user.toString())
-    .filter((user) => user !== postAuthor);
-
-  let usersTaggedOnComment = comment.tags
-    .map((user) => user._id.toString())
-    .filter((user) => user !== commentAuthor);
-
-  const parentCommentAuthor = parentCommentAuthorId;
-
-  const operations = [];
-
-  function createOperation({ message, adressats, options }) {
-    const operation = {
-      message: message,
-      adressats: adressats,
-      from: comment.author._id,
-      location: post._id,
-      target: {
-        targetType: post.type,
-        options: {
-          commentId: parentCommentId || comment._id,
-          replyId: parentCommentId ? comment._id : '',
-        },
-      },
-    };
-
-    if (options) operation.target.options = { ...operation.target.options, ...options };
-
-    // console.log(operation);
-
-    operations.push(operation);
-  }
+  const { operations, createOperation } = await generateOperation({
+    post,
+    comment,
+    postType,
+    parentCommentId,
+  });
 
   const commentTagsIncludesPostAuthor = usersTaggedOnComment.some((tag) => tag === postAuthor);
   const isReplyToUserTaggedOnPost = usersTaggedOnPost.some(
@@ -199,35 +172,48 @@ export async function controllAddCommentNotification({
 }
 
 export async function controllUpdateCommentNotification({
-  postId,
+  post,
   comment,
-  newTags,
   parentCommentId,
+  parentCommentAuthorId,
+  newTags,
 }) {
-  const post = await Post.findById(postId).select('type');
+  const { postType, postAuthorUserName, usersTaggedOnPost } = await getGeneralUsers({
+    post,
+    comment,
+    parentCommentAuthorId,
+  });
 
-  // !!) concentrate on new Tags - on mentions not on replies
+  const { operations, createOperation } = await generateOperation({
+    post,
+    comment,
+    postType,
+    parentCommentId,
+  });
 
-  // 0.1) get post author id and name, and post type
+  const commentTagsIncludesUsersTaggedOnPost = usersTaggedOnPost.some((tag) =>
+    newTags.includes(tag)
+  );
 
-  // 1.1) check if new tags contains users who are tagged on the post
-  // 1.2) check if is comment reply and parentAuthor is one of the tagged user on post
+  if (commentTagsIncludesUsersTaggedOnPost) {
+    createOperation({
+      message: `mentioned you in the comment on the ${'PostAuthorPlaceholder'}'s ${postType} on which you are tagged in`,
+      options: { postAuthorUserName },
+      adressats: usersTaggedOnPost.filter((tag) => newTags.includes(tag)),
+    });
 
-  const operations = [
-    {
-      message: 'mentioned you in the comment',
+    createOperation({
+      message: `mentioned you on the ${'PostAuthorPlaceholder'}'s ${postType}`,
+      options: { postAuthorUserName },
+      adressats: usersTaggedOnPost.filter((tag) => !newTags.includes(tag)),
+    });
+  } else if (!commentTagsIncludesUsersTaggedOnPost) {
+    createOperation({
+      message: `mentioned you on the ${'PostAuthorPlaceholder'}'s ${postType}`,
+      options: { postAuthorUserName },
       adressats: newTags,
-      from: comment.author,
-      location: postId,
-      target: {
-        targetType: post?.type,
-        options: {
-          commentId: parentCommentId || comment._id,
-          replyId: parentCommentId ? comment._id : '',
-        },
-      },
-    },
-  ];
+    });
+  }
 
   await generateNotifications(operations);
 }
@@ -355,9 +341,9 @@ export async function controllFriendRequestNotification({ currUser, adressat, se
   await generateNotifications(operations);
 }
 
-//////////////////////////////
-////////// HELPERS //////////
-////////////////////////////
+///////////////////////////////////
+////////// MAIN HELPERS //////////
+/////////////////////////////////
 async function generateNotifications(operations) {
   await Promise.allSettled(
     operations.map(async (task) => {
@@ -382,6 +368,67 @@ async function createNotification(body) {
   } catch (error) {
     console.log(error);
   }
+}
+
+//////////////////////////////////////
+////////// COMMENT HELPERS //////////
+////////////////////////////////////
+async function getGeneralUsers({ post, comment, parentCommentAuthorId }) {
+  const postAuthor = post.author._id.toString();
+  const postAuthorUserName = post.author.userName
+    .split(' ')
+    .map((fragment) => fragment[0].toUpperCase() + fragment.slice(1))
+    .join(' ');
+
+  const postType = post.type === 'blogPost' ? 'blog post' : 'post';
+
+  const commentAuthor = comment.author._id.toString();
+
+  let usersTaggedOnPost = post.tags
+    .map((tag) => tag.user.toString())
+    .filter((user) => user !== postAuthor);
+
+  let usersTaggedOnComment = comment.tags
+    .map((user) => user._id.toString())
+    .filter((user) => user !== commentAuthor);
+
+  const parentCommentAuthor = parentCommentAuthorId;
+
+  return {
+    postAuthor,
+    postAuthorUserName,
+    postType,
+    commentAuthor,
+    usersTaggedOnPost,
+    usersTaggedOnComment,
+    parentCommentAuthor,
+  };
+}
+
+async function generateOperation({ post, comment, postType, parentCommentId }) {
+  const operations = [];
+
+  function createOperation({ message, adressats, options }) {
+    const operation = {
+      message: message,
+      adressats: adressats,
+      from: comment.author._id,
+      location: post._id,
+      target: {
+        targetType: postType,
+        options: {
+          commentId: parentCommentId || comment._id,
+          replyId: parentCommentId ? comment._id : '',
+        },
+      },
+    };
+
+    if (options) operation.target.options = { ...operation.target.options, ...options };
+
+    operations.push(operation);
+  }
+
+  return { operations, createOperation };
 }
 
 // (async function del() {

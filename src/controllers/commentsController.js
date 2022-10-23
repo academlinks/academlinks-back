@@ -75,7 +75,7 @@ export const updateComment = asyncWrapper(async function (req, res, next) {
   const { text, tags } = req.body;
   const currUser = req.user;
 
-  const { comment } = await controllCommentAccess({ req, next });
+  const { comment, post } = await controllCommentAccess({ req, next });
 
   if (comment.author.toString() !== currUser.id)
     return next(new AppError(404, 'you are not authorized for this operation'));
@@ -84,6 +84,11 @@ export const updateComment = asyncWrapper(async function (req, res, next) {
 
   comment.text = text;
   comment.tags = tags;
+
+  await post.populate({
+    path: 'author',
+    select: 'userName',
+  });
 
   await comment.populate({
     path: 'tags',
@@ -97,8 +102,7 @@ export const updateComment = asyncWrapper(async function (req, res, next) {
     tags: comment.tags,
   };
 
-  if (newTags[0])
-    await controllUpdateCommentNotification({ comment, newTags, postId: comment.post });
+  if (newTags[0]) await controllUpdateCommentNotification({ post, comment, newTags });
 
   res.status(200).json(updatedComment);
 });
@@ -107,7 +111,7 @@ export const updateCommentReply = asyncWrapper(async function (req, res, next) {
   const { text, tags } = req.body;
   const currUser = req.user;
 
-  const { comment, commentReply } = await controllCommentAccess({
+  const { post, comment, commentReply } = await controllCommentAccess({
     req,
     next,
     checkReplyAccess: true,
@@ -120,6 +124,11 @@ export const updateCommentReply = asyncWrapper(async function (req, res, next) {
 
   commentReply.text = text;
   commentReply.tags = tags;
+
+  await post.populate({
+    path: 'author',
+    select: 'userName',
+  });
 
   await comment.populate({
     path: 'replies.tags',
@@ -135,9 +144,10 @@ export const updateCommentReply = asyncWrapper(async function (req, res, next) {
 
   if (newTags[0])
     await controllUpdateCommentNotification({
-      postId: comment.post,
-      parentCommentId: comment._id,
+      post,
       comment: commentReply,
+      parentCommentId: comment._id.toString(),
+      parentCommentAuthorId: comment.author.toString(),
       newTags,
     });
 
