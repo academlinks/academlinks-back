@@ -17,6 +17,7 @@ import userRoutes from './src/routes/userRoutes.js';
 import friendsRoutes from './src/routes/friendsRoutes.js';
 import userInfoRoutes from './src/routes/userInfoRoutes.js';
 import notificationRoutes from './src/routes/notificationRoutes.js';
+import conversationRoutes from './src/routes/conversationRoutes.js';
 
 const App = express();
 
@@ -36,6 +37,7 @@ App.use('/api/v1/comments', commentRoutes);
 App.use('/api/v1/user', userRoutes, friendsRoutes);
 App.use('/api/v1/about', userInfoRoutes);
 App.use('/api/v1/notifications', notificationRoutes);
+App.use('/api/v1/conversation', conversationRoutes);
 
 App.all('*', (req, res, next) => {
   next(new AppError(404, `can't find ${req.originalUrl} on this server`));
