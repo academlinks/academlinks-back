@@ -2,7 +2,6 @@ import express from 'express';
 const { Router } = express;
 
 import {
-  createConversation,
   deleteConversation,
   sendMessage,
   getConversation,
@@ -17,7 +16,6 @@ router
   .delete(checkAuth, deleteConversation)
   .patch(checkAuth, sendMessage)
   .get(checkAuth, getConversation);
-//   .post(checkAuth, createConversation)
 
 router.route('/:userId/all').get(checkAuth, getAllConversation);
 

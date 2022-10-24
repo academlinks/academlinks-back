@@ -29,8 +29,8 @@ ConversationSchema.virtual('messages', {
 });
 
 ConversationSchema.pre('save', function (next) {
-  console.log('runs middleware');
   if (!this.isNew) return next();
+  console.log('runs middleware');
 
   const temp = [];
   this.users.map((user) => {
