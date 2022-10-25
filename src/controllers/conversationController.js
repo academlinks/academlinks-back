@@ -103,7 +103,8 @@ export const getAllConversation = asyncWrapper(async function (req, res, next) {
     users: userId,
     deletion: { $elemMatch: { deletedBy: currUser.id, deleted: false } },
   })
-    .select('-deletion')
+    .select('-deletion -__v -updatedAt')
+    .sort('-createdAt')
     .populate({
       path: 'users',
       select: 'userName profileImg',
@@ -111,7 +112,9 @@ export const getAllConversation = asyncWrapper(async function (req, res, next) {
     .populate({
       path: 'messages',
       match: { 'deletion.deletedBy': { $ne: currUser.id } },
-      select: '-deletion',
+      options: { sort: { createdAt: -1 } },
+      // match: { deletion: { $elemMatch: { deletedBy: currUser.id, deleted: false } } },
+      select: '-deletion -__v -updatedAt',
     });
 
   res.status(200).json(conversations);
