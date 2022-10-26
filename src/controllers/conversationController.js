@@ -72,7 +72,7 @@ export const getConversation = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
 
   const conversation = await Conversation.findOne({
-    conversation: conversationId,
+    _id: conversationId,
     users: currUser.id,
     deletion: { $elemMatch: { deletedBy: currUser.id, deleted: false } },
   })
@@ -90,6 +90,35 @@ export const getConversation = asyncWrapper(async function (req, res, next) {
   if (!conversation) return next(new AppError(404, 'conversation does not exists'));
 
   res.status(200).json(conversation);
+});
+
+export const getLastConversation = asyncWrapper(async function (req, res, next) {
+  const { userId } = req.params;
+  const currUser = req.user;
+
+  if (userId !== currUser.id)
+    return next(new AppError(403, 'you are not authorised for this operation'));
+
+  const lastConversation = await Conversation.findOne({
+    users: userId,
+    deletion: { $elemMatch: { deletedBy: currUser.id, deleted: false } },
+  })
+    .select('-deletion -__v -updatedAt')
+    .sort('-createdAt')
+    .limit(1)
+    .populate({
+      path: 'users',
+      select: 'userName profileImg',
+    })
+    .populate({
+      path: 'messages',
+      match: { 'deletion.deletedBy': { $ne: currUser.id } },
+      options: { sort: { createdAt: 1 } },
+      // match: { deletion: { $elemMatch: { deletedBy: currUser.id, deleted: false } } },
+      select: '-deletion -__v -updatedAt',
+    });
+
+  res.status(200).json(lastConversation);
 });
 
 export const getAllConversation = asyncWrapper(async function (req, res, next) {
