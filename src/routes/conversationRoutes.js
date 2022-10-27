@@ -7,6 +7,7 @@ import {
   getConversation,
   getAllConversation,
   getLastConversation,
+  createConvesation,
 } from '../controllers/conversationController.js';
 import { checkAuth } from '../controllers/authenticationController.js';
 
@@ -18,6 +19,7 @@ router.route('/:userId/all').get(checkAuth, getAllConversation);
 
 router
   .route('/:id')
+  .post(checkAuth, createConvesation)
   .delete(checkAuth, deleteConversation)
   .patch(checkAuth, sendMessage)
   .get(checkAuth, getConversation);

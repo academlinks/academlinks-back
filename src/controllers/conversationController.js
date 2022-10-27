@@ -5,7 +5,43 @@ import Conversation from '../models/Conversation.js';
 import Message from '../models/Message.js';
 import User from '../models/User.js';
 
-import { createMessage, excludeDeletionField } from '../utils/controllConversationUtils.js';
+import {
+  createMessage,
+  excludeDeletionField,
+  deleteConversationPermanently,
+} from '../utils/controllConversationUtils.js';
+
+export const createConvesation = asyncWrapper(async function (req, res, next) {
+  const { id: userId } = req.params;
+  const currUser = req.user;
+
+  if (userId === currUser.id)
+    return next(new AppError(403, `invalid operation. You can't write yourself`));
+
+  const conversation = await Conversation.findOne({ users: { $all: [userId, currUser.id] } });
+
+  if (conversation) {
+    if (conversation.deletion.some((deletion) => deletion.deleted === true)) {
+      const i = conversation.deletion.findIndex((deletion) => deletion.deleted === true);
+
+      conversation.deletion[i] = {
+        deletedBy: conversation.deletion[i].deletedBy,
+        deleted: false,
+      };
+
+      await conversation.save();
+    }
+    return res.status(200).json({ conversationId: conversation._id });
+  }
+
+  const newConversationBody = {
+    users: [currUser.id, userId],
+  };
+
+  const newConversation = await Conversation.create(newConversationBody);
+
+  res.status(201).json({ conversationId: newConversation._id });
+});
 
 export const sendMessage = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
@@ -23,48 +59,29 @@ export const sendMessage = asyncWrapper(async function (req, res, next) {
     users: { $all: [currUser.id, userId] },
   });
 
-  // create conversation
-  if (!existingConversation) {
-    const newConversationBody = {
-      users: [currUser.id, userId],
-    };
-
-    const newConversation = await Conversation.create(newConversationBody);
-
-    await createMessage({ conversation: newConversation._id, author: currUser.id, message });
-
-    await newConversation.populate({ path: 'users', select: 'userName profileImg' });
-
-    await newConversation.populate({ path: 'messages', select: '-deletion' });
-
-    const doc = excludeDeletionField(newConversation._doc);
-
-    return res.status(201).json({ ...doc, messages: newConversation.messages });
-  } else if (existingConversation) {
-    /**
+  /**
       if existing conversation is deleted from one of the users and not from both of them, then update deletion reference back to false, because this route is guarantee that this conversation now exists for both of the users
      */
-    if (existingConversation.deletion.some((deletion) => deletion.deleted === true)) {
-      const i = existingConversation.deletion.findIndex((deletion) => deletion.deleted === true);
+  if (existingConversation.deletion.some((deletion) => deletion.deleted === true)) {
+    const i = existingConversation.deletion.findIndex((deletion) => deletion.deleted === true);
 
-      existingConversation.deletion[i] = {
-        deletedBy: userId,
-        deleted: false,
-      };
+    existingConversation.deletion[i] = {
+      deletedBy: existingConversation.deletion[i].deletedBy,
+      deleted: false,
+    };
 
-      await existingConversation.save();
-    }
-
-    const newMessage = await createMessage({
-      conversation: existingConversation._id,
-      author: currUser.id,
-      message,
-    });
-
-    const doc = excludeDeletionField(newMessage._doc);
-
-    return res.status(201).json(doc);
+    await existingConversation.save();
   }
+
+  const newMessage = await createMessage({
+    conversation: existingConversation._id,
+    author: currUser.id,
+    message,
+  });
+
+  const doc = excludeDeletionField(newMessage._doc);
+
+  res.status(201).json(doc);
 });
 
 export const getConversation = asyncWrapper(async function (req, res, next) {
@@ -153,7 +170,7 @@ export const deleteConversation = asyncWrapper(async function (req, res, next) {
   const { id: conversationId } = req.params;
   const currUser = req.user;
 
-  // 1.1) find conversation
+  // 1.0) find conversation
   const conversation = await Conversation.findOne({
     _id: conversationId,
     users: currUser.id,
@@ -161,7 +178,15 @@ export const deleteConversation = asyncWrapper(async function (req, res, next) {
 
   if (!conversation) return next(new AppError(404, 'conversation does not exists'));
 
-  // 1.2) update conversation deletion reference
+  const conversationMessages = await Message.find({ conversation: conversation._id });
+
+  // 1.1) if conversation is brand new and does not have messages, then delete conversation permanently
+  if (conversationMessages.length === 0) {
+    deleteConversationPermanently({ conversation });
+    return res.status(204).json({ deleted: true });
+  }
+
+  // 1.2) update conversation deletion reference for currUser
   const i = conversation.deletion.findIndex((deletion) => deletion.deletedBy === currUser.id);
 
   conversation.deletion[i] = {
@@ -171,37 +196,36 @@ export const deleteConversation = asyncWrapper(async function (req, res, next) {
 
   await conversation.save();
 
-  // 1.3) update messages deletion reference
+  // 1.3) if conversation is deleted by both of the users then clear conversation permanently
+  if (
+    conversation.deletion.map((deletion) => deletion.deleted).every((deletion) => deletion === true)
+  ) {
+    deleteConversationPermanently({ conversation });
+    return res.status(204).json({ deleted: true });
+  }
+
+  // 1.4) if conversation is deleted only from one side then update messages deletion reference for currUser
   await Message.updateMany(
     {
       conversation: conversationId,
-      'deletion.deletedBy': { $ne: currUser.id },
+      deletion: { $elemMatch: { deletedBy: { $ne: currUser.id } } },
+      // 'deletion.deletedBy': { $ne: currUser.id },
     },
     { $push: { deletion: { deleted: true, deletedBy: currUser.id } } }
   );
 
-  // 1.4) if conversation is deleted by both of the users then clear conversation temporerily
-  if (
-    conversation.deletion.map((deletion) => deletion.deleted).every((deletion) => deletion === true)
-  ) {
-    await conversation.delete();
-    await Message.deleteMany({ conversation: conversationId });
+  // 1.4.1) delete the messages which ones may was deleted different times by both of the users
+  const adressat = conversation.users.find((user) => user.toString() !== currUser.id);
 
-    return res.status(204).json({ deleted: true });
-  } else {
-    // 1.4.1) if conversation is deleted only from the one of the user, and not both of them, then delete the messages which ones may was deleted different times by both of the users
-    const adressat = conversation.users.filter((user) => user.toString() !== currUser.id)[0];
-
-    await Message.deleteMany({
-      conversation: conversationId,
-      deletion: {
-        $all: [
-          { $elemMatch: { deletedBy: adressat, deleted: true } },
-          { $elemMatch: { deletedBy: currUser.id, deleted: true } },
-        ],
-      },
-    });
-  }
+  await Message.deleteMany({
+    conversation: conversationId,
+    deletion: {
+      $all: [
+        { $elemMatch: { deletedBy: adressat, deleted: true } },
+        { $elemMatch: { deletedBy: currUser.id, deleted: true } },
+      ],
+    },
+  });
 
   res.status(204).json({ deleted: true });
 });

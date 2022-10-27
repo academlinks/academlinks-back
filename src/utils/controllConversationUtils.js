@@ -18,3 +18,8 @@ export function excludeDeletionField(doc) {
 
   return excludedDoc;
 }
+
+export async function deleteConversationPermanently({ conversation }) {
+  await conversation.delete();
+  await Message.deleteMany({ conversation: conversation._id });
+}
