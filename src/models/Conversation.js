@@ -26,6 +26,10 @@ const ConversationSchema = new Schema(
       author: String,
       message: String,
     },
+    seen: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );

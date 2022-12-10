@@ -311,6 +311,26 @@ export const deleteConversation = asyncWrapper(async function (req, res, next) {
   res.status(204).json({ deleted: true });
 });
 
+export const getUnreadConversationCount = asyncWrapper(async function (
+  req,
+  res,
+  next
+) {
+  const currUser = req.user;
+  const { userId } = req.params;
+
+  if (currUser.id !== userId)
+    return next(new AppError(403, "you are not authorized for this operation"));
+
+  const count = await Conversation.find({
+    users: currUser.id,
+    "lastMessage.author": { $ne: currUser.id },
+    "lastMessage.isRead": false,
+  }).select("_id");
+
+  res.status(200).json(count);
+});
+
 async function del() {
   await Conversation.deleteMany();
   await Message.deleteMany();

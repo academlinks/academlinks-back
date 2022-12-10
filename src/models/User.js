@@ -1,12 +1,12 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 const { Schema, model } = mongoose;
-import bcrypt from 'bcryptjs';
+import bcrypt from "bcryptjs";
 
 const UserSchema = new Schema(
   {
     role: {
       type: String,
-      enum: ['guest', 'user', 'administrator'],
+      enum: ["guest", "user", "administrator"],
       require: true,
     },
     firstName: {
@@ -53,7 +53,7 @@ const UserSchema = new Schema(
         faculty: String,
         degree: {
           type: String,
-          enum: ['bachelor', 'master', 'doctor', 'proffesor'],
+          enum: ["bachelor", "master", "doctor", "proffesor"],
         },
         description: String,
         years: {
@@ -64,21 +64,21 @@ const UserSchema = new Schema(
     ],
     gender: {
       type: String,
-      enum: ['male', 'female', 'other'],
+      enum: ["male", "female", "other"],
     },
     profileImg: {
       type: String,
-      default: 'http://localhost:4000/avatars/profile-default.jpg',
+      default: "http://localhost:4000/avatars/profile-default.jpg",
     },
     coverImg: {
       type: String,
-      default: 'http://localhost:4000/avatars/cover-default.jpg',
+      default: "http://localhost:4000/avatars/cover-default.jpg",
     },
     sentRequests: [
       {
         adressat: {
           type: Schema.ObjectId,
-          ref: 'User',
+          ref: "User",
         },
         createdAt: {
           type: Date,
@@ -90,11 +90,15 @@ const UserSchema = new Schema(
       {
         adressat: {
           type: Schema.ObjectId,
-          ref: 'User',
+          ref: "User",
         },
         createdAt: {
           type: Date,
           default: new Date(),
+        },
+        seen: {
+          type: Boolean,
+          default: false,
         },
       },
     ],
@@ -102,7 +106,7 @@ const UserSchema = new Schema(
       {
         friend: {
           type: Schema.ObjectId,
-          ref: 'User',
+          ref: "User",
         },
         createdAt: {
           type: Date,
@@ -125,31 +129,35 @@ const UserSchema = new Schema(
 
 UserSchema.index({ userName: 1 });
 
-UserSchema.pre('save', function (next) {
-  if (this.isModified('friends')) this.friendsAmount = this.friends.length;
+UserSchema.pre("save", function (next) {
+  if (this.isModified("friends")) this.friendsAmount = this.friends.length;
   next();
 });
 
-UserSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next();
+UserSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
 
   this.password = await bcrypt.hash(this.password, 12);
 
   next();
 });
 
-UserSchema.pre('save', function (next) {
-  if (!this.isModified('firstName') || !this.isModified('lastName')) return next();
+UserSchema.pre("save", function (next) {
+  if (!this.isModified("firstName") || !this.isModified("lastName"))
+    return next();
 
   this.userName = `${this.firstName} ${this.lastName}`;
 
   next();
 });
 
-UserSchema.methods.checkPassword = async function (candidatePassword, password) {
+UserSchema.methods.checkPassword = async function (
+  candidatePassword,
+  password
+) {
   return await bcrypt.compare(candidatePassword, password);
 };
 
-const User = model('User', UserSchema);
+const User = model("User", UserSchema);
 
 export default User;

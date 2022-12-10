@@ -8,6 +8,7 @@ import {
   getUserFriends,
   getUserPendingRequest,
   getUserSentRequest,
+  getPendingRequestsCount
 } from '../controllers/friendsController.js';
 import { checkAuth } from '../controllers/authenticationController.js';
 
@@ -24,6 +25,8 @@ router
   .patch(checkAuth, cancelFriendRequest);
 
 router.route('/:userId/pending-requests').get(checkAuth, getUserPendingRequest);
+
+router.route('/:userId/pending-requests/count').get(checkAuth, getPendingRequestsCount);
 
 router.route('/:userId/sent-requests').get(checkAuth, getUserSentRequest);
 

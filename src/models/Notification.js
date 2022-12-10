@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
 const { Schema, model } = mongoose;
 
@@ -7,20 +7,24 @@ const NotificationSchema = new Schema(
     message: String,
     from: {
       type: Schema.ObjectId,
-      ref: 'User',
+      ref: "User",
     },
     adressat: {
       type: Schema.ObjectId,
-      ref: 'User',
+      ref: "User",
     },
     read: {
+      type: Boolean,
+      default: false,
+    },
+    seen: {
       type: Boolean,
       default: false,
     },
     location: String,
     target: {
       targetType: {
-        enum: ['post', 'blogPost', 'user'],
+        enum: ["post", "blogPost", "user"],
         type: String,
       },
       options: {
@@ -36,6 +40,6 @@ const NotificationSchema = new Schema(
   { timestamps: true }
 );
 
-const Notification = model('Notification', NotificationSchema);
+const Notification = model("Notification", NotificationSchema);
 
 export default Notification;
