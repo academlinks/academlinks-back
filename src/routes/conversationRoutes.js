@@ -20,11 +20,12 @@ router.route("/:userId/all").get(checkAuth, getAllConversation);
 
 router.route("/:conversationId/read/:adressatId").patch(checkAuth, markAsRead);
 
+router.route("/:conversationId/:adressatId").patch(checkAuth, sendMessage);
+
 router
   .route("/:id")
   .post(checkAuth, createConvesation)
   .delete(checkAuth, deleteConversation)
-  .patch(checkAuth, sendMessage)
   .get(checkAuth, getConversation);
 
 export default router;

@@ -56,23 +56,21 @@ export const createConvesation = asyncWrapper(async function (req, res, next) {
 });
 
 export const sendMessage = asyncWrapper(async function (req, res, next) {
-  const currUser = req.user;
-  const { id: userId } = req.params;
+  const { adressatId, conversationId } = req.params;
   const { message } = req.body;
+  const currUser = req.user;
 
-  if (currUser.id === userId)
+  if (currUser.id === adressatId)
     return next(
       new AppError(404, `invalid operation. You can't message yourself`)
     );
 
-  const adressat = await User.findById(userId);
+  const adressat = await User.findById(adressatId);
 
   if (!adressat)
     return next(new AppError(404, "adressat user does not exists"));
 
-  const existingConversation = await Conversation.findOne({
-    users: { $all: [currUser.id, userId] },
-  });
+  const existingConversation = await Conversation.findById(conversationId);
 
   /**
       if existing conversation is deleted from one of the users and not from both of them, then update deletion reference back to false, because this route is guarantee that this conversation now exists for both of the users
@@ -88,9 +86,14 @@ export const sendMessage = asyncWrapper(async function (req, res, next) {
       deletedBy: existingConversation.deletion[i].deletedBy,
       deleted: false,
     };
-
-    await existingConversation.save();
   }
+
+  existingConversation.lastMessage = {
+    isRead: false,
+    author: currUser.id,
+    createdAt: new Date(),
+    message,
+  };
 
   const newMessage = await createMessage({
     conversation: existingConversation._id,
@@ -98,36 +101,53 @@ export const sendMessage = asyncWrapper(async function (req, res, next) {
     message,
   });
 
+  await existingConversation.save();
+
   const doc = excludeDeletionField(newMessage._doc);
 
   await useSocket(req, {
     adressatId: adressat._id,
     operationName: "receive_new_message",
-    data: doc,
+    data: { lastMessage: existingConversation.lastMessage, message: doc },
   });
 
-  res.status(201).json(doc);
+  res
+    .status(201)
+    .json({ lastMessage: existingConversation.lastMessage, message: doc });
 });
 
 export const markAsRead = asyncWrapper(async function (req, res, next) {
   const { conversationId, adressatId } = req.params;
+  const currUser = req.user;
 
-  await Message.updateMany(
+  if (currUser.id === adressatId)
+    return next(
+      new AppError(
+        400,
+        "adressat is current uuser. please provide valid adressat."
+      )
+    );
+
+  const updatedConversation = await Conversation.findByIdAndUpdate(
+    conversationId,
     {
-      conversation: conversationId,
-      isRead: false,
-      author: adressatId,
+      "lastMessage.isRead": true,
     },
-    { isRead: true }
+    { new: true }
   );
 
+  const body = {
+    conversationId,
+    body: updatedConversation.lastMessage,
+  };
+
   await useSocket(req, {
-    adressatId,
     operationName: "receive_message_isRead",
-    data: { conversationId, adressatId },
+    adressatId,
+    data: body,
   });
 
-  res.status(200).json({ isMarked: true });
+  res.status(200).json(body);
 });
 
 export const getConversation = asyncWrapper(async function (req, res, next) {

@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 const { Schema, model } = mongoose;
 
 const ConversationSchema = new Schema(
@@ -6,7 +6,7 @@ const ConversationSchema = new Schema(
     users: [
       {
         type: Schema.ObjectId,
-        ref: 'User',
+        ref: "User",
         required: true,
       },
     ],
@@ -18,19 +18,27 @@ const ConversationSchema = new Schema(
         deletedBy: String,
       },
     ],
+    lastMessage: {
+      isRead: {
+        type: Boolean,
+        default: false,
+      },
+      author: String,
+      message: String,
+    },
   },
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
 
-ConversationSchema.virtual('messages', {
-  ref: 'Message',
-  foreignField: 'conversation',
-  localField: '_id',
+ConversationSchema.virtual("messages", {
+  ref: "Message",
+  foreignField: "conversation",
+  localField: "_id",
 });
 
-ConversationSchema.pre('save', function (next) {
+ConversationSchema.pre("save", function (next) {
   if (!this.isNew) return next();
-  console.log('runs middleware');
+  console.log("runs middleware");
 
   const temp = [];
   this.users.map((user) => {
@@ -45,6 +53,6 @@ ConversationSchema.pre('save', function (next) {
   next();
 });
 
-const Conversation = model('Conversation', ConversationSchema);
+const Conversation = model("Conversation", ConversationSchema);
 
 export default Conversation;

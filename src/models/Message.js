@@ -25,10 +25,6 @@ const MessageSchema = new Schema(
         deletedBy: String,
       },
     ],
-    isRead: {
-      type: Boolean,
-      default: false,
-    },
   },
   { timestamps: true }
 );
