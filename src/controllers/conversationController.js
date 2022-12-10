@@ -1,37 +1,49 @@
-import AppError from '../lib/AppError.js';
-import { asyncWrapper } from '../lib/asyncWrapper.js';
+import AppError from "../lib/AppError.js";
+import { asyncWrapper } from "../lib/asyncWrapper.js";
 
-import Conversation from '../models/Conversation.js';
-import Message from '../models/Message.js';
-import User from '../models/User.js';
+import Conversation from "../models/Conversation.js";
+import Message from "../models/Message.js";
+import User from "../models/User.js";
+import { useSocket } from "../utils/ioUtils.js";
 
 import {
   createMessage,
   excludeDeletionField,
   deleteConversationPermanently,
-} from '../utils/controllConversationUtils.js';
+} from "../utils/controllConversationUtils.js";
 
 export const createConvesation = asyncWrapper(async function (req, res, next) {
   const { id: userId } = req.params;
   const currUser = req.user;
 
   if (userId === currUser.id)
-    return next(new AppError(403, `invalid operation. You can't write yourself`));
+    return next(
+      new AppError(403, `invalid operation. You can't write yourself`)
+    );
 
-  const conversation = await Conversation.findOne({ users: { $all: [userId, currUser.id] } });
+  const conversation = await Conversation.findOne({
+    users: { $all: [userId, currUser.id] },
+  });
+
+  let isNew = true;
 
   if (conversation) {
     if (conversation.deletion.some((deletion) => deletion.deleted === true)) {
-      const i = conversation.deletion.findIndex((deletion) => deletion.deleted === true);
+      const i = conversation.deletion.findIndex(
+        (deletion) => deletion.deleted === true
+      );
 
       conversation.deletion[i] = {
         deletedBy: conversation.deletion[i].deletedBy,
         deleted: false,
       };
 
+      if (conversation.deletion[i].deletedBy !== currUser.id) isNew = false;
+
       await conversation.save();
     }
-    return res.status(200).json({ conversationId: conversation._id });
+
+    return res.status(200).json({ conversationId: conversation._id, isNew });
   }
 
   const newConversationBody = {
@@ -40,7 +52,7 @@ export const createConvesation = asyncWrapper(async function (req, res, next) {
 
   const newConversation = await Conversation.create(newConversationBody);
 
-  res.status(201).json({ conversationId: newConversation._id });
+  res.status(201).json({ conversationId: newConversation._id, isNew });
 });
 
 export const sendMessage = asyncWrapper(async function (req, res, next) {
@@ -49,11 +61,14 @@ export const sendMessage = asyncWrapper(async function (req, res, next) {
   const { message } = req.body;
 
   if (currUser.id === userId)
-    return next(new AppError(404, `invalid operation. You can't message yourself`));
+    return next(
+      new AppError(404, `invalid operation. You can't message yourself`)
+    );
 
   const adressat = await User.findById(userId);
 
-  if (!adressat) return next(new AppError(404, 'adressat user does not exists'));
+  if (!adressat)
+    return next(new AppError(404, "adressat user does not exists"));
 
   const existingConversation = await Conversation.findOne({
     users: { $all: [currUser.id, userId] },
@@ -62,8 +77,12 @@ export const sendMessage = asyncWrapper(async function (req, res, next) {
   /**
       if existing conversation is deleted from one of the users and not from both of them, then update deletion reference back to false, because this route is guarantee that this conversation now exists for both of the users
      */
-  if (existingConversation.deletion.some((deletion) => deletion.deleted === true)) {
-    const i = existingConversation.deletion.findIndex((deletion) => deletion.deleted === true);
+  if (
+    existingConversation.deletion.some((deletion) => deletion.deleted === true)
+  ) {
+    const i = existingConversation.deletion.findIndex(
+      (deletion) => deletion.deleted === true
+    );
 
     existingConversation.deletion[i] = {
       deletedBy: existingConversation.deletion[i].deletedBy,
@@ -81,7 +100,34 @@ export const sendMessage = asyncWrapper(async function (req, res, next) {
 
   const doc = excludeDeletionField(newMessage._doc);
 
+  await useSocket(req, {
+    adressatId: adressat._id,
+    operationName: "receive_new_message",
+    data: doc,
+  });
+
   res.status(201).json(doc);
+});
+
+export const markAsRead = asyncWrapper(async function (req, res, next) {
+  const { conversationId, adressatId } = req.params;
+
+  await Message.updateMany(
+    {
+      conversation: conversationId,
+      isRead: false,
+      author: adressatId,
+    },
+    { isRead: true }
+  );
+
+  await useSocket(req, {
+    adressatId,
+    operationName: "receive_message_isRead",
+    data: { conversationId, adressatId },
+  });
+
+  res.status(200).json({ isMarked: true });
 });
 
 export const getConversation = asyncWrapper(async function (req, res, next) {
@@ -93,46 +139,51 @@ export const getConversation = asyncWrapper(async function (req, res, next) {
     users: currUser.id,
     deletion: { $elemMatch: { deletedBy: currUser.id, deleted: false } },
   })
-    .select('-deletion')
+    .select("-deletion")
     .populate({
-      path: 'users',
-      select: 'userName profileImg',
+      path: "users",
+      select: "userName profileImg",
     })
     .populate({
-      path: 'messages',
-      match: { 'deletion.deletedBy': { $ne: currUser.id } },
-      select: '-deletion',
+      path: "messages",
+      match: { "deletion.deletedBy": { $ne: currUser.id } },
+      select: "-deletion",
     });
 
-  if (!conversation) return next(new AppError(404, 'conversation does not exists'));
+  if (!conversation)
+    return next(new AppError(404, "conversation does not exists"));
 
   res.status(200).json(conversation);
 });
 
-export const getLastConversation = asyncWrapper(async function (req, res, next) {
+export const getLastConversation = asyncWrapper(async function (
+  req,
+  res,
+  next
+) {
   const { userId } = req.params;
   const currUser = req.user;
 
   if (userId !== currUser.id)
-    return next(new AppError(403, 'you are not authorised for this operation'));
+    return next(new AppError(403, "you are not authorised for this operation"));
 
   const lastConversation = await Conversation.findOne({
     users: userId,
     deletion: { $elemMatch: { deletedBy: currUser.id, deleted: false } },
   })
-    .select('-deletion -__v -updatedAt')
-    .sort('-createdAt')
+    .sort("updatedAt")
+    .select("-deletion -__v -updatedAt")
     .limit(1)
     .populate({
-      path: 'users',
-      select: 'userName profileImg',
+      path: "users",
+      select: "userName profileImg",
     })
     .populate({
-      path: 'messages',
-      match: { 'deletion.deletedBy': { $ne: currUser.id } },
+      path: "messages",
+      match: { "deletion.deletedBy": { $ne: currUser.id } },
       options: { sort: { createdAt: 1 } },
       // match: { deletion: { $elemMatch: { deletedBy: currUser.id, deleted: false } } },
-      select: '-deletion -__v -updatedAt',
+      select: "-deletion -__v -updatedAt",
     });
 
   res.status(200).json(lastConversation);
@@ -143,24 +194,24 @@ export const getAllConversation = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
 
   if (userId !== currUser.id)
-    return next(new AppError(403, 'you are not authorised for this operation'));
+    return next(new AppError(403, "you are not authorised for this operation"));
 
   const conversations = await Conversation.find({
     users: userId,
     deletion: { $elemMatch: { deletedBy: currUser.id, deleted: false } },
   })
-    .select('-deletion -__v -updatedAt')
-    .sort('-createdAt')
+    .select("-deletion -__v")
+    .sort("-createdAt")
     .populate({
-      path: 'users',
-      select: 'userName profileImg',
+      path: "users",
+      select: "userName profileImg",
     })
     .populate({
-      path: 'messages',
-      match: { 'deletion.deletedBy': { $ne: currUser.id } },
-      options: { sort: { createdAt: -1 } },
+      path: "messages",
+      match: { "deletion.deletedBy": { $ne: currUser.id } },
+      options: { sort: { createdAt: 1 } },
       // match: { deletion: { $elemMatch: { deletedBy: currUser.id, deleted: false } } },
-      select: '-deletion -__v -updatedAt',
+      select: "-deletion -__v -updatedAt",
     });
 
   res.status(200).json(conversations);
@@ -176,9 +227,12 @@ export const deleteConversation = asyncWrapper(async function (req, res, next) {
     users: currUser.id,
   });
 
-  if (!conversation) return next(new AppError(404, 'conversation does not exists'));
+  if (!conversation)
+    return next(new AppError(404, "conversation does not exists"));
 
-  const conversationMessages = await Message.find({ conversation: conversation._id });
+  const conversationMessages = await Message.find({
+    conversation: conversation._id,
+  });
 
   // 1.1) if conversation is brand new and does not have messages, then delete conversation permanently
   if (conversationMessages.length === 0) {
@@ -187,7 +241,9 @@ export const deleteConversation = asyncWrapper(async function (req, res, next) {
   }
 
   // 1.2) update conversation deletion reference for currUser
-  const i = conversation.deletion.findIndex((deletion) => deletion.deletedBy === currUser.id);
+  const i = conversation.deletion.findIndex(
+    (deletion) => deletion.deletedBy === currUser.id
+  );
 
   conversation.deletion[i] = {
     deletedBy: currUser.id,
@@ -198,7 +254,9 @@ export const deleteConversation = asyncWrapper(async function (req, res, next) {
 
   // 1.3) if conversation is deleted by both of the users then clear conversation permanently
   if (
-    conversation.deletion.map((deletion) => deletion.deleted).every((deletion) => deletion === true)
+    conversation.deletion
+      .map((deletion) => deletion.deleted)
+      .every((deletion) => deletion === true)
   ) {
     deleteConversationPermanently({ conversation });
     return res.status(204).json({ deleted: true });
@@ -208,14 +266,17 @@ export const deleteConversation = asyncWrapper(async function (req, res, next) {
   await Message.updateMany(
     {
       conversation: conversationId,
-      deletion: { $elemMatch: { deletedBy: { $ne: currUser.id } } },
-      // 'deletion.deletedBy': { $ne: currUser.id },
+      // deletion: { $elemMatch: { deletedBy: { $ne: currUser.id } } },
+      "deletion.deletedBy": { $ne: currUser.id },
     },
-    { $push: { deletion: { deleted: true, deletedBy: currUser.id } } }
+    { $push: { deletion: { deleted: true, deletedBy: currUser.id } } },
+    { new: true }
   );
 
   // 1.4.1) delete the messages which ones may was deleted different times by both of the users
-  const adressat = conversation.users.find((user) => user.toString() !== currUser.id);
+  const adressat = conversation.users.find(
+    (user) => user.toString() !== currUser.id
+  );
 
   await Message.deleteMany({
     conversation: conversationId,
@@ -235,10 +296,4 @@ async function del() {
   await Message.deleteMany();
 }
 
-async function backToDef() {
-  await Conversation.updateMany({ deletion: [] });
-  await Message.deleteMany();
-}
-
-// backToDef();
 // del();

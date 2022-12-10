@@ -1,4 +1,4 @@
-import express from 'express';
+import express from "express";
 const { Router } = express;
 
 import {
@@ -8,17 +8,20 @@ import {
   getAllConversation,
   getLastConversation,
   createConvesation,
-} from '../controllers/conversationController.js';
-import { checkAuth } from '../controllers/authenticationController.js';
+  markAsRead,
+} from "../controllers/conversationController.js";
+import { checkAuth } from "../controllers/authenticationController.js";
 
 const router = Router();
 
-router.route('/:userId/last').get(checkAuth, getLastConversation);
+router.route("/:userId/last").get(checkAuth, getLastConversation);
 
-router.route('/:userId/all').get(checkAuth, getAllConversation);
+router.route("/:userId/all").get(checkAuth, getAllConversation);
+
+router.route("/:conversationId/read/:adressatId").patch(checkAuth, markAsRead);
 
 router
-  .route('/:id')
+  .route("/:id")
   .post(checkAuth, createConvesation)
   .delete(checkAuth, deleteConversation)
   .patch(checkAuth, sendMessage)

@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 const { Schema, model } = mongoose;
 
 const MessageSchema = new Schema(
@@ -9,7 +9,7 @@ const MessageSchema = new Schema(
     },
     author: {
       type: Schema.ObjectId,
-      ref: 'User',
+      ref: "User",
       required: true,
     },
     message: {
@@ -25,10 +25,14 @@ const MessageSchema = new Schema(
         deletedBy: String,
       },
     ],
+    isRead: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );
 
-const Message = model('Message', MessageSchema);
+const Message = model("Message", MessageSchema);
 
 export default Message;

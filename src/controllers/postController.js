@@ -1,14 +1,14 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
-import { uploadMedia, editMedia } from '../lib/multer.js';
+import { uploadMedia, editMedia } from "../lib/multer.js";
 
-import AppError from '../lib/AppError.js';
-import { asyncWrapper } from '../lib/asyncWrapper.js';
+import AppError from "../lib/AppError.js";
+import { asyncWrapper } from "../lib/asyncWrapper.js";
 
-import Post from '../models/Post.js';
-import Comment from '../models/Comment.js';
-import Bookmarks from '../models/Bookmarks.js';
-import User from '../models/User.js';
+import Post from "../models/Post.js";
+import Comment from "../models/Comment.js";
+import Bookmarks from "../models/Bookmarks.js";
+import User from "../models/User.js";
 
 import {
   contollAudience,
@@ -18,12 +18,12 @@ import {
   controllPostMediaOnUpdate,
   controllPostReaction,
   controllShowOnProfile,
-} from '../utils/postControllerUtils.js';
+} from "../utils/postControllerUtils.js";
 import {
   controllCreatePostNotification,
   controllSharePostNotification,
-} from '../utils/notificationControllerUtils.js';
-import { checkIfIsFriendOnEach } from '../utils/userControllerUtils.js';
+} from "../utils/notificationControllerUtils.js";
+import { checkIfIsFriendOnEach } from "../utils/userControllerUtils.js";
 
 export const resizeAndOptimiseMedia = editMedia({
   multy: true,
@@ -32,8 +32,8 @@ export const resizeAndOptimiseMedia = editMedia({
 
 export const uploadPostMediaFiles = (imageName) =>
   uploadMedia({
-    storage: 'memoryStorage',
-    upload: 'any',
+    storage: "memoryStorage",
+    upload: "any",
     filename: imageName,
   });
 
@@ -44,20 +44,23 @@ export const createPost = asyncWrapper(async function (req, res, next) {
     // If multer storage is diskStorage use this
     // req?.files?.map((file) => file.filename);
     newPost.media = req.xOriginal.map(
-      (fileName) => `${req.protocol}://${'localhost:4000'}/${fileName}`
+      (fileName) => `${req.protocol}://${"localhost:4000"}/${fileName}`
       // `${req.protocol}://${req.host === '127.0.0.1' ? 'localhost:4000' : req.host}/${fileName}`
     );
   }
 
   newPost.populate({
-    path: 'author tags.user',
-    select: 'userName profileImg',
+    path: "author tags.user",
+    select: "userName profileImg",
   });
 
   await newPost.save();
 
   if (tags && JSON.parse(tags)[0])
-    await controllCreatePostNotification({ post: newPost, tags: JSON.parse(tags) });
+    await controllCreatePostNotification({
+      post: newPost,
+      tags: JSON.parse(tags),
+    });
 
   res.status(201).json(newPost);
 });
@@ -69,11 +72,12 @@ export const deletePost = asyncWrapper(async function (req, res, next) {
   const postToDelete = await Post.findById(postId);
 
   if (postToDelete.author.toString() !== currUser.id)
-    return next(new AppError(403, 'you are not authorised for this operation'));
+    return next(new AppError(403, "you are not authorised for this operation"));
 
   const postMedia = postToDelete.media;
 
-  if (!postMedia.shared && postMedia?.[0]) await controllPostMediaDeletion(postMedia, next);
+  if (!postMedia.shared && postMedia?.[0])
+    await controllPostMediaDeletion(postMedia, next);
 
   await postToDelete.delete();
 
@@ -81,7 +85,10 @@ export const deletePost = asyncWrapper(async function (req, res, next) {
 
   await Bookmarks.updateMany({ post: postId }, { $set: { deleted: true } });
 
-  await Post.updateMany({ shared: true, authentic: postId }, { $set: { deleted: true } });
+  await Post.updateMany(
+    { shared: true, authentic: postId },
+    { $set: { deleted: true } }
+  );
 
   res.status(204).json({ deleted: true });
 });
@@ -90,11 +97,11 @@ export const updatePost = asyncWrapper(async function (req, res, next) {
   const { postId } = req.params;
   const currUser = req.user;
 
-  const post = await Post.findById(postId).select('-reactions -__v');
+  const post = await Post.findById(postId).select("-reactions -__v");
 
-  if (!post) return next(new AppError(404, 'post does not exists'));
+  if (!post) return next(new AppError(404, "post does not exists"));
   else if (post.author.toString() !== currUser.id)
-    return next(new AppError(404, 'you are not authorised for this operation'));
+    return next(new AppError(404, "you are not authorised for this operation"));
 
   const { body, newTags } = await controllPostUpdateBody({
     req,
@@ -109,17 +116,18 @@ export const updatePost = asyncWrapper(async function (req, res, next) {
   await post.save();
 
   await post.populate({
-    path: 'author tags.user',
-    select: 'userName profileImg',
+    path: "author tags.user",
+    select: "userName profileImg",
   });
 
   await post.populate({
-    path: 'authentic',
-    select: '-reactions -shared',
-    populate: { path: 'author tags', select: 'userName profileImg' },
+    path: "authentic",
+    select: "-reactions -shared",
+    populate: { path: "author tags", select: "userName profileImg" },
   });
 
-  if (newTags?.[0]) await controllCreatePostNotification({ post: post, tags: newTags });
+  if (newTags?.[0])
+    await controllCreatePostNotification({ post: post, tags: newTags });
 
   res.status(201).json(post);
 });
@@ -134,26 +142,27 @@ export const sharePost = asyncWrapper(async function (req, res, next) {
   const body = {
     shared: true,
     authentic: postToShare._id,
-    type: 'post',
+    type: "post",
     author: currUser.id,
     description: description,
   };
 
-  contollAudience(body, audience, 'post');
+  contollAudience(body, audience, "post");
 
-  if (tags && JSON.parse(tags)) body.tags = JSON.parse(tags).map((tag) => ({ user: tag }));
+  if (tags && JSON.parse(tags))
+    body.tags = JSON.parse(tags).map((tag) => ({ user: tag }));
 
   const newPost = await Post.create(body);
 
   await newPost.populate({
-    path: 'author tags.user',
-    select: 'userName profileImg',
+    path: "author tags.user",
+    select: "userName profileImg",
   });
 
   await newPost.populate({
-    path: 'authentic',
-    select: '-reactions -shared',
-    populate: { path: 'author tags.user', select: 'userName profileImg' },
+    path: "authentic",
+    select: "-reactions -shared",
+    populate: { path: "author tags.user", select: "userName profileImg" },
   });
 
   await controllSharePostNotification({ post: newPost, tags });
@@ -165,7 +174,9 @@ export const savePost = asyncWrapper(async function (req, res, next) {
   const { postId } = req.params;
   const currUser = req.user;
 
-  const existingBookmark = await Bookmarks.find({ $or: [{ post: postId }, { cachedId: postId }] });
+  const existingBookmark = await Bookmarks.find({
+    $or: [{ post: postId }, { cachedId: postId }],
+  });
 
   const operation = {};
 
@@ -192,7 +203,7 @@ export const changePostAudience = asyncWrapper(async function (req, res, next) {
   const post = await Post.findById([postId]);
 
   if (post.author.toString() !== currUser.id)
-    return next(new AppError(403, 'yoy are not authorized for this operation'));
+    return next(new AppError(403, "yoy are not authorized for this operation"));
 
   contollAudience(post, audience, post.type);
 
@@ -208,7 +219,7 @@ export const reactOnPost = asyncWrapper(async function (req, res, next) {
 
   const post = await Post.findById(postId);
 
-  if (!post) return next(new AppError(404, 'post does not exists'));
+  if (!post) return next(new AppError(404, "post does not exists"));
 
   await controllPostReaction({ post, currUserId: currUser.id, reaction });
 
@@ -228,21 +239,21 @@ export const getPost = asyncWrapper(async function (req, res, next) {
   const user = await User.findById(currUser.id);
 
   const post = await Post.findById(postId)
-    .select('-reactions -__v')
+    .select("-reactions -__v")
     .populate({
-      path: 'author tags.user',
-      select: 'userName profileImg',
+      path: "author tags.user",
+      select: "userName profileImg",
     })
     .populate({
-      path: 'authentic',
-      select: '-reactions -shared -__v',
+      path: "authentic",
+      select: "-reactions -shared -__v",
       transform: (doc, docId) => checkIfIsFriendOnEach(user, doc, docId),
-      populate: { path: 'author tags.user', select: 'userName profileImg' },
+      populate: { path: "author tags.user", select: "userName profileImg" },
     });
 
-  if (!post) return next(new AppError(404, 'post does not exists'));
-  else if (currUser.role === 'guest' && post.audience !== 'public')
-    return next(new AppError(403, 'you are not authorised for this operation'));
+  if (!post) return next(new AppError(404, "post does not exists"));
+  else if (currUser.role === "guest" && post.audience !== "public")
+    return next(new AppError(403, "you are not authorised for this operation"));
 
   res.status(200).json(post);
 });
@@ -254,24 +265,27 @@ export const getBlogPosts = asyncWrapper(async function (req, res, next) {
   const skip = page * limit - limit;
 
   const postQuery = {
-    type: 'blogPost',
-    [author ? 'author' : '']: author ? author : '',
-    [category ? 'categories' : '']: category ? { $in: category.split(',') } : '',
+    type: "blogPost",
+    [author ? "author" : ""]: author ? author : "",
+    [category ? "categories" : ""]: category
+      ? { $in: category.split(",") }
+      : "",
   };
 
-  if (currUser.role === 'guest') postQuery.audience = 'public';
+  if (currUser.role === "guest") postQuery.audience = "public";
 
   let postsLength;
-  if (hasMore && !JSON.parse(hasMore)) postsLength = await Post.find(postQuery).countDocuments();
+  if (hasMore && !JSON.parse(hasMore))
+    postsLength = await Post.find(postQuery).countDocuments();
 
   const blogPosts = await Post.find(postQuery)
-    .select('-reactions -__v')
+    .select("-reactions -__v")
     .skip(skip)
     .limit(limit)
-    .sort('-createdAt')
+    .sort("-createdAt")
     .populate({
-      path: 'author tags.user reactions.author',
-      select: 'userName profileImg',
+      path: "author tags.user reactions.author",
+      select: "userName profileImg",
     });
 
   res.status(200).json({ data: blogPosts, results: postsLength });
@@ -282,12 +296,12 @@ export const getPostComments = asyncWrapper(async function (req, res, next) {
 
   const post = await Post.findById(postId);
 
-  if (!post) return next(new AppError(404, 'post does not exists'));
+  if (!post) return next(new AppError(404, "post does not exists"));
 
   const comments = await Comment.find({ post: postId })
     .populate({
-      path: 'author tags replies.author replies.tags',
-      select: 'userName profileImg',
+      path: "author tags replies.author replies.tags",
+      select: "userName profileImg",
     })
     .sort({ createdAt: -1 });
   // .select('-reactions -replies.reactions');
@@ -306,7 +320,8 @@ export const isUserPost = asyncWrapper(async function (req, res, next) {
     author: currUser.id,
   });
 
-  if (!post && !bookmark[0]) return next(new AppError(404, 'post does not exists'));
+  if (!post && !bookmark[0])
+    return next(new AppError(404, "post does not exists"));
 
   const info = {
     belongsToUser: post?.author.toString() === currUser.id,
@@ -316,8 +331,9 @@ export const isUserPost = asyncWrapper(async function (req, res, next) {
   };
 
   if (info.isTagged)
-    info.isTaggedAndIsVisible = !post.tags.find((tag) => tag.user.toString() === currUser.id)
-      .hidden;
+    info.isTaggedAndIsVisible = !post.tags.find(
+      (tag) => tag.user.toString() === currUser.id
+    ).hidden;
   else if (info.belongsToUser) info.belongsToUserAndIsVisible = !post.hidden;
 
   res.status(200).json(info);
@@ -328,12 +344,15 @@ export const removeTagFromPost = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
 
   const post = await Post.findOneAndUpdate(
-    { _id: mongoose.Types.ObjectId(postId), 'tags.user': mongoose.Types.ObjectId(currUser.id) },
+    {
+      _id: mongoose.Types.ObjectId(postId),
+      "tags.user": mongoose.Types.ObjectId(currUser.id),
+    },
     { $pull: { tags: { user: mongoose.Types.ObjectId(currUser.id) } } },
     { new: true }
-  ).populate({ path: 'tags.user', select: 'userName profileImg' });
+  ).populate({ path: "tags.user", select: "userName profileImg" });
 
-  if (!post) return next(new AppError(404, 'post does not exists'));
+  if (!post) return next(new AppError(404, "post does not exists"));
 
   res.status(200).json({ removed: true, postId, tags: post.tags });
 });
@@ -343,9 +362,9 @@ export const reviewTaggedPosts = asyncWrapper(async function (req, res, next) {
   const { show } = req.body;
   const currUser = req.user;
 
-  const post = await Post.findOne({ _id: postId, 'tags.user': currUser.id });
+  const post = await Post.findOne({ _id: postId, "tags.user": currUser.id });
 
-  if (!post) return next(new AppError(404, 'there are no such a post'));
+  if (!post) return next(new AppError(404, "there are no such a post"));
 
   const i = post.tags.findIndex((tag) => tag.user.toString() === currUser.id);
   post.tags[i].review = true;
@@ -366,22 +385,30 @@ export const addPostToProfile = asyncWrapper(async function (req, res, next) {
       {
         $or: [
           { author: currUser.id, hidden: true },
-          { 'tags.user': currUser.id, 'tags.review': true, 'tags.hidden': true },
+          {
+            "tags.user": currUser.id,
+            "tags.review": true,
+            "tags.hidden": true,
+          },
         ],
       },
     ],
   });
 
-  if (!post) return next(new AppError(404, 'post does not exists'));
+  if (!post) return next(new AppError(404, "post does not exists"));
 
-  await controllShowOnProfile({ currUser, post, task: 'add' });
+  await controllShowOnProfile({ currUser, post, task: "add" });
 
   await post.save();
 
   res.status(201).json({ updated: true });
 });
 
-export const hidePostFromProfile = asyncWrapper(async function (req, res, next) {
+export const hidePostFromProfile = asyncWrapper(async function (
+  req,
+  res,
+  next
+) {
   const { postId } = req.params;
   const currUser = req.user;
 
@@ -391,55 +418,67 @@ export const hidePostFromProfile = asyncWrapper(async function (req, res, next) 
       {
         $or: [
           { author: currUser.id, hidden: false },
-          { 'tags.user': currUser.id, 'tags.review': true, 'tags.hidden': false },
+          {
+            "tags.user": currUser.id,
+            "tags.review": true,
+            "tags.hidden": false,
+          },
         ],
       },
     ],
   });
 
-  if (!post) return next(new AppError(404, 'post does not exists'));
+  if (!post) return next(new AppError(404, "post does not exists"));
 
-  await controllShowOnProfile({ currUser, post, task: 'hide' });
+  await controllShowOnProfile({ currUser, post, task: "hide" });
 
   await post.save();
 
   res.status(201).json({ updated: true });
 });
 
-export const getTopRatedBlogPosts = asyncWrapper(async function (req, res, next) {
+export const getTopRatedBlogPosts = asyncWrapper(async function (
+  req,
+  res,
+  next
+) {
   const { limit } = req.query;
   const monthAgo = new Date(new Date().setMonth(new Date().getMonth() - 1));
 
   const posts = await Post.find({
-    type: 'blogPost',
+    type: "blogPost",
     createdAt: { $gte: monthAgo },
   })
-    .select('-reactions -__v')
-    .sort('-likesAmount')
+    .select("-reactions -__v")
+    .sort("-likesAmount")
     .limit(limit)
     .populate({
-      path: 'author tags.user',
-      select: 'userName profileImg',
+      path: "author tags.user",
+      select: "userName profileImg",
     });
 
   res.status(200).json(posts);
 });
 
-export const getTopRatedPublishers = asyncWrapper(async function (req, res, next) {
+export const getTopRatedPublishers = asyncWrapper(async function (
+  req,
+  res,
+  next
+) {
   const { limit } = req.query;
 
   const topRatedPublishers = await Post.aggregate([
     {
-      $match: { type: 'blogPost' },
+      $match: { type: "blogPost" },
     },
     {
       $project: { author: 1, likesAmount: 1 },
     },
     {
       $group: {
-        _id: '$author',
+        _id: "$author",
         posts: { $sum: 1 },
-        likes: { $sum: '$likesAmount' },
+        likes: { $sum: "$likesAmount" },
       },
     },
     {
@@ -450,10 +489,10 @@ export const getTopRatedPublishers = asyncWrapper(async function (req, res, next
     },
     {
       $lookup: {
-        as: 'author',
-        from: 'users',
-        foreignField: '_id',
-        localField: '_id',
+        as: "author",
+        from: "users",
+        foreignField: "_id",
+        localField: "_id",
         pipeline: [
           {
             $project: {
@@ -465,7 +504,7 @@ export const getTopRatedPublishers = asyncWrapper(async function (req, res, next
       },
     },
     {
-      $unwind: '$author',
+      $unwind: "$author",
     },
   ]);
 
@@ -476,27 +515,27 @@ export const getRelatedPosts = asyncWrapper(async function (req, res, next) {
   const { postId } = req.params;
   const { limit } = req.query;
 
-  const { categories } = await Post.findById(postId).select('categories');
+  const { categories } = await Post.findById(postId).select("categories");
 
   const posts = await Post.aggregate([
     {
       $match: {
-        type: 'blogPost',
+        type: "blogPost",
         categories: { $in: categories },
         _id: { $ne: mongoose.Types.ObjectId(postId) },
       },
     },
     {
       $addFields: {
-        matched: { $setIntersection: ['$categories', categories] },
+        matched: { $setIntersection: ["$categories", categories] },
       },
     },
     {
-      $unwind: '$matched',
+      $unwind: "$matched",
     },
     {
       $group: {
-        _id: '$_id',
+        _id: "$_id",
         size: { $sum: 1 },
       },
     },
@@ -508,17 +547,17 @@ export const getRelatedPosts = asyncWrapper(async function (req, res, next) {
     },
     {
       $lookup: {
-        as: 'posts',
-        from: 'posts',
-        foreignField: '_id',
-        localField: '_id',
+        as: "posts",
+        from: "posts",
+        foreignField: "_id",
+        localField: "_id",
         pipeline: [
           {
             $lookup: {
-              as: 'author',
-              from: 'users',
-              foreignField: '_id',
-              localField: 'author',
+              as: "author",
+              from: "users",
+              foreignField: "_id",
+              localField: "author",
               pipeline: [
                 {
                   $project: {
@@ -531,10 +570,10 @@ export const getRelatedPosts = asyncWrapper(async function (req, res, next) {
           },
           {
             $lookup: {
-              as: 'tags',
-              from: 'users',
-              foreignField: '_id',
-              localField: 'tags.user',
+              as: "tags",
+              from: "users",
+              foreignField: "_id",
+              localField: "tags.user",
               pipeline: [
                 {
                   $project: {
@@ -549,13 +588,13 @@ export const getRelatedPosts = asyncWrapper(async function (req, res, next) {
       },
     },
     {
-      $unwind: '$posts',
+      $unwind: "$posts",
     },
     {
-      $unset: ['posts.reactions'],
+      $unset: ["posts.reactions"],
     },
     {
-      $unwind: '$posts.author',
+      $unwind: "$posts.author",
     },
   ]);
 
@@ -568,14 +607,14 @@ export const getRelatedPosts = asyncWrapper(async function (req, res, next) {
 
 export const getAllPosts = asyncWrapper(async function (req, res, next) {
   const posts = await Post.find()
-    .populate('author')
+    .populate("author")
     .populate({
-      path: 'authenticAuthor',
-      select: 'userName email _id',
+      path: "authenticAuthor",
+      select: "userName email _id",
     })
     .populate({
-      path: 'comments',
-      populate: { path: 'author replies.author replies.adressat' },
+      path: "comments",
+      populate: { path: "author replies.author replies.adressat" },
     });
 
   res.status(200).json();

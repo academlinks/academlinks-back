@@ -1,9 +1,9 @@
-import multer from 'multer';
-import sharp from 'sharp';
-import AppError from './AppError.js';
+import multer from "multer";
+import sharp from "sharp";
+import AppError from "./AppError.js";
 
 // UPLOAD MEDIA
-function createDestination(destination = 'public/images', storage) {
+function createDestination(destination = "public/images", storage) {
   const mediaStorage = {
     diskStorage: multer.diskStorage({
       destination: (req, file, cb) => cb(null, destination),
@@ -18,13 +18,16 @@ function createDestination(destination = 'public/images', storage) {
 
 function mediaFillter(req, file, cb) {
   const ext = file.mimetype;
-  if (ext.startsWith('image')) cb(null, true);
-  else cb(new AppError(400, 'file is not the image'), false);
+  if (ext.startsWith("image")) cb(null, true);
+  else cb(new AppError(400, "file is not the image"), false);
 }
 
 const media = (params) =>
   multer({
-    storage: createDestination(params.destination || undefined, params.storage || 'diskStorage'),
+    storage: createDestination(
+      params.destination || undefined,
+      params.storage || "diskStorage"
+    ),
     fileFilter: mediaFillter,
   })[[params.upload]](params.filename);
 
@@ -48,7 +51,7 @@ export const uploadMedia = (params) => media(params);
  * @returns
  */
 export const editMedia = (params) => async (req, res, next) => {
-  const key = params.multy ? 'files' : 'file';
+  const key = params.multy ? "files" : "file";
 
   if (!req[key]) return next();
 
@@ -59,24 +62,33 @@ export const editMedia = (params) => async (req, res, next) => {
   async function editor({ file, width, height, fileName }) {
     await sharp(file)
       .resize(width || 500, height || undefined)
-      .toFormat('webp')
+      .toFormat("webp")
       .webp({ quality: 90 })
       .toFile(`public/images/${fileName}`);
   }
 
   async function writeOriginal({ file, fileName }) {
-    await sharp(file).toFormat('webp').webp().toFile(`public/images/${fileName}`);
+    await sharp(file)
+      .toFormat("webp")
+      .webp()
+      .toFile(`public/images/${fileName}`);
   }
 
   const currentDate = Date.now();
 
   function generateFileName(index) {
     const mainStr = `user-${req.user.id}-${currentDate}`;
-    const widthStr = `${index.startsWith('original') ? '' : params?.width || '500'}`;
-    const heightStr = `${
-      index.startsWith('original') ? '' : params?.height ? `x${params?.height}` : 'xAuto'
+    const widthStr = `${
+      index.startsWith("original") ? "" : params?.width || "500"
     }`;
-    const indexStr = `${index.startsWith('original') ? index : ''}`;
+    const heightStr = `${
+      index.startsWith("original")
+        ? ""
+        : params?.height
+        ? `x${params?.height}`
+        : "xAuto"
+    }`;
+    const indexStr = `${index.startsWith("original") ? index : ""}`;
     ////////////////////////////////////////////////////////////////////////
     const fileName = `${mainStr}--${widthStr}${heightStr}${indexStr}.webp`;
 
@@ -84,8 +96,10 @@ export const editMedia = (params) => async (req, res, next) => {
   }
 
   if (!isArray) {
-    const { fileName: nameForOrigin } = generateFileName('original');
-    const { fileName } = params.resize ? generateFileName(`1`) : { fileName: '' };
+    const { fileName: nameForOrigin } = generateFileName("original");
+    const { fileName } = params.resize
+      ? generateFileName(`1`)
+      : { fileName: "" };
 
     await writeOriginal({
       file: copyrightedData.buffer,
@@ -108,8 +122,12 @@ export const editMedia = (params) => async (req, res, next) => {
 
     await Promise.all(
       copyrightedData.map(async (file, index) => {
-        const { fileName: nameForOrigin } = generateFileName(`original-${index}`);
-        const { fileName } = params.resize ? generateFileName(`${index + 1}`) : { fileName: '' };
+        const { fileName: nameForOrigin } = generateFileName(
+          `original-${index}`
+        );
+        const { fileName } = params.resize
+          ? generateFileName(`${index + 1}`)
+          : { fileName: "" };
 
         await writeOriginal({
           file: file.buffer,
