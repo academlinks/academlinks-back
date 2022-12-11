@@ -116,40 +116,6 @@ export const sendMessage = asyncWrapper(async function (req, res, next) {
     .json({ lastMessage: existingConversation.lastMessage, message: doc });
 });
 
-export const markAsRead = asyncWrapper(async function (req, res, next) {
-  const { conversationId, adressatId } = req.params;
-  const currUser = req.user;
-
-  if (currUser.id === adressatId)
-    return next(
-      new AppError(
-        400,
-        "adressat is current uuser. please provide valid adressat."
-      )
-    );
-
-  const updatedConversation = await Conversation.findByIdAndUpdate(
-    conversationId,
-    {
-      "lastMessage.isRead": true,
-    },
-    { new: true }
-  );
-
-  const body = {
-    conversationId,
-    body: updatedConversation.lastMessage,
-  };
-
-  await useSocket(req, {
-    operationName: "receive_message_isRead",
-    adressatId,
-    data: body,
-  });
-
-  res.status(200).json(body);
-});
-
 export const getConversation = asyncWrapper(async function (req, res, next) {
   const { id: conversationId } = req.params;
   const currUser = req.user;
@@ -311,7 +277,41 @@ export const deleteConversation = asyncWrapper(async function (req, res, next) {
   res.status(204).json({ deleted: true });
 });
 
-export const getUnreadConversationCount = asyncWrapper(async function (
+export const markAsRead = asyncWrapper(async function (req, res, next) {
+  const { conversationId, adressatId } = req.params;
+  const currUser = req.user;
+
+  if (currUser.id === adressatId)
+    return next(
+      new AppError(
+        400,
+        "adressat is current uuser. please provide valid adressat."
+      )
+    );
+
+  const updatedConversation = await Conversation.findByIdAndUpdate(
+    conversationId,
+    {
+      "lastMessage.isRead": true,
+    },
+    { new: true }
+  );
+
+  const body = {
+    conversationId,
+    body: updatedConversation.lastMessage,
+  };
+
+  await useSocket(req, {
+    operationName: "receive_message_isRead",
+    adressatId,
+    data: body,
+  });
+
+  res.status(200).json(body);
+});
+
+export const getUnseenConversationCount = asyncWrapper(async function (
   req,
   res,
   next
@@ -325,10 +325,33 @@ export const getUnreadConversationCount = asyncWrapper(async function (
   const count = await Conversation.find({
     users: currUser.id,
     "lastMessage.author": { $ne: currUser.id },
-    "lastMessage.isRead": false,
+    seen: false,
   }).select("_id");
 
   res.status(200).json(count);
+});
+
+export const markConversationsAsSeen = asyncWrapper(async function (
+  req,
+  res,
+  next
+) {
+  const currUser = req.user;
+  const { userId } = req.params;
+
+  if (currUser.id !== userId)
+    return next(new AppError(403, "you are not authorized for this operation"));
+
+  await Conversation.updateMany(
+    {
+      users: currUser.id,
+      "lastMessage.author": { $ne: currUser.id },
+      seen: false,
+    },
+    { $set: { seen: true } }
+  );
+
+  res.status(200).json({ isMarked: true });
 });
 
 async function del() {

@@ -9,7 +9,8 @@ import {
   getLastConversation,
   createConvesation,
   markAsRead,
-  getUnreadConversationCount,
+  getUnseenConversationCount,
+  markConversationsAsSeen,
 } from "../controllers/conversationController.js";
 import { checkAuth } from "../controllers/authenticationController.js";
 
@@ -21,7 +22,10 @@ router.route("/:userId/all").get(checkAuth, getAllConversation);
 
 router.route("/:conversationId/read/:adressatId").patch(checkAuth, markAsRead);
 
-router.route("/:userId/unread").get(checkAuth, getUnreadConversationCount);
+router
+  .route("/:userId/unseen")
+  .get(checkAuth, getUnseenConversationCount)
+  .patch(checkAuth, markConversationsAsSeen);
 
 router.route("/:conversationId/:adressatId").patch(checkAuth, sendMessage);
 

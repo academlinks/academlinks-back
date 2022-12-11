@@ -1,5 +1,5 @@
-import fs from 'fs';
-import { promisify } from 'util';
+import fs from "fs";
+import { promisify } from "util";
 
 export async function deleteExistingImage(originalFileNameFragments) {
   try {
@@ -10,8 +10,10 @@ export async function deleteExistingImage(originalFileNameFragments) {
   }
 }
 
-export function checkIfIsFriend(user, userId) {
-  const isFriend = user.friends.some((friend) => friend.friend.toString() === userId);
+export function checkIfIsFriend({ user, userId, userFriendShip }) {
+  const isFriend = userFriendShip.friends.some(
+    (friend) => friend.friend.toString() === userId
+  );
   const isCurrUser = user._id.toString() === userId;
 
   const info = {
@@ -22,12 +24,12 @@ export function checkIfIsFriend(user, userId) {
   };
 
   if (!isFriend) {
-    const isPendingRequest = user.pendingRequests.some(
+    const isPendingRequest = userFriendShip.pendingRequests.some(
       (request) => request.adressat.toString() === userId
     );
     if (isPendingRequest) info.isPendingRequest = isPendingRequest;
     else if (!isPendingRequest) {
-      const isSentRequest = user.sentRequests.some(
+      const isSentRequest = userFriendShip.sentRequests.some(
         (request) => request.adressat.toString() === userId
       );
       if (isSentRequest) info.isSentRequest = isSentRequest;
@@ -38,17 +40,26 @@ export function checkIfIsFriend(user, userId) {
   return { info, isFriend, isCurrUser };
 }
 
-export function checkIfIsFriendOnEach(user, doc, docId) {
+export function checkIfIsFriendOnEach({ user, doc, docId, userFriendShip }) {
   if (doc === null) return { restricted: true, _id: docId };
 
   const authorId = doc.author._id.toString();
-  const { isFriend, isCurrUser } = checkIfIsFriend(user, authorId);
+  const { isFriend, isCurrUser } = checkIfIsFriend({
+    user,
+    authorId,
+    userFriendShip,
+  });
 
-  if (doc.type === 'blogPost' && user.role === 'user') return doc;
+  if (doc.type === "blogPost" && user.role === "user") return doc;
   else if (isCurrUser) return doc;
-  else if (!isCurrUser && doc.audience === 'private') return { restricted: true, _id: doc._id };
-  else if (doc.audience === 'friends' && !isCurrUser && !isFriend)
+  else if (!isCurrUser && doc.audience === "private")
     return { restricted: true, _id: doc._id };
-  else if ((doc.audience === 'friends' || doc?.audience === 'public') && isFriend) return doc;
+  else if (doc.audience === "friends" && !isCurrUser && !isFriend)
+    return { restricted: true, _id: doc._id };
+  else if (
+    (doc.audience === "friends" || doc?.audience === "public") &&
+    isFriend
+  )
+    return doc;
   else return { restricted: true, _id: doc._id };
 }
