@@ -290,7 +290,6 @@ export const getUserPendingRequest = asyncWrapper(async function (
               userName: 1,
               profileImg: 1,
               _id: 1,
-              id: 1,
             },
           },
         ],
@@ -302,7 +301,11 @@ export const getUserPendingRequest = asyncWrapper(async function (
     {
       $addFields: {
         pendingRequest: {
-          $mergeObjects: ["$requestAuthor", "$pendingRequests"],
+          _id: "$requestAuthor._id",
+          profileImg: "$requestAuthor.profileImg",
+          userName: "$requestAuthor.userName",
+          seen: "$pendingRequests.seen",
+          createdAt: "$pendingRequests.createdAt",
         },
       },
     },
@@ -317,7 +320,7 @@ export const getUserPendingRequest = asyncWrapper(async function (
       $lookup: {
         as: "reqAuthorFriends",
         from: "friendships",
-        localField: "pendingRequest.adressat",
+        localField: "pendingRequest._id",
         foreignField: "user",
         pipeline: [
           {
@@ -333,7 +336,7 @@ export const getUserPendingRequest = asyncWrapper(async function (
     },
     {
       $group: {
-        _id: "$pendingRequest.adressat",
+        _id: "$pendingRequest._id",
         friends: { $first: "$friends.friend" },
         pendingRequest: { $first: "$pendingRequest" },
         reqAuthorFriends: { $push: "$reqAuthorFriends.friends.friend" },
@@ -410,7 +413,11 @@ export const getUserSentRequest = asyncWrapper(async function (req, res, next) {
     {
       $addFields: {
         sentRequest: {
-          $mergeObjects: ["$requestAuthor", "$sentRequests"],
+          _id: "$requestAuthor._id",
+          profileImg: "$requestAuthor.profileImg",
+          userName: "$requestAuthor.userName",
+          seen: "$pendingRequests.seen",
+          createdAt: "$sentRequests.createdAt",
         },
       },
     },
@@ -425,7 +432,7 @@ export const getUserSentRequest = asyncWrapper(async function (req, res, next) {
       $lookup: {
         as: "reqAuthorFriends",
         from: "friendships",
-        localField: "sentRequest.adressat",
+        localField: "sentRequest._id",
         foreignField: "user",
         pipeline: [
           {
@@ -441,7 +448,7 @@ export const getUserSentRequest = asyncWrapper(async function (req, res, next) {
     },
     {
       $group: {
-        _id: "$sentRequest.adressat",
+        _id: "$sentRequest._id",
         friends: { $first: "$friends.friend" },
         sentRequest: { $first: "$sentRequest" },
         reqAuthorFriends: { $push: "$reqAuthorFriends.friends.friend" },

@@ -94,7 +94,7 @@ export const deleteUserNotification = asyncWrapper(async function (
   res.status(204).json({ deleted: true });
 });
 
-export const getUnreadNotificationCount = asyncWrapper(async function (
+export const getUnseenNotificationsCount = asyncWrapper(async function (
   req,
   res,
   next
@@ -112,3 +112,34 @@ export const getUnreadNotificationCount = asyncWrapper(async function (
 
   res.status(200).json(unreadNotifications);
 });
+
+export const markNotificationAsSeen = asyncWrapper(async function (
+  req,
+  res,
+  next
+) {
+  const currUser = req.user;
+  const { userId } = req.params;
+
+  if (currUser.id !== userId)
+    return next(new AppError(403, "you are not authorized for this operation"));
+
+  await Notification.updateMany(
+    { adressat: currUser.id, seen: false },
+    { seen: true }
+  );
+
+  res.status(200).json({ isMarked: true });
+});
+
+async function editor() {
+  await Notification.updateMany(
+    {
+      adressat: "62fbaf941fffa1f725217953",
+    },
+    {
+      seen: false,
+    }
+  );
+}
+// editor();

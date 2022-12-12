@@ -5,7 +5,8 @@ import {
   deleteAllUserNotification,
   markAsRead,
   markAllUserNotificationAsRead,
-  getUnreadNotificationCount,
+  getUnseenNotificationsCount,
+  markNotificationAsSeen,
 } from "../controllers/notificationController.js";
 import {
   checkAuth,
@@ -21,7 +22,10 @@ router
 
 router.route("/:userId").get(checkAuth, getAllNotifications);
 
-router.route("/:userId/count").get(checkAuth, getUnreadNotificationCount);
+router
+  .route("/:userId/unseen")
+  .get(checkAuth, getUnseenNotificationsCount)
+  .patch(checkAuth, markNotificationAsSeen);
 
 router
   .route("")
