@@ -43,6 +43,15 @@ const FriendshipSchema = new Schema({
       },
     },
   ],
+  friendsAmount: {
+    type: Number,
+    default: 0,
+  },
+});
+
+FriendshipSchema.pre("save", function (next) {
+  if (this.isModified("friends")) this.friendsAmount = this.friends.length;
+  next();
 });
 
 const Friendship = model("Friendship", FriendshipSchema);

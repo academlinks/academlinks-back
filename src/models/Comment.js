@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 const { Schema, model } = mongoose;
 
 const CommentSchema = new Schema(
@@ -9,17 +9,18 @@ const CommentSchema = new Schema(
 
     author: {
       type: Schema.ObjectId,
-      ref: 'User',
+      ref: "User",
     },
 
     text: {
       type: String,
+      require: [true, "text field can't be empty"],
     },
 
     tags: [
       {
         type: Schema.ObjectId,
-        ref: 'User',
+        ref: "User",
       },
     ],
 
@@ -28,7 +29,7 @@ const CommentSchema = new Schema(
         reaction: Boolean,
         author: {
           type: Schema.ObjectId,
-          ref: 'User',
+          ref: "User",
         },
       },
     ],
@@ -42,13 +43,13 @@ const CommentSchema = new Schema(
       {
         author: {
           type: Schema.ObjectId,
-          ref: 'User',
+          ref: "User",
         },
 
         tags: [
           {
             type: Schema.ObjectId,
-            ref: 'User',
+            ref: "User",
           },
         ],
 
@@ -64,7 +65,7 @@ const CommentSchema = new Schema(
             reaction: Boolean,
             author: {
               type: Schema.ObjectId,
-              ref: 'User',
+              ref: "User",
             },
           },
         ],
@@ -96,13 +97,13 @@ const CommentSchema = new Schema(
 
 // CommentSchema.index({ post: 1 });
 
-CommentSchema.pre('^find', async function (next) {
-  await this.populate('author');
+CommentSchema.pre("^find", async function (next) {
+  await this.populate("author");
   next();
 });
 
-CommentSchema.pre('save', function (next) {
-  if (!this.isModified('reactions')) return next();
+CommentSchema.pre("save", function (next) {
+  if (!this.isModified("reactions")) return next();
   this.likesAmount = this.reactions.length;
   next();
 });
@@ -112,6 +113,6 @@ CommentSchema.methods.controllCommentReplyLikes = async function (replyId) {
   reply.likesAmount = reply.reactions.length;
 };
 
-const Comment = model('Comment', CommentSchema);
+const Comment = model("Comment", CommentSchema);
 
 export default Comment;

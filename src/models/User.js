@@ -74,50 +74,6 @@ const UserSchema = new Schema(
       type: String,
       default: "http://localhost:4000/avatars/cover-default.jpg",
     },
-    // sentRequests: [
-    //   {
-    //     adressat: {
-    //       type: Schema.ObjectId,
-    //       ref: "User",
-    //     },
-    //     createdAt: {
-    //       type: Date,
-    //       default: new Date(),
-    //     },
-    //   },
-    // ],
-    // pendingRequests: [
-    //   {
-    //     adressat: {
-    //       type: Schema.ObjectId,
-    //       ref: "User",
-    //     },
-    //     createdAt: {
-    //       type: Date,
-    //       default: new Date(),
-    //     },
-    //     seen: {
-    //       type: Boolean,
-    //       default: false,
-    //     },
-    //   },
-    // ],
-    // friends: [
-    //   {
-    //     friend: {
-    //       type: Schema.ObjectId,
-    //       ref: "User",
-    //     },
-    //     createdAt: {
-    //       type: Date,
-    //       default: new Date(),
-    //     },
-    //   },
-    // ],
-    friendsAmount: {
-      type: Number,
-      default: 0,
-    },
     password: {
       type: String,
       require: true,
@@ -128,11 +84,6 @@ const UserSchema = new Schema(
 );
 
 UserSchema.index({ userName: 1 });
-
-// UserSchema.pre("save", function (next) {
-//   if (this.isModified("friends")) this.friendsAmount = this.friends.length;
-//   next();
-// });
 
 UserSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();

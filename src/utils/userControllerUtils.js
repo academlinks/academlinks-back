@@ -10,10 +10,11 @@ export async function deleteExistingImage(originalFileNameFragments) {
   }
 }
 
-export function checkIfIsFriend({ user, userId, userFriendShip }) {
+export function checkIfIsFriend({ user, userFriendShip, userId }) {
   const isFriend = userFriendShip.friends.some(
     (friend) => friend.friend.toString() === userId
   );
+
   const isCurrUser = user._id.toString() === userId;
 
   const info = {
@@ -23,7 +24,7 @@ export function checkIfIsFriend({ user, userId, userFriendShip }) {
     isForeign: false,
   };
 
-  if (!isFriend) {
+  if (!isFriend && !isCurrUser) {
     const isPendingRequest = userFriendShip.pendingRequests.some(
       (request) => request.adressat.toString() === userId
     );
@@ -46,20 +47,22 @@ export function checkIfIsFriendOnEach({ user, doc, docId, userFriendShip }) {
   const authorId = doc.author._id.toString();
   const { isFriend, isCurrUser } = checkIfIsFriend({
     user,
-    authorId,
     userFriendShip,
+    userId: authorId,
   });
 
-  if (doc.type === "blogPost" && user.role === "user") return doc;
-  else if (isCurrUser) return doc;
-  else if (!isCurrUser && doc.audience === "private")
-    return { restricted: true, _id: doc._id };
-  else if (doc.audience === "friends" && !isCurrUser && !isFriend)
-    return { restricted: true, _id: doc._id };
-  else if (
-    (doc.audience === "friends" || doc?.audience === "public") &&
-    isFriend
-  )
-    return doc;
-  else return { restricted: true, _id: doc._id };
+  if (!isCurrUser && doc.audience === "private")
+    return { restricted: true, _id: docId };
+  else if (!isCurrUser && !isFriend && doc.audience === "friends")
+    return { restricted: true, _id: docId };
+  else return doc;
+
+  // else if (doc.audience === "public") return doc;
+  // else if (isCurrUser || isFriend) return doc;
+  // else if (doc.type === "blogPost" && user.role === "user") return doc;
+  // else if (
+  //   (doc.audience === "friends" || doc?.audience === "public") &&
+  //   isFriend
+  // )
+  //   return doc;
 }

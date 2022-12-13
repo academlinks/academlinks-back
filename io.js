@@ -31,7 +31,13 @@ async function removeOnlineUser(socketId) {
 export function socket() {
   io.on("connection", (socket) => {
     socket.on("userConnection", async (data) => {
-      await addOnlineUser({ ...data, userId: data.id, socketId: socket.id });
+      await addOnlineUser({
+        userId: data._id,
+        userName:data.userName,
+        email:data.email,
+        image:data.image,
+        socketId: socket.id,
+      });
     });
 
     socket.on("disconnect", async () => {

@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import AppError from "../lib/AppError.js";
 import { asyncWrapper } from "../lib/asyncWrapper.js";
+import { useSocket, socket_name_placeholders } from "../utils/ioUtils.js";
 
 import Friendship from "../models/Friendship.js";
 
@@ -23,9 +24,16 @@ export const sendFriendRequest = asyncWrapper(async function (req, res, next) {
   );
 
   await controllFriendRequestNotification({
+    req,
     currUser: user._id.toString(),
     adressat: adressatUser._id.toString(),
     send: true,
+  });
+
+  await useSocket(req, {
+    adressatId: adressatUser._id,
+    operationName: socket_name_placeholders.receiveNewFriendRequest,
+    data: 1,
   });
 
   res.status(200).json({ sent: true });
@@ -57,8 +65,6 @@ export const cancelFriendRequest = asyncWrapper(async function (
       },
     }
   );
-
-  console.log({ curr: currUser.id, adr: adressatUser._id });
 
   res.status(200).json({ canceled: true });
 });
@@ -113,6 +119,7 @@ export const confirmFriendRequest = asyncWrapper(async function (
         },
       },
       $push: { friends: { friend: adressatUser._id } },
+      $inc: { friendsAmount: 1 },
     }
   );
 
@@ -123,16 +130,22 @@ export const confirmFriendRequest = asyncWrapper(async function (
         sentRequests: { adressat: mongoose.Types.ObjectId(currUser.id) },
       },
       $push: { friends: { friend: currUser.id } },
+      $inc: { friendsAmount: 1 },
     }
   );
 
   await controllFriendRequestNotification({
+    req,
     currUser: user._id.toString(),
     adressat: adressatUser._id.toString(),
     confirm: true,
   });
 
-  res.status(200).json({ confirmed: true });
+  res.status(200).json({
+    _id: adressatUser._id,
+    userName: adressatUser.userName,
+    profileImg: adressatUser.profileImg,
+  });
 });
 
 export const deleteFriend = asyncWrapper(async function (req, res, next) {
@@ -148,6 +161,7 @@ export const deleteFriend = asyncWrapper(async function (req, res, next) {
           friend: mongoose.Types.ObjectId(adressatUser._id),
         },
       },
+      $inc: { friendsAmount: -1 },
     }
   );
 
@@ -157,6 +171,7 @@ export const deleteFriend = asyncWrapper(async function (req, res, next) {
       $pull: {
         friends: { friend: mongoose.Types.ObjectId(currUser.id) },
       },
+      $inc: { friendsAmount: -1 },
     }
   );
 
@@ -169,7 +184,7 @@ export const getUserFriends = asyncWrapper(async function (req, res, next) {
 
   const userFriends = await Friendship.aggregate([
     {
-      $match: { user: mongoose.Types.ObjectId(currUser.id) },
+      $match: { user: mongoose.Types.ObjectId(userId) },
     },
     {
       $project: {
@@ -193,17 +208,26 @@ export const getUserFriends = asyncWrapper(async function (req, res, next) {
       },
     },
     {
-      $group: {
-        _id: "$_id",
-        friendsArr: { $push: "$friends.friend" },
-        friend: { $first: "$friend" },
-      },
-    },
-    {
-      $unwind: "$friendsArr",
+      $unwind: "$friends",
     },
     {
       $unwind: "$friend",
+    },
+    {
+      $addFields: {
+        friend: {
+          _id: "$friend._id",
+          userName: "$friend.userName",
+          profileImg: "$friend.profileImg",
+          createdAt: "$friends.createdAt",
+        },
+      },
+    },
+    {
+      $group: {
+        _id: "$friend._id",
+        friend: { $first: "$friend" },
+      },
     },
     {
       $lookup: {
@@ -226,7 +250,6 @@ export const getUserFriends = asyncWrapper(async function (req, res, next) {
     {
       $group: {
         _id: "$friend._id",
-        friendsArr: { $first: "$friendsArr" },
         friend: { $first: "$friend" },
         friendFriends: { $push: "$friendFriends.friends.friend" },
       },
@@ -235,8 +258,40 @@ export const getUserFriends = asyncWrapper(async function (req, res, next) {
       $unwind: "$friendFriends",
     },
     {
+      $addFields: { currUserId: mongoose.Types.ObjectId(currUser.id) },
+    },
+    {
+      $lookup: {
+        as: "currUserFriends",
+        from: "friendships",
+        localField: "currUserId",
+        foreignField: "user",
+        pipeline: [
+          {
+            $project: {
+              "friends.friend": 1,
+            },
+          },
+        ],
+      },
+    },
+    {
+      $unwind: "$currUserFriends",
+    },
+    {
+      $group: {
+        _id: "$_id",
+        friend: { $first: "$friend" },
+        friendFriends: { $first: "$friendFriends" },
+        currUserFriends: { $push: "$currUserFriends.friends.friend" },
+      },
+    },
+    {
+      $unwind: "$currUserFriends",
+    },
+    {
       $addFields: {
-        matched: { $setIntersection: ["$friendsArr", "$friendFriends"] },
+        matched: { $setIntersection: ["$friendFriends", "$currUserFriends"] },
       },
     },
     {
@@ -247,6 +302,9 @@ export const getUserFriends = asyncWrapper(async function (req, res, next) {
         friend: 1,
         muntual: 1,
       },
+    },
+    {
+      $sort: { "friend.createdAt": -1 },
     },
   ]);
 

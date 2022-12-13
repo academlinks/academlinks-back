@@ -101,7 +101,7 @@ export const searchUsers = asyncWrapper(async function (req, res, next) {
 
 export const getUserProfile = asyncWrapper(async function (req, res, next) {
   const { userId } = req.params;
-  const currUser = req.user;
+  // const currUser = req.user;
 
   const user = await User.findById(userId).select(
     "-education -workplace.description -workplace.workingYears"
@@ -109,8 +109,8 @@ export const getUserProfile = asyncWrapper(async function (req, res, next) {
 
   if (!user) return next(new AppError(404, "there are no such an user"));
 
-  const userFriends = await Friendship.findOne({ user: currUser.id })
-    .select("friends")
+  const userFriends = await Friendship.findOne({ user: userId })
+    .select("friends friendsAmount")
     .populate({
       path: "friends.friend",
       select: "userName profileImg",
@@ -121,6 +121,7 @@ export const getUserProfile = asyncWrapper(async function (req, res, next) {
     ...user._doc,
     workplace: user._doc.workplace[0],
     friends: userFriends.friends.slice(0, 9).map((fr) => fr.friend),
+    friendsAmount: userFriends.friendsAmount,
   };
 
   res.status(200).json(userProfile);
@@ -150,8 +151,8 @@ export const getProfilePosts = asyncWrapper(async function (req, res, next) {
 
   const { isFriend, isCurrUser } = checkIfIsFriend({
     user,
-    userId,
     userFriendShip,
+    userId,
   });
 
   if (!isCurrUser) {
@@ -163,7 +164,6 @@ export const getProfilePosts = asyncWrapper(async function (req, res, next) {
   if (hasMore && !JSON.parse(hasMore))
     postsLength = await Post.find(postQuery).countDocuments();
 
-  // .select('-reactions -__v')
   const posts = await Post.find(postQuery)
     .skip(skip)
     .limit(limit)
@@ -176,7 +176,7 @@ export const getProfilePosts = asyncWrapper(async function (req, res, next) {
       path: "authentic",
       select: "-shared -__v",
       transform: (doc, docId) =>
-        checkIfIsFriendOnEach({ user, doc, docId, userFriendShip }),
+        checkIfIsFriendOnEach({ user, userFriendShip, doc, docId }),
       populate: { path: "author tags.user", select: "userName profileImg" },
     });
 
@@ -355,7 +355,6 @@ export const getUser = asyncWrapper(async function (req, res, next) {
   const userFriendShip = await Friendship.findOne({
     user: currUser.id,
   }).populate("sentRequests.adressat pendingRequests.adressat friends.friend");
-
 
   res.status(200).json();
 });

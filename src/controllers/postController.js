@@ -24,6 +24,7 @@ import {
   controllSharePostNotification,
 } from "../utils/notificationControllerUtils.js";
 import { checkIfIsFriendOnEach } from "../utils/userControllerUtils.js";
+import Friendship from "../models/Friendship.js";
 
 export const resizeAndOptimiseMedia = editMedia({
   multy: true,
@@ -58,6 +59,7 @@ export const createPost = asyncWrapper(async function (req, res, next) {
 
   if (tags && JSON.parse(tags)[0])
     await controllCreatePostNotification({
+      req,
       post: newPost,
       tags: JSON.parse(tags),
     });
@@ -127,7 +129,7 @@ export const updatePost = asyncWrapper(async function (req, res, next) {
   });
 
   if (newTags?.[0])
-    await controllCreatePostNotification({ post: post, tags: newTags });
+    await controllCreatePostNotification({ req, post: post, tags: newTags });
 
   res.status(201).json(post);
 });
@@ -165,7 +167,7 @@ export const sharePost = asyncWrapper(async function (req, res, next) {
     populate: { path: "author tags.user", select: "userName profileImg" },
   });
 
-  await controllSharePostNotification({ post: newPost, tags });
+  await controllSharePostNotification({ req, post: newPost, tags });
 
   res.status(201).json(newPost);
 });
@@ -233,10 +235,11 @@ export const reactOnPost = asyncWrapper(async function (req, res, next) {
 });
 
 export const getPost = asyncWrapper(async function (req, res, next) {
-  const { postId } = req.params;
   const currUser = req.user;
+  const { postId } = req.params;
 
   const user = await User.findById(currUser.id);
+  const userFriendShip = await Friendship.findOne({ user: currUser.id });
 
   const post = await Post.findById(postId)
     .select("-reactions -__v")
@@ -247,7 +250,8 @@ export const getPost = asyncWrapper(async function (req, res, next) {
     .populate({
       path: "authentic",
       select: "-reactions -shared -__v",
-      transform: (doc, docId) => checkIfIsFriendOnEach(user, doc, docId),
+      transform: (doc, docId) =>
+        checkIfIsFriendOnEach({ user, userFriendShip, doc, docId }),
       populate: { path: "author tags.user", select: "userName profileImg" },
     });
 
@@ -310,24 +314,25 @@ export const getPostComments = asyncWrapper(async function (req, res, next) {
 });
 
 export const isUserPost = asyncWrapper(async function (req, res, next) {
-  const { postId } = req.params;
   const currUser = req.user;
+  const { postId } = req.params;
 
   const post = await Post.findById(postId);
 
-  const bookmark = await Bookmarks.find({
+  const bookmark = await Bookmarks.findOne({
     $or: [{ post: postId }, { cachedId: postId }],
     author: currUser.id,
   });
 
-  if (!post && !bookmark[0])
+  if (!post && !bookmark)
     return next(new AppError(404, "post does not exists"));
 
   const info = {
-    belongsToUser: post?.author.toString() === currUser.id,
-    // isBookmarked: bookmark[0]?.cachedId === postId && bookmark[0]?.author === currUser.id,
-    isBookmarked: (bookmark[0] && true) || false,
-    isTagged: post.tags.map((tag) => tag.user.toString()).includes(currUser.id),
+    belongsToUser: post ? post.author.toString() === currUser.id : false,
+    isBookmarked: (bookmark && true) || false,
+    isTagged: post
+      ? post.tags.map((tag) => tag.user.toString()).includes(currUser.id)
+      : false,
   };
 
   if (info.isTagged)

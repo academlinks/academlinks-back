@@ -4,7 +4,7 @@ import { asyncWrapper } from "../lib/asyncWrapper.js";
 import Conversation from "../models/Conversation.js";
 import Message from "../models/Message.js";
 import User from "../models/User.js";
-import { useSocket } from "../utils/ioUtils.js";
+import { useSocket, socket_name_placeholders } from "../utils/ioUtils.js";
 
 import {
   createMessage,
@@ -56,9 +56,9 @@ export const createConvesation = asyncWrapper(async function (req, res, next) {
 });
 
 export const sendMessage = asyncWrapper(async function (req, res, next) {
+  const currUser = req.user;
   const { adressatId, conversationId } = req.params;
   const { message } = req.body;
-  const currUser = req.user;
 
   if (currUser.id === adressatId)
     return next(
@@ -107,7 +107,7 @@ export const sendMessage = asyncWrapper(async function (req, res, next) {
 
   await useSocket(req, {
     adressatId: adressat._id,
-    operationName: "receive_new_message",
+    operationName: socket_name_placeholders.newMessage,
     data: { lastMessage: existingConversation.lastMessage, message: doc },
   });
 
@@ -303,7 +303,7 @@ export const markAsRead = asyncWrapper(async function (req, res, next) {
   };
 
   await useSocket(req, {
-    operationName: "receive_message_isRead",
+    operationName: socket_name_placeholders.messageIsRead,
     adressatId,
     data: body,
   });
