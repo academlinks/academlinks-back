@@ -128,7 +128,7 @@ export const updatePost = asyncWrapper(async function (req, res, next) {
     populate: { path: "author tags", select: "userName profileImg" },
   });
 
-  if (newTags?.[0])
+  if (newTags && newTags[0])
     await controllCreatePostNotification({ req, post: post, tags: newTags });
 
   res.status(201).json(post);

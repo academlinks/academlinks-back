@@ -1,21 +1,25 @@
-import fs from 'fs';
-import { promisify } from 'util';
+import fs from "fs";
+import { promisify } from "util";
+import mongoose from "mongoose";
 
-import AppError from '../lib/AppError.js';
+import AppError from "../lib/AppError.js";
 
-import Post from '../models/Post.js';
+import Post from "../models/Post.js";
 
 export function contollAudience(post, audience, type) {
-  const audienceForBlogPost = ['public', 'users'];
-  const audienceForPost = ['public', 'friends', 'private'];
+  const audienceForBlogPost = ["public", "users"];
+  const audienceForPost = ["public", "friends", "private"];
 
-  if (type === 'post' && !audienceForPost.includes(audience)) post.audience = 'friends';
-  else if (type === 'blogPost' && !audienceForBlogPost.includes(audience)) post.audience = 'public';
+  if (type === "post" && !audienceForPost.includes(audience))
+    post.audience = "friends";
+  else if (type === "blogPost" && !audienceForBlogPost.includes(audience))
+    post.audience = "public";
   else post.audience = audience;
 }
 
 export async function controllPostCreation(req) {
-  const { type, description, article, categories, tags, title, audience } = req.body;
+  const { type, description, article, categories, tags, title, audience } =
+    req.body;
   const currUser = req.user;
 
   const newPost = new Post({
@@ -26,9 +30,9 @@ export async function controllPostCreation(req) {
 
   contollAudience(newPost, audience, type);
 
-  if (type === 'post') {
+  if (type === "post") {
     newPost.description = description;
-  } else if (type === 'blogPost') {
+  } else if (type === "blogPost") {
     newPost.article = article;
     newPost.categories = categories && JSON.parse(categories);
     newPost.title = title;
@@ -43,7 +47,7 @@ export async function controllPostMediaDeletion(media, next) {
   Promise.all(
     media.map(async (media) => {
       try {
-        const originalFileName = media.split('/')?.slice(3)[0];
+        const originalFileName = media.split("/")?.slice(3)[0];
         await deletion(`public/images/${originalFileName}`);
       } catch (error) {
         return next(
@@ -59,28 +63,44 @@ export async function controllPostMediaDeletion(media, next) {
 
 export async function controllPostUpdateBody({ req, postType, existingTags }) {
   const body = {};
-  const availableKeys = ['description', 'tags', 'article', 'categories', 'title', 'audience'];
+
+  const availableKeys = [
+    "description",
+    "tags",
+    "article",
+    "categories",
+    "title",
+    "audience",
+  ];
+
   let newTags;
 
   Object.keys(req.body)
     .filter((key) => availableKeys.includes(key))
     .forEach((key) => {
-      if (key === 'audience') contollAudience(body, req.body[key], postType);
-      if (key === 'tags' || key === 'categories') body[key] = JSON.parse(req.body[key]);
+      if (key === "audience") contollAudience(body, req.body[key], postType);
+      if (key === "categories" || key === "tags")
+        body[key] = JSON.parse(req.body[key]);
       else body[key] = req.body[key];
     });
 
-  const filteredExistingTags = existingTags.filter((tag) =>
-    body.tags.includes(tag.user.toString())
-  );
-  const filteredExistingTagsIds = filteredExistingTags.map((tag) => tag.user.toString());
+  const filteredExistingTagsIds = existingTags
+    .filter((tag) => body.tags.includes(tag.user.toString()))
+    ?.map((tag) => tag.user.toString());
+
   const filteredNewTags = body.tags
     .filter((tag) => !filteredExistingTagsIds.includes(tag))
     .map((tag) => ({ user: tag }));
 
   if (filteredNewTags?.[0]) {
-    body.tags = [...filteredExistingTags, ...filteredNewTags];
+    body.tags = [
+      ...filteredExistingTagsIds.map((tag) => ({ user: tag })),
+      ...filteredNewTags,
+    ];
+
     newTags = filteredNewTags.map((tag) => tag.user);
+  } else {
+    body.tags = body.tags.map((tag) => ({ user: tag }));
   }
 
   return { body, newTags };
@@ -100,7 +120,7 @@ export async function controllPostMediaOnUpdate({ req, next, post }) {
       existingMedia.map(async (file) => {
         try {
           if (!media?.includes(file)) {
-            const originalFileName = file.split('/')?.slice(3)[0];
+            const originalFileName = file.split("/")?.slice(3)[0];
             await deletion(`public/images/${originalFileName}`);
           } else filteredMedia.push(file);
         } catch (error) {
@@ -116,7 +136,7 @@ export async function controllPostMediaOnUpdate({ req, next, post }) {
 
   if (!shared && req.files) {
     const newFiles = req.xOriginal.map(
-      (fileName) => `${req.protocol}://${'localhost:4000'}/${fileName}`
+      (fileName) => `${req.protocol}://${"localhost:4000"}/${fileName}`
     );
 
     const modifiedExistingFiles = filteredMedia[0] ? filteredMedia : [];
@@ -138,7 +158,8 @@ export async function controllPostReaction({ post, currUserId, reaction }) {
       post.reactions = post.reactions.filter(
         (reaction) => reaction.author.toString() !== currUserId
       );
-    else if (existingReaction.reaction !== reaction) existingReaction.reaction = reaction;
+    else if (existingReaction.reaction !== reaction)
+      existingReaction.reaction = reaction;
   } else
     post.reactions.push({
       reaction,
@@ -154,11 +175,16 @@ export async function controllUserRelationToPost({ post, currUser }) {
 }
 
 export async function controllShowOnProfile({ currUser, post, task }) {
-  const { isAuthor, isTagged } = await controllUserRelationToPost({ post, currUser });
+  const { isAuthor, isTagged } = await controllUserRelationToPost({
+    post,
+    currUser,
+  });
 
-  if (isAuthor) post.hidden = task === 'add' ? false : task === 'hide' ? true : undefined;
+  if (isAuthor)
+    post.hidden = task === "add" ? false : task === "hide" ? true : undefined;
   else if (isTagged) {
     const i = post.tags.findIndex((tag) => tag.user.toString() === currUser.id);
-    post.tags[i].hidden = task === 'add' ? false : task === 'hide' ? true : undefined;
+    post.tags[i].hidden =
+      task === "add" ? false : task === "hide" ? true : undefined;
   }
 }
