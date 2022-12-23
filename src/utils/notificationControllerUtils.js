@@ -303,7 +303,7 @@ export async function controllCreatePostNotification({
       from: postAuthor,
       location: post._id,
       target: {
-        targetType: postType,
+        targetType: post.type,
         options: {
           isNewTag: true,
         },
@@ -360,7 +360,11 @@ export async function controllSharePostNotification({ req, post, tags }) {
       })
     );
 
-  if ((postTags[0] && !postTags.includes(authenticPostAuthor)) || !postTags[0])
+  if (
+    ((postTags[0] && !postTags.includes(authenticPostAuthor)) ||
+      !postTags[0]) &&
+    postAuthor !== authenticPostAuthor
+  )
     operations.push(
       generateTaskBody({
         message: messages_placeholder.onPostShare(postType),

@@ -198,6 +198,7 @@ export const getPendingPosts = asyncWrapper(async function (req, res, next) {
     "tags.hidden": true,
     "tags.review": false,
     audience: { $ne: "private" },
+    type: { $ne: "blogPost" },
   })
     .populate({
       path: "author tags.user",
