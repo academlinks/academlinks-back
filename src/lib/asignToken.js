@@ -1,4 +1,5 @@
-import JWT from 'jsonwebtoken';
+import JWT from "jsonwebtoken";
+import { getOrigins } from "../utils/getOrigins.js";
 
 async function signToken(res, user) {
   const SECRET = process.env.JWT_SECRET;
@@ -8,17 +9,17 @@ async function signToken(res, user) {
     id: user._id,
     role: user.role,
     userName: user.userName,
-    email: user.email,
+    email: user?.email,
   };
 
-  const accessToken = JWT.sign(payload, SECRET, { expiresIn: '1h' });
+  const accessToken = JWT.sign(payload, SECRET, { expiresIn: "1h" });
 
   const cookieOptions = {
     httpOnly: true,
-    origin: 'http://localhost:3000',
+    origin: getOrigins(),
   };
   const refreshToken = JWT.sign(payload, REFRESH_SECRET);
-  res.cookie('authorization', `Bearer ${refreshToken}`, cookieOptions);
+  res.cookie("authorization", `Bearer ${refreshToken}`, cookieOptions);
 
   return { accessToken };
 }

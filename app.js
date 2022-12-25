@@ -18,19 +18,37 @@ import friendsRoutes from "./src/routes/friendsRoutes.js";
 import userInfoRoutes from "./src/routes/userInfoRoutes.js";
 import notificationRoutes from "./src/routes/notificationRoutes.js";
 import conversationRoutes from "./src/routes/conversationRoutes.js";
+import adminRoutes from "./src/routes/adminRoutes.js";
+
+import { getOrigins } from "./src/utils/getOrigins.js";
 
 const App = express();
 
 App.use(express.json());
 App.use(express.urlencoded({ extended: false }));
 App.use(cookieParser());
-App.use(cors({ credentials: true, origin: "http://localhost:3000" }));
+App.use(
+  cors({
+    credentials: true,
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
+
+      if (getOrigins().indexOf(origin) === -1) {
+        const msg = `This site ${origin} does not have an access. Only specific domains are allowed to access it.`;
+        return callback(new Error(msg), false);
+      }
+
+      return callback(null, true);
+    },
+  })
+);
 App.use(morgan("dev"));
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 App.use(express.static(path.join(__dirname, "public/images")));
 
+App.use("/api/v1/administration", adminRoutes);
 App.use("/api/v1/authentication", authenticationRoutes);
 App.use("/api/v1/posts", postRoutes);
 App.use("/api/v1/comments", commentRoutes);

@@ -169,6 +169,7 @@ export const deleteComment = asyncWrapper(async function (req, res, next) {
   });
 
   if (
+    currUser.role !== "admin" &&
     currUser.id !== comment.author.toString() &&
     currUser.id !== post.author.toString()
   )
@@ -193,6 +194,7 @@ export const deleteCommentReply = asyncWrapper(async function (req, res, next) {
   });
 
   if (
+    currUser.role !== "admin" &&
     currUser.id !== commentReply.author.toString() &&
     currUser.id !== post.author.toString()
   )

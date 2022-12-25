@@ -17,19 +17,21 @@ const router = express.Router();
 
 router
   .route("/notify/:notifyId")
-  .delete(checkAuth, deleteUserNotification)
-  .patch(checkAuth, markAsRead);
+  .delete(checkAuth, restriction("user"), deleteUserNotification)
+  .patch(checkAuth, restriction("user"), markAsRead);
 
-router.route("/:userId").get(checkAuth, getAllNotifications);
+router
+  .route("/:userId")
+  .get(checkAuth, restriction("user"), getAllNotifications);
 
 router
   .route("/:userId/unseen")
-  .get(checkAuth, getUnseenNotificationsCount)
-  .patch(checkAuth, markNotificationAsSeen);
+  .get(checkAuth, restriction("user"), getUnseenNotificationsCount)
+  .patch(checkAuth, restriction("user"), markNotificationAsSeen);
 
 router
   .route("")
-  .delete(checkAuth, deleteAllUserNotification)
-  .patch(checkAuth, markAllUserNotificationAsRead);
+  .delete(checkAuth, restriction("user"), deleteAllUserNotification)
+  .patch(checkAuth, restriction("user"), markAllUserNotificationAsRead);
 
 export default router;

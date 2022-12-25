@@ -1,4 +1,4 @@
-import express from 'express';
+import express from "express";
 import {
   updateComment,
   deleteComment,
@@ -9,26 +9,40 @@ import {
   deleteCommentReply,
   pinCommentReply,
   reactOnCommentReply,
-} from '../controllers/commentsController.js';
-import { checkAuth } from '../controllers/authenticationController.js';
+} from "../controllers/commentsController.js";
+import {
+  checkAuth,
+  restriction,
+} from "../controllers/authenticationController.js";
 
 const router = express.Router();
 
-router.route('/:commentId/reply').post(checkAuth, addCommentReply);
+router.route("/:commentId/reply").post(checkAuth, addCommentReply);
 
 router
-  .route('/:commentId/reply/:replyId')
-  .patch(checkAuth, updateCommentReply)
-  .delete(checkAuth, deleteCommentReply);
+  .route("/:commentId/reply/:replyId")
+  .patch(checkAuth, restriction("user"), updateCommentReply)
+  .delete(checkAuth, restriction("user", "admin"), deleteCommentReply);
 
-router.route('/:commentId/reply/:replyId/pin').patch(checkAuth, pinCommentReply);
+router
+  .route("/:commentId/reply/:replyId/pin")
+  .patch(checkAuth, restriction("user"), pinCommentReply);
 
-router.route('/:commentId/reply/:replyId/reaction').patch(checkAuth, reactOnCommentReply);
+router
+  .route("/:commentId/reply/:replyId/reaction")
+  .patch(checkAuth, restriction("user"), reactOnCommentReply);
 
-router.route('/:commentId/pin').patch(checkAuth, pinComment);
+router
+  .route("/:commentId/pin")
+  .patch(checkAuth, restriction("user"), pinComment);
 
-router.route('/:commentId/reaction').patch(checkAuth, reactOnComment);
+router
+  .route("/:commentId/reaction")
+  .patch(checkAuth, restriction("user"), reactOnComment);
 
-router.route('/:commentId').patch(checkAuth, updateComment).delete(checkAuth, deleteComment);
+router
+  .route("/:commentId")
+  .patch(checkAuth, restriction("user"), updateComment)
+  .delete(checkAuth, restriction("user", "admin"), deleteComment);
 
 export default router;

@@ -12,27 +12,38 @@ import {
   getUnseenConversationCount,
   markConversationsAsSeen,
 } from "../controllers/conversationController.js";
-import { checkAuth } from "../controllers/authenticationController.js";
+import {
+  checkAuth,
+  restriction,
+} from "../controllers/authenticationController.js";
 
 const router = Router();
 
-router.route("/:userId/last").get(checkAuth, getLastConversation);
+router
+  .route("/:userId/last")
+  .get(checkAuth, restriction("user"), getLastConversation);
 
-router.route("/:userId/all").get(checkAuth, getAllConversation);
+router
+  .route("/:userId/all")
+  .get(checkAuth, restriction("user"), getAllConversation);
 
-router.route("/:conversationId/read/:adressatId").patch(checkAuth, markAsRead);
+router
+  .route("/:conversationId/read/:adressatId")
+  .patch(checkAuth, restriction("user"), markAsRead);
 
 router
   .route("/:userId/unseen")
-  .get(checkAuth, getUnseenConversationCount)
-  .patch(checkAuth, markConversationsAsSeen);
+  .get(checkAuth, restriction("user"), getUnseenConversationCount)
+  .patch(checkAuth, restriction("user"), markConversationsAsSeen);
 
-router.route("/:conversationId/:adressatId").patch(checkAuth, sendMessage);
+router
+  .route("/:conversationId/:adressatId")
+  .patch(checkAuth, restriction("user"), sendMessage);
 
 router
   .route("/:id")
-  .post(checkAuth, createConvesation)
-  .delete(checkAuth, deleteConversation)
-  .get(checkAuth, getConversation);
+  .post(checkAuth, restriction("user"), createConvesation)
+  .delete(checkAuth, restriction("user"), deleteConversation)
+  .get(checkAuth, restriction("user"), getConversation);
 
 export default router;

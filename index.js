@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import App from "./app.js";
 import http from "http";
 import { Server } from "socket.io";
+import { getOrigins } from "./src/utils/getOrigins.js";
 
 const { createServer } = http;
 const {
@@ -12,7 +13,7 @@ const {
 export const SERVER = createServer(App);
 
 export const io = new Server(SERVER, {
-  cors: { origin: "http://localhost:3000" },
+  cors: { origin: getOrigins() },
 });
 
 import { socket } from "./io.js";

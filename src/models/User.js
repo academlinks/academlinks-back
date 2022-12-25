@@ -68,11 +68,11 @@ const UserSchema = new Schema(
     },
     profileImg: {
       type: String,
-      default: "http://localhost:4000/avatars/profile-default.jpg",
+      default: "http://localhost:4000/avatars/profile-default.webp",
     },
     coverImg: {
       type: String,
-      default: "http://localhost:4000/avatars/cover-default.jpg",
+      default: "http://localhost:4000/avatars/cover-default.webp",
     },
     password: {
       type: String,
