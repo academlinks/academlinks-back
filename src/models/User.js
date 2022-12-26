@@ -6,8 +6,9 @@ const UserSchema = new Schema(
   {
     role: {
       type: String,
-      enum: ["guest", "user", "administrator"],
+      enum: ["guest", "user"],
       require: true,
+      default: "user",
     },
     firstName: {
       type: String,

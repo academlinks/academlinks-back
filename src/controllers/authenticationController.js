@@ -8,24 +8,86 @@ import Admin from "../models/Admin.js";
 
 import asignToken from "../lib/asignToken.js";
 import { verifyToken } from "../lib/verifyToken.js";
-import { emailTransport } from "../lib/sendEmail.js";
+import { Email } from "../lib/sendEmail.js";
+import crypto from "crypto";
 
 export const registerUser = asyncWrapper(async function (req, res, next) {
-  // const { email, password, firstName, lastName } = req.body;
-  emailTransport("georgiaspontoeli123@gmail.com");
-  // await Registration.create(req.body);
-  // const newUser = await User.create({ email, password, firstName, lastName });
-  // await Friendship.create({
-  //   user: newUser._id,
-  // });
+  const { email } = req.body;
 
-  // const { token } = asignToken(newUser);
+  try {
+    if (!email) return;
+
+    await new Email({
+      adressat: email,
+    }).sendWelcome();
+  } catch (error) {
+    return next(
+      new AppError("There was an error sending the email. Try again later!"),
+      500
+    );
+  }
+
+  await Registration.create(req.body);
 
   res
     .status(200)
     .json(
-      "your registration form is sent to administration. after review your request we will contact you on email"
+      "Your registration request will be reviewed and we wil Email you in case of affirmation !"
     );
+});
+
+export const aproveRegistration = asyncWrapper(async function (req, res, next) {
+  const currUser = req.user;
+  const { requestId } = req.params;
+
+  if (currUser.role !== "admin")
+    return next(new AppError(403, "you are not authorized for this operation"));
+
+  const registration = await Registration.findById(requestId);
+
+  if (!registration)
+    return next(new AppError(404, "registration request does not exists"));
+
+  const registrationPasswordResetToken =
+    registration.createPasswordResetToken();
+
+  registration.aproved = true;
+  await registration.save({ validateBeforeSave: false });
+
+  try {
+    await new Email({
+      adressat: registration.email,
+    }).sendRegistrationAprovment({
+      url: `http://localhost:3000/confirmRegistration/${registration._id}/confirm/${registrationPasswordResetToken}`,
+    });
+  } catch (error) {
+    return next(
+      new AppError("There was an error sending the email. Try again later!"),
+      500
+    );
+  }
+
+  res.status(200).json({ isAproved: true });
+});
+
+export const checkRegistrationExistance = asyncWrapper(async function (
+  req,
+  res,
+  next
+) {
+  const { registerId, tokenId } = req.params;
+
+  const hashedToken = crypto.createHash("sha256").update(tokenId).digest("hex");
+
+  const register = await Registration.findOne({
+    _id: registerId,
+    passwordResetToken: hashedToken,
+  });
+
+  if (!register)
+    return next(new AppError(404, "registration request does not exists"));
+
+  res.status(200).json({ isExistingRequest: true });
 });
 
 export const confirmRegistration = asyncWrapper(async function (
@@ -33,8 +95,38 @@ export const confirmRegistration = asyncWrapper(async function (
   res,
   next
 ) {
-  console.log({ body: req.body, params: req.params });
-  res.status(200).json({ isConfirmed: true });
+  const { registerId, tokenId } = req.params;
+  const { password } = req.body;
+
+  const hashedToken = crypto.createHash("sha256").update(tokenId).digest("hex");
+
+  const registration = await Registration.findOne({
+    _id: registerId,
+    passwordResetToken: hashedToken,
+  });
+
+  if (!registration)
+    return next(new AppError("Token is invalid or has expired", 400));
+
+  const newUserBody = {
+    password,
+  };
+  
+  Object.keys(registration._doc)
+    .filter(
+      (key) => !["_id", "aproved", "passwordResetToken", "__v"].includes(key)
+    )
+    .map((key) => (newUserBody[key] = registration._doc[key]));
+
+  const newUser = await User.create(newUserBody);
+
+  await Friendship.create({
+    user: newUser._id,
+  });
+
+  await registration.delete();
+
+  res.status(200).json({ success: true });
 });
 
 export const loginUser = asyncWrapper(async function (req, res, next) {

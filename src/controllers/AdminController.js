@@ -20,7 +20,7 @@ export const logIn = asyncWrapper(async function (req, res, next) {
 
   const { accessToken } = await asignToken(res, admin);
 
-  res.status(200).json({ ...admin._doc, accessToken });
+  res.status(200).json({ accessToken });
 });
 
 export const getUserLabels = asyncWrapper(async function (req, res, next) {

@@ -14,7 +14,6 @@ import {
 const router = express.Router();
 
 router.route("/login").post(logIn);
-router.route("/login").post(logIn);
 
 router
   .route("/label/users")

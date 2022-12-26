@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 const { Schema, model } = mongoose;
+import crypto from "crypto";
 
 const RegistrationSchema = new Schema({
   email: {
@@ -76,6 +77,14 @@ const RegistrationSchema = new Schema({
       },
     },
   },
+  aproved: {
+    type: Boolean,
+    default: false,
+  },
+  passwordResetToken: {
+    type: String,
+    select: false,
+  },
 });
 
 RegistrationSchema.pre("save", function (next) {
@@ -86,6 +95,17 @@ RegistrationSchema.pre("save", function (next) {
 
   next();
 });
+
+RegistrationSchema.methods.createPasswordResetToken = function () {
+  const passwordReset = crypto.randomBytes(32).toString("hex");
+
+  this.passwordResetToken = crypto
+    .createHash("sha256")
+    .update(passwordReset)
+    .digest("hex");
+
+  return passwordReset;
+};
 
 const Registration = model("Registration", RegistrationSchema);
 export default Registration;

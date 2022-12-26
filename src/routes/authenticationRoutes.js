@@ -1,15 +1,25 @@
 import express from "express";
 import {
   registerUser,
+  checkRegistrationExistance,
   loginUser,
   logoutUser,
   refresh,
+  aproveRegistration,
   confirmRegistration,
+  checkAuth,
+  restriction,
 } from "../controllers/authenticationController.js";
 
 const router = express.Router();
 
-router.route("/confirm-register/:tokenId").post(confirmRegistration);
+router
+  .route("/aprove-register/:requestId")
+  .post(checkAuth, restriction("admin"), aproveRegistration);
+router
+  .route("/confirm-register/:registerId/confirm/:tokenId")
+  .get(checkRegistrationExistance)
+  .post(confirmRegistration);
 
 router.route("/register").post(registerUser);
 
