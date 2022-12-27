@@ -2,6 +2,8 @@ import { asyncWrapper } from "../lib/asyncWrapper.js";
 import AppError from "../lib/AppError.js";
 import asignToken from "../lib/asignToken.js";
 
+import API_Features from "../lib/API_Features.js";
+
 import Admin from "../models/Admin.js";
 import User from "../models/User.js";
 import Registration from "../models/Registration.js";
@@ -24,19 +26,19 @@ export const logIn = asyncWrapper(async function (req, res, next) {
 });
 
 export const getUserLabels = asyncWrapper(async function (req, res, next) {
-  const { hasMore, limit, page } = req.query;
-  console.log({ hasMore, limit, page });
+  const docQuery = new API_Features(User.find(), req.query)
+    .pagination()
+    .selectFields("profileImg userName email birthDate")
+    .filter()
+    .sort();
 
-  let docCount;
-  if (hasMore) User.count();
-
-  const users = await User.find().select("profileImg userName email birthDate");
+  const { data, docCount } = await docQuery.execute();
 
   const resBody = {
-    users,
+    users: data,
   };
 
-  if (hasMore) resBody.count = docCount;
+  if (docCount.isRequested) resBody.docCount = docCount.count;
 
   res.status(200).json(resBody);
 });
@@ -58,7 +60,13 @@ export const getRegistrationLabels = asyncWrapper(async function (
   res,
   next
 ) {
-  const registrations = await Registration.find().select(
+  const { filter } = req.query;
+
+  const query = {};
+  if (filter)
+    query.aproved = filter === "aproved" ? true : filter === "new" ? false : "";
+
+  const registrations = await Registration.find(query).select(
     "userName email gender"
   );
 

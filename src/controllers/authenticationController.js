@@ -111,7 +111,7 @@ export const confirmRegistration = asyncWrapper(async function (
   const newUserBody = {
     password,
   };
-  
+
   Object.keys(registration._doc)
     .filter(
       (key) => !["_id", "aproved", "passwordResetToken", "__v"].includes(key)

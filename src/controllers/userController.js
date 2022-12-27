@@ -366,4 +366,13 @@ export const getAllUsers = asyncWrapper(async function (req, res, next) {
   res.status(200).json();
 });
 
-export const fnName = asyncWrapper(async function (req, res, next) {});
+export const updater = asyncWrapper(async function (req, res, next) {
+  await User.updateMany(
+    { birthDate: { $exists: false } },
+    {
+      birthDate: "02-02-1990",
+    }
+  );
+});
+
+// updater();
