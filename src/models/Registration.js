@@ -19,10 +19,6 @@ const RegistrationSchema = new Schema({
   userName: {
     type: String,
   },
-  birthDate: {
-    type: Date,
-    required: [true, "please provide us your birthdate"],
-  },
   gender: {
     type: String,
     required: [true, "please provide us your gender"],
@@ -54,26 +50,26 @@ const RegistrationSchema = new Schema({
       },
     },
   },
-  workplace: {
+  registrationBio: {
     type: {
-      company: {
+      institution: {
         type: String,
-        required: [
-          true,
-          "please tell us where are you working at this point or where you worked last time",
-        ],
+        required: [true, "please tell us where are you working at this point."],
       },
       position: {
         type: String,
+        enum: [
+          "professor",
+          "associate professor",
+          "assistant professor",
+          "researcher",
+          "administrative personnel",
+          "phd student",
+          "post-doc-fellow",
+        ],
       },
       description: {
         type: String,
-      },
-      workingYears: {
-        type: {
-          from: Date,
-          to: Date,
-        },
       },
     },
   },

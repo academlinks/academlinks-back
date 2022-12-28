@@ -15,19 +15,22 @@ export const registerUser = asyncWrapper(async function (req, res, next) {
   const { email } = req.body;
 
   try {
-    if (!email) return;
+    if (!email)
+      return next(new AppError(403, "please provide us valid information"));
+
+    await Registration.create(req.body);
 
     await new Email({
       adressat: email,
     }).sendWelcome();
   } catch (error) {
     return next(
-      new AppError("There was an error sending the email. Try again later!"),
-      500
+      new AppError(
+        500,
+        "There was an error sending the email. Try again later!"
+      )
     );
   }
-
-  await Registration.create(req.body);
 
   res
     .status(200)
@@ -116,7 +119,15 @@ export const confirmRegistration = asyncWrapper(async function (
     .filter(
       (key) => !["_id", "aproved", "passwordResetToken", "__v"].includes(key)
     )
-    .map((key) => (newUserBody[key] = registration._doc[key]));
+    .map((key) => {
+      if (key === "registrationBio")
+        newUserBody.workplace = {
+          institution: registration.registrationBio.institution,
+          position: registration.registrationBio.position,
+          description: registration.registrationBio.description,
+        };
+      else newUserBody[key] = registration._doc[key];
+    });
 
   const newUser = await User.create(newUserBody);
 
@@ -160,7 +171,6 @@ export const checkAuth = asyncWrapper(async function (req, res, next) {
   const { authorization } = req.headers;
 
   const token = authorization?.split(" ");
-
   if (!authorization || token?.[0] !== "Bearer" || !token?.[1])
     return next(new AppError(401, "you are not authorized"));
 

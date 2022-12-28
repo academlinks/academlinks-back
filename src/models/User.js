@@ -6,17 +6,17 @@ const UserSchema = new Schema(
   {
     role: {
       type: String,
-      enum: ["guest", "user"],
+      enum: ["user"],
       require: true,
       default: "user",
     },
     firstName: {
       type: String,
-      require: true,
+      require: [true, "please provide us your first name"],
     },
     lastName: {
       type: String,
-      require: true,
+      require: [true, "please provide us your last name"],
     },
     userName: {
       type: String,
@@ -24,23 +24,53 @@ const UserSchema = new Schema(
     email: {
       type: String,
       unique: true,
-      require: true,
+      require: [true, "please provide us your email"],
     },
     birthDate: {
       type: Date,
     },
+    age: {
+      type: Number,
+    },
     from: {
-      country: String,
-      city: String,
+      country: {
+        type: String,
+        required: [true, "please provide us the country where are you from"],
+      },
+      city: {
+        type: String,
+        required: [true, "please provide us the city where are you from"],
+      },
     },
     currentLivingPlace: {
-      country: String,
-      city: String,
+      country: {
+        type: String,
+        required: [true, "please provide us the country where are you from"],
+      },
+      city: {
+        type: String,
+        required: [true, "please provide us the city where are you from"],
+      },
     },
     workplace: [
       {
-        company: String,
-        position: String,
+        institution: {
+          type: String,
+          required: [true, "please provide us where are you work"],
+        },
+        position: {
+          type: String,
+          enum: [
+            "professor",
+            "associate professor",
+            "assistant professor",
+            "researcher",
+            "administrative personnel",
+            "phd student",
+            "post-doc-fellow",
+          ],
+          required: [true, "please provide us your position"],
+        },
         description: String,
         workingYears: {
           from: Date,
@@ -51,10 +81,13 @@ const UserSchema = new Schema(
     education: [
       {
         collage: String,
-        faculty: String,
+        faculty: {
+          type: String,
+          required: [true, "please provide us the faculty"],
+        },
         degree: {
           type: String,
-          enum: ["bachelor", "master", "doctor", "proffesor"],
+          enum: ["bachelor", "master", "doctor"],
         },
         description: String,
         years: {
@@ -65,7 +98,8 @@ const UserSchema = new Schema(
     ],
     gender: {
       type: String,
-      enum: ["male", "female", "other"],
+      enum: ["male", "female"],
+      required: true,
     },
     profileImg: {
       type: String,
@@ -94,11 +128,16 @@ UserSchema.pre("save", async function (next) {
   next();
 });
 
-UserSchema.pre("save", function (next) {
-  if (!this.isModified("firstName") || !this.isModified("lastName"))
-    return next();
+UserSchema.pre("save", async function (next) {
+  if (!this.isModified("birthDate")) return next();
 
-  this.userName = `${this.firstName} ${this.lastName}`;
+  const date = new Date(this.birthDate);
+
+  function calcAge() {
+    return Math.abs(new Date(Date.now() - date.getTime()).getFullYear() - 1970);
+  }
+
+  this.age = calcAge();
 
   next();
 });
