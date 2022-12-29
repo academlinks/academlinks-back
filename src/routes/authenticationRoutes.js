@@ -6,6 +6,7 @@ import {
   logoutUser,
   refresh,
   aproveRegistration,
+  deleteRegistrationRequest,
   confirmRegistration,
   checkAuth,
   restriction,
@@ -15,7 +16,9 @@ const router = express.Router();
 
 router
   .route("/aprove-register/:requestId")
-  .post(checkAuth, restriction("admin"), aproveRegistration);
+  .post(checkAuth, restriction("admin"), aproveRegistration)
+  .delete(checkAuth, restriction("admin"), deleteRegistrationRequest);
+
 router
   .route("/confirm-register/:registerId/confirm/:tokenId")
   .get(checkRegistrationExistance)

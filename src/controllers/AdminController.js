@@ -28,9 +28,11 @@ export const logIn = asyncWrapper(async function (req, res, next) {
 export const getUserLabels = asyncWrapper(async function (req, res, next) {
   const docQuery = new API_Features(User.find(), req.query)
     .pagination()
-    .selectFields("profileImg userName email birthDate")
-    .filter()
-    .sort();
+    .selectFields(
+      "profileImg firstName lastName userName email birthDate gender createdAt"
+    )
+    .filter();
+  // .sort();
 
   const { data, docCount } = await docQuery.execute();
 

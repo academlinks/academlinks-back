@@ -1,10 +1,14 @@
 import AppError from "../lib/AppError.js";
 import { asyncWrapper } from "../lib/asyncWrapper.js";
 
-import Post from "../models/Post.js";
-import User from "../models/User.js";
 import Bookmarks from "../models/Bookmarks.js";
+import Post from "../models/Post.js";
+import Comments from "../models/Comment.js";
+import Notifications from "../models/Notification.js";
+import Conversation from "../models/Conversation.js";
+import Messages from "../models/Message.js";
 import Friendship from "../models/Friendship.js";
+import User from "../models/User.js";
 
 import { uploadMedia, editMedia } from "../lib/multer.js";
 import {
@@ -12,6 +16,7 @@ import {
   checkIfIsFriend,
   checkIfIsFriendOnEach,
 } from "../utils/userControllerUtils.js";
+import mongoose from "mongoose";
 
 export const resizeAndOptimiseMedia = editMedia({
   multy: false,
@@ -40,6 +45,7 @@ export const updateProfileImage = asyncWrapper(async function (req, res, next) {
       originalFileNameFragments[1] !== "profile-default.jpg"
     )
       await deleteExistingImage(originalFileNameFragments);
+
     mediaUrl = `${req.protocol}://${"localhost:4000"}/${req.xOriginal}`;
   } catch (error) {
     return next(
@@ -87,6 +93,173 @@ export const updateCoverImage = asyncWrapper(async function (req, res, next) {
   await user.save();
 
   res.status(201).json(mediaUrl);
+});
+
+export const deleteUser = asyncWrapper(async function (req, res, next) {
+  const currUser = req.user;
+  const { userId } = req.params;
+
+  if (currUser.role !== "admin" && currUser.id !== userId)
+    return next(new AppError(403, "you are not authorized for this operation"));
+
+  const user = await User.findById(userId);
+
+  if (!user) return next(new AppError(403, "user does not exists"));
+
+  // ================================================ //
+  // ========== Delete CurrUser Bookmarks ========== //
+  // ============================================== //
+
+  // 1.0
+  await Bookmarks.deleteMany({ author: userId });
+
+  // ============================================ //
+  // ========== Delete CurrUser Posts ========== //
+  // ========================================== //
+
+  // 2.1 Find And Extract CurrUser Post Ids
+  const posts = await Post.find({ author: userId }).select("_id");
+  const userPostsId = posts.map((post) => post._id);
+
+  // 2.2 Delete CurrUser Posts
+  await Post.deleteMany({ author: userId });
+
+  // =============================================== //
+  // ========== Delete CurrUser Comments ========== //
+  // ============================================= //
+
+  // 3.1 Delete Comments Which Are Binded To CurrUser Posts
+  await Comments.deleteMany({ post: { $in: userPostsId } });
+
+  // 3.2 Update CurrUser Comments On Other Users Posts
+  await Comments.updateMany(
+    { author: userId },
+    {
+      $set: {
+        cachedUser: {
+          isDeleted: true,
+          userName: user.userName,
+          cachedUserId: user._id,
+        },
+        "replies.$[x].cachedUser.isDeleted": true,
+        "replies.$[x].cachedUser.userName": user.userName,
+        "replies.$[x].cachedUser.cachedUserId": userId,
+      },
+    },
+    { arrayFilters: [{ "x.author": userId }] }
+  );
+
+  // ==================================================== //
+  // ========== Delete CurrUser Notifications ========== //
+  // ================================================== //
+
+  // 4.0
+  await Notifications.deleteMany({ adressat: userId });
+  await Notifications.updateMany(
+    { from: userId },
+    {
+      $set: {
+        isDeletedSender: { isDeletedUser: true, cachedUserName: user.userName },
+      },
+    }
+  );
+
+  // ======================================================== //
+  // ========== Delete Conversations And Messages ========== //
+  // ====================================================== //
+
+  // 5.1 Find CurrUser Conversations And Extract Ids
+  const conversations = await Conversation.find({
+    users: userId,
+    deletion: { $elemMatch: { deleted: false, deletedBy: userId } },
+  }).select("_id");
+
+  const conversationIds = conversations.map((conv) => conv._id);
+
+  // 5.2 Mark Conversations And Messages As Deleted By CurrUser
+  await Conversation.updateMany(
+    { users: userId },
+    {
+      $set: { "deletion.$[x].deleted": true },
+      $push: {
+        deletedUsers: {
+          isDeleted: true,
+          cachedUserName: user.userName,
+          cachedUserId: userId,
+        },
+      },
+    },
+    { arrayFilters: [{ "x.deletedBy": userId }] }
+  );
+
+  await Messages.updateMany(
+    {
+      conversation: { $in: conversationIds },
+      "deletion.deletedBy": { $ne: currUser.id },
+    },
+    { $push: { deletion: { deleted: true, deletedBy: currUser.id } } }
+  );
+
+  // 5.3 Find Conversations With CurrUser Which Are Marked As Deleted By Adressat And Extract Ids
+  const conversationToDeletePermanently = await Conversation.find({
+    users: userId,
+    deletion: { $elemMatch: { deleted: true, deletedBy: { $ne: userId } } },
+  }).select("_id");
+
+  // 5.4 Delete Convesations And Messages Permanently Which Are Marked As Deleted By CurrUser And Adressat
+  const conversationToDeletePermanentlyIds =
+    conversationToDeletePermanently.map((conv) => conv._id);
+  await Conversation.deleteMany({
+    _id: { $in: conversationToDeletePermanentlyIds },
+  });
+  await Messages.deleteMany({
+    conversation: { $in: conversationToDeletePermanentlyIds },
+  });
+
+  // ==================================================== //
+  // ========== Remove Curr User From Friends ========== //
+  // ================================================== //
+
+  // 6.0 Remove CurrUser From Friendships
+  await Friendship.updateMany(
+    { "friends.friend": userId },
+    {
+      $pull: { friends: { friend: mongoose.Types.ObjectId(userId) } },
+      $inc: { friendsAmount: -1 },
+    }
+  );
+
+  // 6.1 Delete CurrUser Friendship
+  await Friendship.deleteOne({ user: userId });
+
+  // ================================== //
+  // ========== Delete User ========== //
+  // ================================ //
+
+  // 7.1 Delete User Profile And Cover Images
+  const existingProfileImg = user.profileImg;
+  const profileFragments = existingProfileImg.split("/")?.slice(3);
+
+  const existingCoverImg = user.profileImg;
+  const coverFragments = existingCoverImg.split("/")?.slice(3);
+
+  await Promise.allSettled(
+    [profileFragments, coverFragments].map(
+      async (fr) => await deleteExistingImage(fr)
+    )
+  );
+
+  // 7.2 Delete User
+  await User.findByIdAndDelete(userId);
+
+  // ====================================== //
+  // ========== Clean Up Cookie ========== //
+  // ==================================== //
+  
+  // 8.0
+  if (currUser.role === "user") res.clearCookie("authorization");
+
+  res.status(200).json({ done: true });
 });
 
 export const searchUsers = asyncWrapper(async function (req, res, next) {

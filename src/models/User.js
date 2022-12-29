@@ -10,28 +10,35 @@ const UserSchema = new Schema(
       require: true,
       default: "user",
     },
+
     firstName: {
       type: String,
       require: [true, "please provide us your first name"],
     },
+
     lastName: {
       type: String,
       require: [true, "please provide us your last name"],
     },
+
     userName: {
       type: String,
     },
+
     email: {
       type: String,
       unique: true,
       require: [true, "please provide us your email"],
     },
+
     birthDate: {
       type: Date,
     },
+
     age: {
       type: Number,
     },
+
     from: {
       country: {
         type: String,
@@ -42,6 +49,7 @@ const UserSchema = new Schema(
         required: [true, "please provide us the city where are you from"],
       },
     },
+
     currentLivingPlace: {
       country: {
         type: String,
@@ -52,6 +60,7 @@ const UserSchema = new Schema(
         required: [true, "please provide us the city where are you from"],
       },
     },
+
     workplace: [
       {
         institution: {
@@ -78,6 +87,7 @@ const UserSchema = new Schema(
         },
       },
     ],
+
     education: [
       {
         collage: String,
@@ -96,19 +106,23 @@ const UserSchema = new Schema(
         },
       },
     ],
+
     gender: {
       type: String,
       enum: ["male", "female"],
       required: true,
     },
+
     profileImg: {
       type: String,
       default: "http://localhost:4000/avatars/profile-default.webp",
     },
+
     coverImg: {
       type: String,
       default: "http://localhost:4000/avatars/cover-default.webp",
     },
+
     password: {
       type: String,
       require: true,
@@ -122,7 +136,6 @@ UserSchema.index({ userName: 1 });
 
 UserSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
-
   this.password = await bcrypt.hash(this.password, 12);
 
   next();

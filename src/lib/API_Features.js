@@ -11,7 +11,7 @@ export default class API_Features {
   }
 
   filter() {
-    const availableKeys = ["gender", "createdAt", "birthDate"];
+    const availableKeys = ["gender", "createdAt", "birthDate", "userName"];
 
     let queryToModify = {};
     const queryKeys = Object.keys(this.query);
@@ -26,6 +26,7 @@ export default class API_Features {
       "fromCity",
       "fromCountry",
     ];
+
     if (queryKeys.some((key) => livingPlaceQueries.includes(key))) {
       let livingPlaceQueryKeys = queryKeys.filter((key) =>
         livingPlaceQueries.includes(key)
@@ -54,9 +55,12 @@ export default class API_Features {
       };
     }
 
+    if (this.query.position)
+      queryToModify["workplace.position"] = this.query.position;
+
     const finalQuery = JSON.parse(
       JSON.stringify(queryToModify).replace(
-        /gt|gte|lt|lte/g,
+        /gt|gte|lt|lte|regex/g,
         (match) => `$${match}`
       )
     );

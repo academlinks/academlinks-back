@@ -10,6 +10,7 @@ const ConversationSchema = new Schema(
         required: true,
       },
     ],
+
     deletion: [
       {
         deleted: {
@@ -18,6 +19,7 @@ const ConversationSchema = new Schema(
         deletedBy: String,
       },
     ],
+
     lastMessage: {
       isRead: {
         type: Boolean,
@@ -26,10 +28,19 @@ const ConversationSchema = new Schema(
       author: String,
       message: String,
     },
+
     seen: {
       type: Boolean,
       default: false,
     },
+
+    deletedUsers: [
+      {
+        isDeleted: Boolean,
+        cachedUserName: String,
+        cachedUserId: String,
+      },
+    ],
   },
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );

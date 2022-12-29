@@ -51,6 +51,13 @@ export class Email {
     });
   }
 
+  async sendRegistrationReject() {
+    await this.send({
+      subject: "Registration Aprovment",
+      text: "Your request about registration is rejected",
+    });
+  }
+
   async sendPasswordReset() {
     await this.send({
       subject: "Password Reset",

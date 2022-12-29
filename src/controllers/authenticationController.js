@@ -14,29 +14,30 @@ import crypto from "crypto";
 export const registerUser = asyncWrapper(async function (req, res, next) {
   const { email } = req.body;
 
-  try {
-    if (!email)
-      return next(new AppError(403, "please provide us valid information"));
+  // try {
+  //   if (!email)
+  //     return next(new AppError(403, "please provide us valid information"));
 
-    await Registration.create(req.body);
+  //   await Registration.create(req.body);
 
-    await new Email({
-      adressat: email,
-    }).sendWelcome();
-  } catch (error) {
-    return next(
-      new AppError(
-        500,
-        "There was an error sending the email. Try again later!"
-      )
-    );
-  }
+  //   await new Email({
+  //     adressat: email,
+  //   }).sendWelcome();
+  // } catch (error) {
+  //   return next(
+  //     new AppError(
+  //       500,
+  //       "There was an error sending the email. Try again later!"
+  //     )
+  //   );
+  // }
 
-  res
-    .status(200)
-    .json(
-      "Your registration request will be reviewed and we wil Email you in case of affirmation !"
-    );
+  const newReg = await Registration.create(req.body);
+
+  res.status(200).json({
+    msg: "Your registration request will be reviewed and we wil Email you in case of affirmation !",
+    id: newReg._id,
+  });
 });
 
 export const aproveRegistration = asyncWrapper(async function (req, res, next) {
@@ -57,12 +58,47 @@ export const aproveRegistration = asyncWrapper(async function (req, res, next) {
   registration.aproved = true;
   await registration.save({ validateBeforeSave: false });
 
+  // try {
+  //   await new Email({
+  //     adressat: registration.email,
+  //   }).sendRegistrationAprovment({
+  //     url: `http://localhost:3000/confirmRegistration/${registration._id}/confirm/${registrationPasswordResetToken}`,
+  //   });
+  // } catch (error) {
+  //   return next(
+  //     new AppError("There was an error sending the email. Try again later!"),
+  //     500
+  //   );
+  // }
+
+  res
+    .status(200)
+    .json({ isAproved: true, resetToken: registrationPasswordResetToken });
+});
+
+export const deleteRegistrationRequest = asyncWrapper(async function (
+  req,
+  res,
+  next
+) {
+  const { requestId } = req.params;
+  const currUser = req.user;
+
+  if (currUser.role !== "admin")
+    return next(new AppError(403, "you are not authorized for this operation"));
+
+  const registration = await Registration.findById(requestId);
+
+  if (!registration)
+    return next(new AppError(404, "registration request does not exists"));
+
+  const adressat = registration.email;
+  await registration.delete();
+
   try {
     await new Email({
-      adressat: registration.email,
-    }).sendRegistrationAprovment({
-      url: `http://localhost:3000/confirmRegistration/${registration._id}/confirm/${registrationPasswordResetToken}`,
-    });
+      adressat,
+    }).sendRegistrationReject();
   } catch (error) {
     return next(
       new AppError("There was an error sending the email. Try again later!"),
@@ -70,7 +106,7 @@ export const aproveRegistration = asyncWrapper(async function (req, res, next) {
     );
   }
 
-  res.status(200).json({ isAproved: true });
+  res.status(204).json({ deleted: true });
 });
 
 export const checkRegistrationExistance = asyncWrapper(async function (

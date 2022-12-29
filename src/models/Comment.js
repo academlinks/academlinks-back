@@ -79,6 +79,12 @@ const CommentSchema = new Schema(
           type: Date,
           default: new Date(),
         },
+
+        cachedUser: {
+          isDeleted: Boolean,
+          userName: String,
+          cachedUserId: String,
+        },
       },
     ],
 
@@ -90,6 +96,12 @@ const CommentSchema = new Schema(
     pin: {
       type: Boolean,
       default: false,
+    },
+
+    cachedUser: {
+      isDeleted: Boolean,
+      userName: String,
+      cachedUserId: String,
     },
   },
   { timestamps: true }

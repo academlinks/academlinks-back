@@ -133,13 +133,6 @@ export const markNotificationAsSeen = asyncWrapper(async function (
 });
 
 async function editor() {
-  await Notification.updateMany(
-    {
-      adressat: "62fbaf941fffa1f725217953",
-    },
-    {
-      seen: false,
-    }
-  );
+  await Notification.deleteMany();
 }
 // editor();
