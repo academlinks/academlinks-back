@@ -1,6 +1,5 @@
 import fs from "fs";
 import { promisify } from "util";
-import mongoose from "mongoose";
 
 import AppError from "../lib/AppError.js";
 
@@ -18,8 +17,16 @@ export function contollAudience(post, audience, type) {
 }
 
 export async function controllPostCreation(req) {
-  const { type, description, article, categories, tags, title, audience } =
-    req.body;
+  const {
+    type,
+    description,
+    article,
+    labels,
+    category,
+    tags,
+    title,
+    audience,
+  } = req.body;
   const currUser = req.user;
 
   const newPost = new Post({
@@ -34,7 +41,8 @@ export async function controllPostCreation(req) {
     newPost.description = description;
   } else if (type === "blogPost") {
     newPost.article = article;
-    newPost.categories = categories && JSON.parse(categories);
+    newPost.labels = labels && JSON.parse(labels);
+    newPost.category = category;
     newPost.title = title;
   }
 
@@ -68,7 +76,8 @@ export async function controllPostUpdateBody({ req, postType, existingTags }) {
     "description",
     "tags",
     "article",
-    "categories",
+    "labels",
+    "category",
     "title",
     "audience",
   ];
@@ -79,7 +88,7 @@ export async function controllPostUpdateBody({ req, postType, existingTags }) {
     .filter((key) => availableKeys.includes(key))
     .forEach((key) => {
       if (key === "audience") contollAudience(body, req.body[key], postType);
-      if (key === "categories" || key === "tags")
+      if (key === "labels" || key === "tags")
         body[key] = JSON.parse(req.body[key]);
       else body[key] = req.body[key];
     });

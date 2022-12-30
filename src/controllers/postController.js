@@ -271,9 +271,7 @@ export const getBlogPosts = asyncWrapper(async function (req, res, next) {
   const postQuery = {
     type: "blogPost",
     [author ? "author" : ""]: author ? author : "",
-    [category ? "categories" : ""]: category
-      ? { $in: category.split(",") }
-      : "",
+    [category ? "category" : ""]: category ? { $in: category.split(",") } : "",
   };
 
   if (currUser.role === "guest") postQuery.audience = "public";
@@ -520,19 +518,22 @@ export const getRelatedPosts = asyncWrapper(async function (req, res, next) {
   const { postId } = req.params;
   const { limit } = req.query;
 
-  const { categories } = await Post.findById(postId).select("categories");
+  const { labels, category } = await Post.findById(postId).select(
+    "labels category"
+  );
 
   const posts = await Post.aggregate([
     {
       $match: {
         type: "blogPost",
-        categories: { $in: categories },
+        labels: { $in: labels },
+        category: category,
         _id: { $ne: mongoose.Types.ObjectId(postId) },
       },
     },
     {
       $addFields: {
-        matched: { $setIntersection: ["$categories", categories] },
+        matched: { $setIntersection: ["$labels", labels] },
       },
     },
     {
@@ -627,9 +628,3 @@ export const getAllPosts = asyncWrapper(async function (req, res, next) {
 
 //////////////////////////////////////////////////////////////////////
 export const fnName = asyncWrapper(async function (req, res, next) {});
-
-// check separated populatio on share post and updatePost
-
-// (async function up() {
-//   await Post.updateMany({ $set: { commentsAmount: 0 } });
-// })();
