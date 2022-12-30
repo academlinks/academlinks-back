@@ -11,6 +11,8 @@ import { verifyToken } from "../lib/verifyToken.js";
 import { Email } from "../lib/sendEmail.js";
 import crypto from "crypto";
 
+import { getAppHost } from "../lib/getOrigins.js";
+
 export const registerUser = asyncWrapper(async function (req, res, next) {
   const { email } = req.body;
 
@@ -62,7 +64,7 @@ export const aproveRegistration = asyncWrapper(async function (req, res, next) {
   //   await new Email({
   //     adressat: registration.email,
   //   }).sendRegistrationAprovment({
-  //     url: `http://localhost:3000/confirmRegistration/${registration._id}/confirm/${registrationPasswordResetToken}`,
+  //     url: `${getAppHost()}/confirmRegistration/${registration._id}/confirm/${registrationPasswordResetToken}`,
   //   });
   // } catch (error) {
   //   return next(

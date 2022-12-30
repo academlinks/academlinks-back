@@ -85,12 +85,10 @@ const PostSchema = new Schema(
 
     labels: {
       type: [String],
-      required: [true, "please enter at least 1 label"],
     },
 
     category: {
       type: String,
-      required: [true, "please select a category"],
       enum: [
         "economics",
         "business",

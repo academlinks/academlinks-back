@@ -8,7 +8,6 @@ import { asyncWrapper } from "../lib/asyncWrapper.js";
 import Post from "../models/Post.js";
 import Comment from "../models/Comment.js";
 import Bookmarks from "../models/Bookmarks.js";
-import User from "../models/User.js";
 
 import {
   contollAudience,
@@ -24,7 +23,8 @@ import {
   controllSharePostNotification,
 } from "../utils/notificationControllerUtils.js";
 import { checkIfIsFriendOnEach } from "../utils/userControllerUtils.js";
-import Friendship from "../models/Friendship.js";
+
+import { getServerHost } from "../lib/getOrigins.js";
 
 export const resizeAndOptimiseMedia = editMedia({
   multy: true,
@@ -45,8 +45,7 @@ export const createPost = asyncWrapper(async function (req, res, next) {
     // If multer storage is diskStorage use this
     // req?.files?.map((file) => file.filename);
     newPost.media = req.xOriginal.map(
-      (fileName) => `${req.protocol}://${"localhost:4000"}/${fileName}`
-      // `${req.protocol}://${req.host === '127.0.0.1' ? 'localhost:4000' : req.host}/${fileName}`
+      (fileName) => `${req.protocol}://${getServerHost()}/${fileName}`
     );
   }
 
@@ -68,12 +67,15 @@ export const createPost = asyncWrapper(async function (req, res, next) {
 });
 
 export const deletePost = asyncWrapper(async function (req, res, next) {
-  const { postId } = req.params;
   const currUser = req.user;
+  const { postId } = req.params;
 
   const postToDelete = await Post.findById(postId);
 
-  if (postToDelete.author.toString() !== currUser.id)
+  if (
+    currUser.role !== "admin" &&
+    postToDelete.author.toString() !== currUser.id
+  )
     return next(new AppError(403, "you are not authorised for this operation"));
 
   const postMedia = postToDelete.media;
@@ -238,9 +240,6 @@ export const getPost = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
   const { postId } = req.params;
 
-  const user = await User.findById(currUser.id);
-  const userFriendShip = await Friendship.findOne({ user: currUser.id });
-
   const post = await Post.findById(postId)
     .select("-reactions -__v")
     .populate({
@@ -251,7 +250,7 @@ export const getPost = asyncWrapper(async function (req, res, next) {
       path: "authentic",
       select: "-reactions -shared -__v",
       transform: (doc, docId) =>
-        checkIfIsFriendOnEach({ user, userFriendShip, doc, docId }),
+        checkIfIsFriendOnEach({ currUser, doc, docId }),
       populate: { path: "author tags.user", select: "userName profileImg" },
     });
 
@@ -263,8 +262,8 @@ export const getPost = asyncWrapper(async function (req, res, next) {
 });
 
 export const getBlogPosts = asyncWrapper(async function (req, res, next) {
+  // const currUser = req.user;
   const { page, limit, hasMore, author, category } = req.query;
-  const currUser = req.user;
 
   const skip = page * limit - limit;
 
@@ -274,7 +273,7 @@ export const getBlogPosts = asyncWrapper(async function (req, res, next) {
     [category ? "category" : ""]: category ? { $in: category.split(",") } : "",
   };
 
-  if (currUser.role === "guest") postQuery.audience = "public";
+  // if (currUser.role === "guest") postQuery.audience = "public";
 
   let postsLength;
   if (hasMore && !JSON.parse(hasMore))

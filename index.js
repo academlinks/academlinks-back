@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 import App from "./app.js";
 import http from "http";
 import { Server } from "socket.io";
-import { getOrigins } from "./src/utils/getOrigins.js";
+import { getOrigins } from "./src/lib/getOrigins.js";
 
 const { createServer } = http;
 const {

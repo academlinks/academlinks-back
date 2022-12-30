@@ -11,6 +11,7 @@ import Friendship from "../models/Friendship.js";
 import User from "../models/User.js";
 
 import { uploadMedia, editMedia } from "../lib/multer.js";
+import { getServerHost } from "../lib/getOrigins.js";
 import {
   deleteExistingImage,
   checkIfIsFriend,
@@ -46,7 +47,7 @@ export const updateProfileImage = asyncWrapper(async function (req, res, next) {
     )
       await deleteExistingImage(originalFileNameFragments);
 
-    mediaUrl = `${req.protocol}://${"localhost:4000"}/${req.xOriginal}`;
+    mediaUrl = `${req.protocol}://${getServerHost()}/${req.xOriginal}`;
   } catch (error) {
     return next(
       new AppError(
@@ -78,7 +79,7 @@ export const updateCoverImage = asyncWrapper(async function (req, res, next) {
       originalFileNameFragments[1] !== "cover-default.webp"
     )
       await deleteExistingImage(originalFileNameFragments);
-    mediaUrl = `${req.protocol}://${"localhost:4000"}/${req.xOriginal}`;
+    mediaUrl = `${req.protocol}://${getServerHost()}/${req.xOriginal}`;
   } catch (error) {
     return next(
       new AppError(
@@ -255,7 +256,7 @@ export const deleteUser = asyncWrapper(async function (req, res, next) {
   // ====================================== //
   // ========== Clean Up Cookie ========== //
   // ==================================== //
-  
+
   // 8.0
   if (currUser.role === "user") res.clearCookie("authorization");
 
@@ -319,13 +320,16 @@ export const getProfilePosts = asyncWrapper(async function (req, res, next) {
     ],
   };
 
-  const user = await User.findById(currUser.id);
-  const userFriendShip = await Friendship.findOne({ user: currUser.id });
+  const user = await User.findById(userId);
+
+  if (!user) return next(new AppError(404, "user does not exists"));
+
+  const userFriendShip = await Friendship.findOne({ user: userId });
 
   const { isFriend, isCurrUser } = checkIfIsFriend({
-    user,
+    currUser,
+    userId: user._id.toString(),
     userFriendShip,
-    userId,
   });
 
   if (!isCurrUser) {
@@ -349,7 +353,7 @@ export const getProfilePosts = asyncWrapper(async function (req, res, next) {
       path: "authentic",
       select: "-shared -__v",
       transform: (doc, docId) =>
-        checkIfIsFriendOnEach({ user, userFriendShip, doc, docId }),
+        checkIfIsFriendOnEach({ currUser, doc, docId }),
       populate: { path: "author tags.user", select: "userName profileImg" },
     });
 
@@ -362,9 +366,6 @@ export const getPendingPosts = asyncWrapper(async function (req, res, next) {
 
   if (userId !== currUser.id)
     return next(new AppError(403, "you are not authorised for this operation"));
-
-  const user = await User.findById(currUser.id);
-  const userFriendShip = await Friendship.findOne({ user: currUser.id });
 
   const pendingPosts = await Post.find({
     "tags.user": userId,
@@ -381,7 +382,7 @@ export const getPendingPosts = asyncWrapper(async function (req, res, next) {
       path: "authentic",
       select: "-reactions -shared -__v",
       transform: (doc, docId) =>
-        checkIfIsFriendOnEach({ user, doc, docId, userFriendShip }),
+        checkIfIsFriendOnEach({ currUser, doc, docId }),
       populate: { path: "author tags.user", select: "userName profileImg" },
     })
     .sort("-createdAt");
@@ -396,9 +397,6 @@ export const getHiddenPosts = asyncWrapper(async function (req, res, next) {
   if (userId !== currUser.id)
     return next(new AppError(403, "you are not authorised"));
 
-  const user = await User.findById(currUser.id);
-  const userFriendShip = await Friendship.findOne({ user: currUser.id });
-
   const hiddenPosts = await Post.find({
     $or: [
       { author: userId, hidden: true },
@@ -411,7 +409,7 @@ export const getHiddenPosts = asyncWrapper(async function (req, res, next) {
       path: "authentic",
       select: "-reactions -shared -__v",
       transform: (doc, docId) =>
-        checkIfIsFriendOnEach({ user, doc, docId, userFriendShip }),
+        checkIfIsFriendOnEach({ currUser, doc, docId }),
       populate: { path: "author tags.user", select: "userName profileImg" },
     })
     .sort("-createdAt");
@@ -427,10 +425,10 @@ export const getUserFeed = asyncWrapper(async function (req, reqs, next) {
   if (currUser.id !== userId)
     return next(new AppError(401, "you are not authorized for this operation"));
 
-  const user = await User.findById(currUser.id);
+  const user = await User.findById(userId);
   if (!user) return next(new AppError(404, "there are no such an user"));
 
-  const userFriendShip = await Friendship.findOne({ user: currUser.id });
+  const userFriendShip = await Friendship.findOne({ user: userId });
   const userFriendsIds = userFriendShip.friends.map((friend) => friend.friend);
 
   const skip = page * limit - limit;
@@ -457,7 +455,7 @@ export const getUserFeed = asyncWrapper(async function (req, reqs, next) {
       path: "authentic",
       select: "-__v -shared",
       transform: (doc, docId) =>
-        checkIfIsFriendOnEach({ user, doc, docId, userFriendShip }),
+        checkIfIsFriendOnEach({ currUser, doc, docId }),
       populate: { path: "author tags.user", select: "userName profileImg" },
     });
 
@@ -478,9 +476,6 @@ export const getBookmarks = asyncWrapper(async function (req, res, next) {
   if (hasMore && !JSON.parse(hasMore))
     postsLength = await Bookmarks.find({ author: userId }).countDocuments();
 
-  const user = await User.findById(userId);
-  const userFriendShip = await Friendship.findOne({ user: currUser.id });
-
   const savedPosts = await Bookmarks.find({ author: userId })
     .skip(skip)
     .limit(limit)
@@ -489,14 +484,14 @@ export const getBookmarks = asyncWrapper(async function (req, res, next) {
       path: "post",
       select: "-__v",
       transform: (doc, docId) =>
-        checkIfIsFriendOnEach({ user, doc, docId, userFriendShip }),
+        checkIfIsFriendOnEach({ currUser, doc, docId }),
       populate: [
         { path: "author tags.user", select: "userName profileImg" },
         {
           path: "authentic",
           select: "-__v",
           transform: (doc, docId) =>
-            checkIfIsFriendOnEach({ user, doc, docId, userFriendShip }),
+            checkIfIsFriendOnEach({ currUser, doc, docId }),
           populate: {
             path: "tags.user author",
             select: "userName profileImg",
@@ -509,13 +504,16 @@ export const getBookmarks = asyncWrapper(async function (req, res, next) {
 });
 
 export const isFriend = asyncWrapper(async function (req, res, next) {
-  const { userId } = req.params;
   const currUser = req.user;
+  const { userId } = req.params;
 
-  const user = await User.findById(currUser.id);
-  const userFriendShip = await Friendship.findOne({ user: currUser.id });
+  const user = await User.findById(userId);
 
-  const { info } = checkIfIsFriend({ user, userId, userFriendShip });
+  if (!user) return next(new AppError(404, "user does not exists"));
+
+  const userFriendShip = await Friendship.findOne({ user: userId });
+
+  const { info } = checkIfIsFriend({ currUser, userId, userFriendShip });
 
   res.status(200).json(info);
 });

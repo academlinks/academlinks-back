@@ -54,6 +54,8 @@ FriendshipSchema.pre("save", function (next) {
   next();
 });
 
+FriendshipSchema.index({ user: 1 });
+
 const Friendship = model("Friendship", FriendshipSchema);
 
 export default Friendship;

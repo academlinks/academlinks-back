@@ -4,6 +4,7 @@ import { promisify } from "util";
 import AppError from "../lib/AppError.js";
 
 import Post from "../models/Post.js";
+import { getServerHost } from "../lib/getOrigins.js";
 
 export function contollAudience(post, audience, type) {
   const audienceForBlogPost = ["public", "users"];
@@ -145,7 +146,7 @@ export async function controllPostMediaOnUpdate({ req, next, post }) {
 
   if (!shared && req.files) {
     const newFiles = req.xOriginal.map(
-      (fileName) => `${req.protocol}://${"localhost:4000"}/${fileName}`
+      (fileName) => `${req.protocol}://${getServerHost()}/${fileName}`
     );
 
     const modifiedExistingFiles = filteredMedia[0] ? filteredMedia : [];

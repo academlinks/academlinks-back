@@ -20,7 +20,7 @@ import notificationRoutes from "./src/routes/notificationRoutes.js";
 import conversationRoutes from "./src/routes/conversationRoutes.js";
 import adminRoutes from "./src/routes/adminRoutes.js";
 
-import { getOrigins } from "./src/utils/getOrigins.js";
+import { getOrigins } from "./src/lib/getOrigins.js";
 
 const App = express();
 

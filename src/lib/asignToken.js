@@ -1,5 +1,5 @@
 import JWT from "jsonwebtoken";
-import { getOrigins } from "../utils/getOrigins.js";
+import { getOrigins } from "./getOrigins.js";
 
 async function signToken(res, user) {
   const SECRET = process.env.JWT_SECRET;
@@ -18,6 +18,7 @@ async function signToken(res, user) {
     httpOnly: true,
     origin: getOrigins(),
   };
+
   const refreshToken = JWT.sign(payload, REFRESH_SECRET);
   res.cookie("authorization", `Bearer ${refreshToken}`, cookieOptions);
 

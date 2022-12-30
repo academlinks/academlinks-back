@@ -1,5 +1,6 @@
 import fs from "fs";
 import { promisify } from "util";
+import Friendship from "../models/Friendship.js";
 
 export async function deleteExistingImage(originalFileNameFragments) {
   try {
@@ -10,12 +11,15 @@ export async function deleteExistingImage(originalFileNameFragments) {
   }
 }
 
-export function checkIfIsFriend({ user, userFriendShip, userId }) {
-  const isFriend = userFriendShip.friends.some(
-    (friend) => friend.friend.toString() === userId
-  );
+export function checkIfIsFriend({ userId, userFriendShip, currUser }) {
+  const isCurrUser = userId === currUser.id;
 
-  const isCurrUser = user._id.toString() === userId;
+  const isFriend =
+    currUser.role !== "admin" || !isCurrUser
+      ? userFriendShip.friends?.some(
+          (friend) => friend.friend.toString() === currUser.id
+        )
+      : false;
 
   const info = {
     isFriend,
@@ -26,14 +30,14 @@ export function checkIfIsFriend({ user, userFriendShip, userId }) {
 
   if (!isFriend && !isCurrUser) {
     const isPendingRequest = userFriendShip.pendingRequests.some(
-      (request) => request.adressat.toString() === userId
+      (request) => request.adressat.toString() === currUser.id
     );
-    if (isPendingRequest) info.isPendingRequest = isPendingRequest;
+    if (isPendingRequest) info.isPendingRequest = true;
     else if (!isPendingRequest) {
       const isSentRequest = userFriendShip.sentRequests.some(
-        (request) => request.adressat.toString() === userId
+        (request) => request.adressat.toString() === currUser.id
       );
-      if (isSentRequest) info.isSentRequest = isSentRequest;
+      if (isSentRequest) info.isSentRequest = true;
       else if (!isSentRequest) info.isForeign = true;
     }
   }
@@ -41,14 +45,16 @@ export function checkIfIsFriend({ user, userFriendShip, userId }) {
   return { info, isFriend, isCurrUser };
 }
 
-export function checkIfIsFriendOnEach({ user, doc, docId, userFriendShip }) {
+export function checkIfIsFriendOnEach({ currUser, doc, docId }) {
   if (doc === null) return { restricted: true, _id: docId };
 
-  const authorId = doc.author._id.toString();
+  const userId = doc.author._id.toString();
+  const userFriendShip = Friendship.find({ user: userId }).then((data) => data);
+
   const { isFriend, isCurrUser } = checkIfIsFriend({
-    user,
+    userId,
     userFriendShip,
-    userId: authorId,
+    currUser,
   });
 
   if (!isCurrUser && doc.audience === "private")
@@ -56,13 +62,4 @@ export function checkIfIsFriendOnEach({ user, doc, docId, userFriendShip }) {
   else if (!isCurrUser && !isFriend && doc.audience === "friends")
     return { restricted: true, _id: docId };
   else return doc;
-
-  // else if (doc.audience === "public") return doc;
-  // else if (isCurrUser || isFriend) return doc;
-  // else if (doc.type === "blogPost" && user.role === "user") return doc;
-  // else if (
-  //   (doc.audience === "friends" || doc?.audience === "public") &&
-  //   isFriend
-  // )
-  //   return doc;
 }
