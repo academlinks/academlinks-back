@@ -8,6 +8,8 @@ import {
   aproveRegistration,
   deleteRegistrationRequest,
   confirmRegistration,
+  changeEmail,
+  changePassword,
   checkAuth,
   restriction,
 } from "../controllers/authenticationController.js";
@@ -23,6 +25,14 @@ router
   .route("/confirm-register/:registerId/confirm/:tokenId")
   .get(checkRegistrationExistance)
   .post(confirmRegistration);
+
+router
+  .route("/update/pass/:userId")
+  .post(checkAuth, restriction("user"), changePassword);
+
+router
+  .route("/update/email/:userId")
+  .post(checkAuth, restriction("user"), changeEmail);
 
 router.route("/register").post(registerUser);
 

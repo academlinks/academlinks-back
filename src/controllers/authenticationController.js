@@ -205,6 +205,52 @@ export const logoutUser = asyncWrapper(async function (req, res, next) {
   res.status(200).json({ loggedOut: true, accessToken: "" });
 });
 
+export const changePassword = asyncWrapper(async function (req, res, next) {
+  const currUser = req.user;
+  const { userId } = req.params;
+  const { password, newPassword } = req.body;
+
+  if (userId !== currUser.id)
+    return next(new AppError(403, "you are not authorised for tis operation"));
+
+  const user = await User.findById(userId).select("+password");
+
+  const validPassword = await user.checkPassword(password, user.password);
+
+  if (!user || !validPassword)
+    return next(new AppError(403, "incorect password"));
+
+  user.password = newPassword;
+  await user.save({ validateBeforeSave: false });
+
+  const { accessToken } = await asignToken(res, user);
+
+  res.status(200).json({ accessToken });
+});
+
+export const changeEmail = asyncWrapper(async function (req, res, next) {
+  const currUser = req.user;
+  const { userId } = req.params;
+  const { password, email, newEmail } = req.body;
+
+  if (userId !== currUser.id)
+    return next(new AppError(403, "you are not authorised for tis operation"));
+
+  const user = await User.findOne({ _id: userId, email }).select("+password");
+
+  const validPassword = await user.checkPassword(password, user.password);
+
+  if (!user || !validPassword)
+    return next(new AppError(403, "incorect email or password"));
+
+  user.email = newEmail;
+  await user.save({ validateBeforeSave: false });
+
+  const { accessToken } = await asignToken(res, user);
+
+  res.status(200).json({ accessToken, email: user.email });
+});
+
 export const checkAuth = asyncWrapper(async function (req, res, next) {
   const { authorization } = req.headers;
 
