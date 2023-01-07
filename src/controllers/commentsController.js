@@ -4,11 +4,11 @@ import { asyncWrapper } from "../lib/asyncWrapper.js";
 import Post from "../models/Post.js";
 import Comment from "../models/Comment.js";
 
-import { controllCommentAccess } from "../utils/commentControllerUtils.js";
 import {
   controllAddCommentNotification,
   controllUpdateCommentNotification,
 } from "../utils/notificationControllerUtils.js";
+import { controllCommentAccess } from "../utils/commentControllerUtils.js";
 
 export const addComment = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
@@ -318,7 +318,3 @@ export const pinCommentReply = asyncWrapper(async function (req, res, next) {
 
   res.status(200).json({ pin: commentReply.pin });
 });
-
-// (async function del() {
-//   await Comment.deleteMany();
-// })();

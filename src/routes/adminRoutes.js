@@ -5,6 +5,11 @@ import {
   getUserInfo,
   getRegistrationLabels,
   getRegistration,
+  addCommercial,
+  deleteCommercial,
+  updateCommercial,
+  resizeAndOptimiseMedia,
+  uploadCommercialMediaFiles
 } from "../controllers/AdminController.js";
 import {
   checkAuth,
@@ -28,5 +33,17 @@ router
 router
   .route("/registrations/:registrationId")
   .get(checkAuth, restriction("admin"), getRegistration);
+
+router
+  .route("/commercials")
+  .post(
+    checkAuth,
+    restriction("admin"),
+    uploadCommercialMediaFiles("image"),
+    resizeAndOptimiseMedia,
+    addCommercial
+  )
+  .delete(checkAuth, restriction("admin"), deleteCommercial)
+  .patch(checkAuth, restriction("admin"), updateCommercial);
 
 export default router;

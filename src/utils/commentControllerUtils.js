@@ -1,7 +1,16 @@
-import Post from '../models/Post.js';
-import Comment from '../models/Comment.js';
-import AppError from '../lib/AppError.js';
+import Post from "../models/Post.js";
+import Comment from "../models/Comment.js";
+import AppError from "../lib/AppError.js";
 
+/**
+ * takes commentId and replyId from req.params and base on that finds and checks existance of comment,commentReply and post on which comment was writen
+ * @params {req,next,checkBody,checkReplyAccess} param0
+ * @param  req server request
+ * @param next  next midleware
+ * @param checkBody  boolean | by default is true | checks if comment body is empty or not. And if does not exists throws an error
+ * @param checkReplyAccess boolean | by default is false | if true it checks if specific comment replies thread includes comment reply on which request happens. If is true and comment reply does not exists throws an error
+ * @returns {Post Comment, CommentReply}
+ */
 export async function controllCommentAccess({
   req,
   next,
@@ -12,16 +21,23 @@ export async function controllCommentAccess({
 
   if (checkBody) {
     const { text, tags } = req.body;
-    if (!text && (!tags || tags?.[0])) return next(new AppError(400, 'comment is empty'));
+    if (!text && (!tags || tags?.[0]))
+      return next(new AppError(400, "comment is empty"));
   }
 
   const parentComment = await Comment.findById(commentId);
 
-  if (!parentComment) return next(new AppError(400, 'comment does not exists'));
+  if (!parentComment) return next(new AppError(400, "comment does not exists"));
 
   const postToUpdate = await Post.findById(parentComment.post);
 
-  if (!postToUpdate) return next(new AppError(400, 'post does not exists'));
+  if (!postToUpdate)
+    return next(
+      new AppError(
+        400,
+        "post which one this comment belongs to does not exists"
+      )
+    );
 
   const credentials = {
     comment: parentComment,
@@ -29,11 +45,12 @@ export async function controllCommentAccess({
   };
 
   if (checkReplyAccess) {
-    const i = parentComment.replies.findIndex((comm) => comm._id.toString() === replyId);
+    const commentReply = parentComment.replies.find(
+      (rep) => rep._id.toString() === replyId
+    );
 
-    const commentReply = parentComment.replies[i];
-
-    if (!commentReply) return next(new AppError(404, 'comment does not exists'));
+    if (!commentReply)
+      return next(new AppError(404, "comment reply does not exists"));
 
     credentials.commentReply = commentReply;
   }

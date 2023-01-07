@@ -50,14 +50,19 @@ export async function controllPostCreation(req) {
   return { newPost, tags };
 }
 
-export async function controllPostMediaDeletion(media, next) {
+export async function controllPostMediaDeletion(
+  media,
+  next,
+  destination = "public/images"
+) {
   const deletion = promisify(fs.unlink);
 
   Promise.all(
     media.map(async (media) => {
       try {
         const originalFileName = media.split("/")?.slice(3)[0];
-        await deletion(`public/images/${originalFileName}`);
+        console.log({ originalFileName, media });
+        await deletion(`${destination}/${originalFileName}`);
       } catch (error) {
         return next(
           new AppError(

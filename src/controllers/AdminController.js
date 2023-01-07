@@ -7,6 +7,25 @@ import API_Features from "../lib/API_Features.js";
 import Admin from "../models/Admin.js";
 import User from "../models/User.js";
 import Registration from "../models/Registration.js";
+import Commercial from "../models/Commercials.js";
+
+import { uploadMedia, editMedia } from "../lib/multer.js";
+import { getServerHost } from "../lib/getOrigins.js";
+import { controllPostMediaDeletion } from "../utils/postControllerUtils.js";
+
+export const resizeAndOptimiseMedia = editMedia({
+  multy: false,
+  resize: false,
+  destination: "public/commercials",
+});
+
+export const uploadCommercialMediaFiles = (imageName) =>
+  uploadMedia({
+    storage: "memoryStorage",
+    destination: "public/commercials",
+    upload: "single",
+    filename: imageName,
+  });
 
 export const logIn = asyncWrapper(async function (req, res, next) {
   const { userName, password } = req.body;
@@ -32,7 +51,6 @@ export const getUserLabels = asyncWrapper(async function (req, res, next) {
       "profileImg firstName lastName userName email birthDate gender createdAt"
     )
     .filter();
-  // .sort();
 
   const { data, docCount } = await docQuery.execute();
 
@@ -85,6 +103,47 @@ export const getRegistration = asyncWrapper(async function (req, res, next) {
 
   res.status(200).json(registration);
 });
+
+export const addCommercial = asyncWrapper(async function (req, res, next) {
+  const commercialBody = req.body;
+
+  const newCommercial = {
+    ...commercialBody,
+  };
+
+  if (req.file) {
+    newCommercial.media = `${req.protocol}://${getServerHost()}/${
+      req.xOriginal
+    }`;
+  }
+
+  const createdCommercial = await Commercial.create(newCommercial);
+
+  res.status(201).json({ created: true });
+});
+
+export const deleteCommercial = asyncWrapper(async function (req, res, next) {
+  const { commercialId } = req.query;
+
+  const commercial = await Commercial.findById(commercialId);
+
+  if (!commercial) return next(new AppError(404, "commercial does not exists"));
+
+  const commercialMedia = commercial.media;
+
+  if (commercialMedia?.[0])
+    await controllPostMediaDeletion([commercialMedia], next);
+
+  await commercial.delete();
+
+  res.status(204).json({ deleted: true });
+});
+
+export const updateCommercial = asyncWrapper(async function (
+  req,
+  res,
+  next
+) {});
 
 async function createAdmin() {
   const admin = new Admin({

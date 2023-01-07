@@ -34,6 +34,11 @@ export const registerUser = asyncWrapper(async function (req, res, next) {
   //   );
   // }
 
+  const isExistingEmail = await User.findOne({ email });
+
+  if (isExistingEmail)
+    return next(new AppError(403, "user with this email already exists"));
+
   const newReg = await Registration.create(req.body);
 
   res.status(200).json({

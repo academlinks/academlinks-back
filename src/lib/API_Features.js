@@ -11,12 +11,14 @@ export default class API_Features {
   }
 
   filter() {
-    const availableKeys = ["gender", "createdAt", "birthDate", "userName"];
+    const simpleKeys = ["gender", "createdAt", "birthDate", "userName"];
+
+    const queryKeys = Object.keys(this.query);
 
     let queryToModify = {};
-    const queryKeys = Object.keys(this.query);
+
     queryKeys
-      .filter((key) => availableKeys.includes(key))
+      .filter((key) => simpleKeys.includes(key))
       .map((key) => (queryToModify[key] = this.query[key]));
 
     // Fillter Living Place
@@ -33,6 +35,7 @@ export default class API_Features {
       );
 
       const livingPlaceQuery = {};
+
       livingPlaceQueryKeys
         .map((key) => {
           if (key === "currCity")

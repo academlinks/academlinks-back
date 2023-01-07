@@ -44,14 +44,15 @@ export const uploadMedia = (params) => media(params);
 // EDIT AND RESIZE MEDIA
 /**
  * @param {} params {multy, width, height}
- * @multy must be the Boolean true || false -- is true if specific route waits for multiple files at time, if route waits for single file define as false
- * @resize must be the Boolean true || false
- * @width must be The Number (width of file to resize). By Default is 500
- * @height must be The Number (height of file to resize). By Default is undefined
+ * @param multy must be the Boolean true || false -- is true if specific route waits for multiple files at time, if route waits for single file define as false
+ * @param resize must be the Boolean true || false
+ * @param width must be The Number (width of file to resize). By Default is 500
+ * @param height must be The Number (height of file to resize). By Default is undefined
  * @returns
  */
 export const editMedia = (params) => async (req, res, next) => {
   const key = params.multy ? "files" : "file";
+  const destination = params.destination || "public/images";
 
   if (!req[key]) return next();
 
@@ -64,14 +65,14 @@ export const editMedia = (params) => async (req, res, next) => {
       .resize(width || 500, height || undefined)
       .toFormat("webp")
       .webp({ quality: 90 })
-      .toFile(`public/images/${fileName}`);
+      .toFile(`${destination}/${fileName}`);
   }
 
   async function writeOriginal({ file, fileName }) {
     await sharp(file)
       .toFormat("webp")
-      .webp()
-      .toFile(`public/images/${fileName}`);
+      .webp({ quality: 90 })
+      .toFile(`${destination}/${fileName}`);
   }
 
   const currentDate = Date.now();
