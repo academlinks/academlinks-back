@@ -61,7 +61,6 @@ export async function controllPostMediaDeletion(
     media.map(async (media) => {
       try {
         const originalFileName = media.split("/")?.slice(3)[0];
-        console.log({ originalFileName, media });
         await deletion(`${destination}/${originalFileName}`);
       } catch (error) {
         return next(
@@ -142,7 +141,7 @@ export async function controllPostMediaOnUpdate({ req, next, post }) {
           return next(
             new AppError(
               403,
-              "something went wrong, cant't find and delete removed post media files which are attached to your post.  please report the problem or try later"
+              "Something went wrong, cant't find and delete removed post media files which are attached to your post.  Please report the problem or try again later"
             )
           );
         }

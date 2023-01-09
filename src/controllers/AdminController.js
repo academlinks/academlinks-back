@@ -13,16 +13,23 @@ import { uploadMedia, editMedia } from "../lib/multer.js";
 import { getServerHost } from "../lib/getOrigins.js";
 import { controllPostMediaDeletion } from "../utils/postControllerUtils.js";
 
+import fs from "fs";
+import { promisify } from "util";
+
+///////////////////////////////////////
+///////////////////////////////////////
+///////////////////////////////////////
+
 export const resizeAndOptimiseMedia = editMedia({
   multy: false,
   resize: false,
-  destination: "public/commercials",
+  destination: "public/images/commercials",
 });
 
 export const uploadCommercialMediaFiles = (imageName) =>
   uploadMedia({
     storage: "memoryStorage",
-    destination: "public/commercials",
+    destination: "public/images/commercials",
     upload: "single",
     filename: imageName,
   });
@@ -104,6 +111,35 @@ export const getRegistration = asyncWrapper(async function (req, res, next) {
   res.status(200).json(registration);
 });
 
+export const getCommercials = asyncWrapper(async function (req, res, next) {
+  const { all, outdated, active } = req.query;
+
+  const clientQuery = {
+    all: all && JSON.parse(all),
+    outdated: outdated && JSON.parse(outdated),
+    active: active && JSON.parse(active),
+  };
+
+  const dbQuery = {};
+
+  if (clientQuery.outdated) dbQuery.validUntil = { $lt: new Date() };
+  else if (clientQuery.active) dbQuery.validUntil = { $gte: new Date() };
+
+  const commercials = await Commercial.find(dbQuery);
+
+  res.status(200).json(commercials);
+});
+
+export const getCommercial = asyncWrapper(async function (req, res, next) {
+  const { commercialId } = req.params;
+
+  const commercial = await Commercial.findById(commercialId);
+
+  if (!commercial) return next(new AppError(404, "commercial does not exists"));
+
+  res.status(200).json(commercial);
+});
+
 export const addCommercial = asyncWrapper(async function (req, res, next) {
   const commercialBody = req.body;
 
@@ -112,38 +148,80 @@ export const addCommercial = asyncWrapper(async function (req, res, next) {
   };
 
   if (req.file) {
-    newCommercial.media = `${req.protocol}://${getServerHost()}/${
+    newCommercial.media = `${req.protocol}://${getServerHost()}/commercials/${
       req.xOriginal
     }`;
   }
 
-  const createdCommercial = await Commercial.create(newCommercial);
+  await Commercial.create(newCommercial);
 
   res.status(201).json({ created: true });
 });
 
 export const deleteCommercial = asyncWrapper(async function (req, res, next) {
-  const { commercialId } = req.query;
+  const { commercialId } = req.params;
 
   const commercial = await Commercial.findById(commercialId);
-
   if (!commercial) return next(new AppError(404, "commercial does not exists"));
 
   const commercialMedia = commercial.media;
 
-  if (commercialMedia?.[0])
-    await controllPostMediaDeletion([commercialMedia], next);
+  const deletion = promisify(fs.unlink);
+
+  if (commercialMedia) {
+    try {
+      const originalFileName = commercialMedia.split("/")?.slice(4)[0];
+      console.log(originalFileName);
+      await deletion(`public/images/commercials/${originalFileName}`);
+    } catch (error) {
+      return next(
+        new AppError(
+          403,
+          "something went wrong, cant't find and delete removed commercial media files which are attached to the commercial. Please report the problem or try again later"
+        )
+      );
+    }
+  }
 
   await commercial.delete();
 
   res.status(204).json({ deleted: true });
 });
 
-export const updateCommercial = asyncWrapper(async function (
-  req,
-  res,
-  next
-) {});
+export const updateCommercial = asyncWrapper(async function (req, res, next) {
+  const { commercialId } = req.params;
+  const body = req.body;
+
+  const comerc = await Commercial.findById(commercialId);
+  if (!comerc) return next(new AppError(404, "commercial does not exists"));
+
+  const media = body.media;
+
+  const deletion = promisify(fs.unlink);
+
+  if (req.file && req.xOriginal) {
+    try {
+      const originalFileName = media.split("/")?.slice(4)[0];
+      await deletion(`public/images/commercials/${originalFileName}`);
+      body.media = `${req.protocol}://${getServerHost()}/commercials/${
+        req.xOriginal
+      }`;
+    } catch (error) {
+      return next(
+        new AppError(
+          403,
+          "something went wrong, cant't find and delete removed commercial media files which are attached to the commercial. Please report the problem or try again later"
+        )
+      );
+    }
+  }
+
+  Object.keys(body).forEach((key) => (comerc[key] = body[key]));
+
+  await comerc.save();
+
+  res.status(201).json({ updated: true });
+});
 
 async function createAdmin() {
   const admin = new Admin({
