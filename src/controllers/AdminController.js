@@ -11,7 +11,6 @@ import Commercial from "../models/Commercials.js";
 
 import { uploadMedia, editMedia } from "../lib/multer.js";
 import { getServerHost } from "../lib/getOrigins.js";
-import { controllPostMediaDeletion } from "../utils/postControllerUtils.js";
 
 import fs from "fs";
 import { promisify } from "util";
@@ -74,12 +73,24 @@ export const getUserInfo = asyncWrapper(async function (req, res, next) {
   const { userId } = req.params;
 
   const userInfo = await User.findById(userId).select(
-    "userName email createdAt education birthDate currentLivingPlace workplace gender from profileImg"
+    "userName email createdAt education birthDate currentLivingPlace currentWorkplace workplace gender from profileImg"
   );
 
   if (!userInfo) return next(new AppError(404, "user does not exists"));
 
   res.status(200).json(userInfo);
+});
+
+export const getUsersForStatistic = asyncWrapper(async function (
+  req,
+  res,
+  next
+) {
+  const users = await User.find().select(
+    "age currentWorkplace.position gender createdAt currentLivingPlace.country from.country"
+  );
+
+  res.status(200).json(users);
 });
 
 export const getRegistrationLabels = asyncWrapper(async function (

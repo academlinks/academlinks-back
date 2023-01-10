@@ -164,7 +164,7 @@ export const confirmRegistration = asyncWrapper(async function (
     )
     .map((key) => {
       if (key === "registrationBio")
-        newUserBody.workplace = {
+        newUserBody.currentWorkplace = {
           institution: registration.registrationBio.institution,
           position: registration.registrationBio.position,
           description: registration.registrationBio.description,

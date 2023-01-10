@@ -12,6 +12,7 @@ import {
   uploadCommercialMediaFiles,
   getCommercials,
   getCommercial,
+  getUsersForStatistic,
 } from "../controllers/AdminController.js";
 import {
   checkAuth,
@@ -33,6 +34,10 @@ router
 router
   .route("/users/:userId/info")
   .get(checkAuth, restriction("admin"), getUserInfo);
+
+router
+  .route("/users/statistic")
+  .get(checkAuth, restriction("admin"), getUsersForStatistic);
 
 router
   .route("/registrations/:registrationId")

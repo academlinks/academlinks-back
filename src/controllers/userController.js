@@ -538,12 +538,25 @@ export const getAllUsers = asyncWrapper(async function (req, res, next) {
 });
 
 export const updater = asyncWrapper(async function (req, res, next) {
-  await User.updateMany(
-    { birthDate: { $exists: false } },
-    {
-      birthDate: "02-02-1990",
-    }
-  );
+  // await User.updateMany(
+  //   { birthDate: { $exists: false } },
+  //   {
+  //     birthDate: "02-02-1990",
+  //   }
+  // );
+
+  // const users = await User.find();
+  // console.log(users);
+
+  // users.forEach(async (user) => {
+  //   user.birthDate = "02-02-1990";
+  //   user.currentWorkplace = {
+  //     institution: "university",
+  //     position: "associate professor",
+  //     description: "one two three four five six seven eight nine ten",
+  //   };
+  //   await user.save({ validateBeforeSave: false });
+  // });
 });
 
 // updater();

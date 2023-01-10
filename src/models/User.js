@@ -61,6 +61,27 @@ const UserSchema = new Schema(
       },
     },
 
+    currentWorkplace: {
+      institution: {
+        type: String,
+        required: [true, "please provide us where are you work"],
+      },
+      position: {
+        type: String,
+        enum: [
+          "professor",
+          "associate professor",
+          "assistant professor",
+          "researcher",
+          "administrative personnel",
+          "phd student",
+          "post-doc-fellow",
+        ],
+        required: [true, "please provide us your position"],
+      },
+      description: String,
+    },
+
     workplace: [
       {
         institution: {
@@ -69,15 +90,6 @@ const UserSchema = new Schema(
         },
         position: {
           type: String,
-          enum: [
-            "professor",
-            "associate professor",
-            "assistant professor",
-            "researcher",
-            "administrative personnel",
-            "phd student",
-            "post-doc-fellow",
-          ],
           required: [true, "please provide us your position"],
         },
         description: String,
