@@ -15,9 +15,9 @@ export function checkIfIsFriend({ userId, userFriendShip, currUser }) {
   const isCurrUser = userId === currUser.id;
 
   const isFriend =
-    currUser.role !== "admin" || !isCurrUser
+    currUser.role !== "admin" && !isCurrUser
       ? userFriendShip.friends?.some(
-          (friend) => friend.friend.toString() === currUser.id
+          (friend) => friend.friend.toString() === userId
         )
       : false;
 
@@ -30,12 +30,13 @@ export function checkIfIsFriend({ userId, userFriendShip, currUser }) {
 
   if (!isFriend && !isCurrUser) {
     const isPendingRequest = userFriendShip.pendingRequests.some(
-      (request) => request.adressat.toString() === currUser.id
+      (request) => request.adressat.toString() === userId
     );
+
     if (isPendingRequest) info.isPendingRequest = true;
     else if (!isPendingRequest) {
       const isSentRequest = userFriendShip.sentRequests.some(
-        (request) => request.adressat.toString() === currUser.id
+        (request) => request.adressat.toString() === userId
       );
       if (isSentRequest) info.isSentRequest = true;
       else if (!isSentRequest) info.isForeign = true;
@@ -45,11 +46,15 @@ export function checkIfIsFriend({ userId, userFriendShip, currUser }) {
   return { info, isFriend, isCurrUser };
 }
 
-export function checkIfIsFriendOnEach({ currUser, doc, docId }) {
+export function checkIfIsFriendOnEach({
+  currUser,
+  doc,
+  docId,
+  userFriendShip,
+}) {
   if (doc === null) return { restricted: true, _id: docId };
 
   const userId = doc.author._id.toString();
-  const userFriendShip = Friendship.find({ user: userId }).then((data) => data);
 
   const { isFriend, isCurrUser } = checkIfIsFriend({
     userId,
@@ -57,9 +62,11 @@ export function checkIfIsFriendOnEach({ currUser, doc, docId }) {
     currUser,
   });
 
-  if (!isCurrUser && doc.audience === "private")
+  if (!isCurrUser && doc.audience === "private") {
     return { restricted: true, _id: docId };
-  else if (!isCurrUser && !isFriend && doc.audience === "friends")
+  } else if (!isCurrUser && !isFriend && doc.audience === "friends") {
     return { restricted: true, _id: docId };
-  else return doc;
+  } else {
+    return doc;
+  }
 }

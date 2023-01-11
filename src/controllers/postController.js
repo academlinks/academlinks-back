@@ -8,6 +8,7 @@ import { asyncWrapper } from "../lib/asyncWrapper.js";
 import Post from "../models/Post.js";
 import Comment from "../models/Comment.js";
 import Bookmarks from "../models/Bookmarks.js";
+import Friendship from "../models/Friendship.js";
 
 import {
   contollAudience,
@@ -18,10 +19,12 @@ import {
   controllPostReaction,
   controllShowOnProfile,
 } from "../utils/postControllerUtils.js";
+
 import {
   controllCreatePostNotification,
   controllSharePostNotification,
 } from "../utils/notificationControllerUtils.js";
+
 import { checkIfIsFriendOnEach } from "../utils/userControllerUtils.js";
 
 import { getServerHost } from "../lib/getOrigins.js";
@@ -240,6 +243,8 @@ export const getPost = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
   const { postId } = req.params;
 
+  const userFriendShip = await Friendship.findOne({ user: currUser.id });
+
   const post = await Post.findById(postId)
     .select("-reactions -__v")
     .populate({
@@ -250,7 +255,7 @@ export const getPost = asyncWrapper(async function (req, res, next) {
       path: "authentic",
       select: "-reactions -shared -__v",
       transform: (doc, docId) =>
-        checkIfIsFriendOnEach({ currUser, doc, docId }),
+        checkIfIsFriendOnEach({ currUser, doc, docId, userFriendShip }),
       populate: { path: "author tags.user", select: "userName profileImg" },
     });
 

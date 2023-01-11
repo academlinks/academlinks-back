@@ -7,7 +7,7 @@ export const getUserInfo = asyncWrapper(async function (req, res, next) {
   const { userId } = req.params;
 
   const user = await User.findById(userId).select(
-    "birthDate from currentLivingPlace createdAt workplace education gender email"
+    "birthDate from currentLivingPlace createdAt currentWorkplace workplace education gender email"
   );
 
   res.status(200).json(user);
@@ -31,6 +31,7 @@ export const addUserInfo = asyncWrapper(async function (req, res, next) {
     "currentLivingPlace",
     "gender",
     "from",
+    "currentWorkplace"
   ];
 
   if (!availableUpdates.includes(dataToAdd))
