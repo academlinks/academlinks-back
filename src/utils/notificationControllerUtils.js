@@ -1,6 +1,5 @@
 import Notification from "../models/Notification.js";
-import { socket_name_placeholders } from "./ioUtils.js";
-import { useLazySocket } from "./ioUtils.js";
+import { useLazySocket, socket_name_placeholders } from "./ioUtils.js";
 
 const messages_placeholder = {
   // On Comments

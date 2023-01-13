@@ -1,15 +1,18 @@
 import AppError from "../lib/AppError.js";
 import { asyncWrapper } from "../lib/asyncWrapper.js";
 
+import Admin from "../models/Admin.js";
 import User from "../models/User.js";
 import Friendship from "../models/Friendship.js";
 import Registration from "../models/Registration.js";
-import Admin from "../models/Admin.js";
+import AdminNotification from "../models/AdminNotification.js";
 
 import asignToken from "../lib/asignToken.js";
 import { verifyToken } from "../lib/verifyToken.js";
 import { Email } from "../lib/sendEmail.js";
 import crypto from "crypto";
+
+import { useLazySocket, socket_name_placeholders } from "../utils/ioUtils.js";
 
 import { getAppHost } from "../lib/getOrigins.js";
 
@@ -238,6 +241,10 @@ export const changeEmail = asyncWrapper(async function (req, res, next) {
   const { userId } = req.params;
   const { password, email, newEmail } = req.body;
 
+  //////////////////////////////////////////////////
+  /////////// Validate And Update User ////////////
+  ////////////////////////////////////////////////
+
   if (userId !== currUser.id)
     return next(new AppError(403, "you are not authorised for tis operation"));
 
@@ -250,6 +257,33 @@ export const changeEmail = asyncWrapper(async function (req, res, next) {
 
   user.email = newEmail;
   await user.save({ validateBeforeSave: false });
+
+  //////////////////////////////////////////////////
+  /////////// Send Notification To Admin //////////
+  ////////////////////////////////////////////////
+
+  const admin = await Admin.findOne({ role: "admin" });
+
+  const adminNotify = await AdminNotification.create({
+    from: currUser.id,
+    message: "user change email",
+    options: {
+      newEmail: newEmail,
+      oldEmail: email,
+    },
+  });
+
+  const sender = await useLazySocket(req);
+
+  await sender({
+    adressatId: admin._id,
+    operationName: socket_name_placeholders.adminChangeEmail,
+    data: adminNotify,
+  });
+
+  ///////////////////////////////////////////////
+  /////////// Asign New Token To User //////////
+  /////////////////////////////////////////////
 
   const { accessToken } = await asignToken(res, user);
 

@@ -27,4 +27,5 @@ export const socket_name_placeholders = {
   newMessage: "receive_new_message",
   messageIsRead: "receive_message_isRead",
   receiveNewFriendRequest: "receive_new_friend_request",
+  adminChangeEmail: "admin_change_email_notify",
 };

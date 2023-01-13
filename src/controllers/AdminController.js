@@ -8,6 +8,7 @@ import Admin from "../models/Admin.js";
 import User from "../models/User.js";
 import Registration from "../models/Registration.js";
 import Commercial from "../models/Commercials.js";
+import AdminNotification from "../models/AdminNotification.js";
 
 import { uploadMedia, editMedia } from "../lib/multer.js";
 import { getServerHost } from "../lib/getOrigins.js";
@@ -15,9 +16,9 @@ import { getServerHost } from "../lib/getOrigins.js";
 import fs from "fs";
 import { promisify } from "util";
 
-///////////////////////////////////////
-///////////////////////////////////////
-///////////////////////////////////////
+////////////////////////////
+////////// Media //////////
+//////////////////////////
 
 export const resizeAndOptimiseMedia = editMedia({
   multy: false,
@@ -32,6 +33,10 @@ export const uploadCommercialMediaFiles = (imageName) =>
     upload: "single",
     filename: imageName,
   });
+
+////////////////////////////////////
+////////// Authorization //////////
+//////////////////////////////////
 
 export const logIn = asyncWrapper(async function (req, res, next) {
   const { userName, password } = req.body;
@@ -49,6 +54,10 @@ export const logIn = asyncWrapper(async function (req, res, next) {
 
   res.status(200).json({ accessToken });
 });
+
+////////////////////////////
+////////// Users //////////
+//////////////////////////
 
 export const getUserLabels = asyncWrapper(async function (req, res, next) {
   const docQuery = new API_Features(User.find(), req.query)
@@ -87,11 +96,15 @@ export const getUsersForStatistic = asyncWrapper(async function (
   next
 ) {
   const users = await User.find().select(
-    "age currentWorkplace.position gender createdAt currentLivingPlace.country from.country"
+    "age currentWorkplace.institution currentWorkplace.position gender createdAt currentLivingPlace.country from.country"
   );
 
   res.status(200).json(users);
 });
+
+///////////////////////////////////
+////////// Registration //////////
+/////////////////////////////////
 
 export const getRegistrationLabels = asyncWrapper(async function (
   req,
@@ -121,6 +134,10 @@ export const getRegistration = asyncWrapper(async function (req, res, next) {
 
   res.status(200).json(registration);
 });
+
+//////////////////////////////////
+////////// Commercials //////////
+////////////////////////////////
 
 export const getCommercials = asyncWrapper(async function (req, res, next) {
   const { all, outdated, active } = req.query;
@@ -242,3 +259,95 @@ async function createAdmin() {
 
   await admin.save();
 }
+
+////////////////////////////////////
+////////// Notifications //////////
+//////////////////////////////////
+
+export const getBadges = asyncWrapper(async function (req, res, next) {
+  const regCounts = await Registration.find().countDocuments();
+
+  const outdatedCommercialsCount = await Commercial.find({
+    validUntil: { $lt: new Date() },
+  }).countDocuments();
+
+  const useenNotifies = await AdminNotification.find({
+    seen: false,
+  }).countDocuments();
+
+  res.status(200).json({
+    outdatedCommercialsCount: outdatedCommercialsCount,
+    regRequestCount: regCounts,
+    unseenNotifications: useenNotifies,
+  });
+});
+
+export const getNotifications = asyncWrapper(async function (req, res, next) {
+  const notifications = await AdminNotification.find();
+
+  res.status(200).json(notifications);
+});
+
+export const getNotification = asyncWrapper(async function (req, res, next) {
+  const { notificationId } = req.params;
+
+  const notification = await AdminNotification.findById(notificationId);
+
+  if (!notification)
+    return next(new AppError(404, "notification does not exists"));
+
+  res.status(200).json(notification);
+});
+
+export const deleteAllNotifications = asyncWrapper(async function (
+  req,
+  res,
+  next
+) {
+  await AdminNotification.deleteMany();
+
+  res.status(204).json({ deleted: true });
+});
+
+export const deleteNotification = asyncWrapper(async function (req, res, next) {
+  const { notificationId } = req.params;
+
+  const deletedNotify = await AdminNotification.findByIdAndDelete(
+    notificationId
+  );
+
+  if (!deletedNotify)
+    return next(new AppError(404, "notification does not exists"));
+
+  res.status(204).json({ deleted: true });
+});
+
+export const markNotificationsAsSeen = asyncWrapper(async function (
+  req,
+  res,
+  next
+) {
+  await AdminNotification.updateMany({ seen: false }, { $set: { seen: true } });
+
+  res.status(201).json({ updated: true });
+});
+
+export const markNotificationAsRead = asyncWrapper(async function (
+  req,
+  res,
+  next
+) {
+  const { notificationId } = req.params;
+
+  const updatedNotify = await AdminNotification.findByIdAndUpdate(
+    notificationId,
+    {
+      $set: { read: true },
+    }
+  );
+
+  if (!updatedNotify)
+    return next(new AppError(404, "notification does not exists"));
+
+  res.status(201).json({ marked: true });
+});

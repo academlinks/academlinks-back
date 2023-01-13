@@ -79,6 +79,7 @@ const PostSchema = new Schema(
     article: {
       type: String,
     },
+    
     title: {
       type: String,
     },

@@ -1,19 +1,33 @@
 import express from "express";
+
 import {
   logIn,
-  getUserLabels,
-  getUserInfo,
-  getRegistrationLabels,
-  getRegistration,
-  addCommercial,
-  deleteCommercial,
-  updateCommercial,
+  // media upload
   resizeAndOptimiseMedia,
   uploadCommercialMediaFiles,
-  getCommercials,
+  // commercials
+  addCommercial,
+  updateCommercial,
+  deleteCommercial,
   getCommercial,
+  getCommercials,
+  // Registration
+  getRegistration,
+  getRegistrationLabels,
+  // users
+  getUserLabels,
+  getUserInfo,
   getUsersForStatistic,
+  // notifications
+  getBadges,
+  getNotifications,
+  getNotification,
+  deleteAllNotifications,
+  deleteNotification,
+  markNotificationsAsSeen,
+  markNotificationAsRead,
 } from "../controllers/AdminController.js";
+
 import {
   checkAuth,
   restriction,
@@ -23,13 +37,12 @@ const router = express.Router();
 
 router.route("/login").post(logIn);
 
+////////////////////////////
+////////// Users //////////
+//////////////////////////
 router
   .route("/label/users")
   .get(checkAuth, restriction("admin"), getUserLabels);
-
-router
-  .route("/label/registrations")
-  .get(checkAuth, restriction("admin"), getRegistrationLabels);
 
 router
   .route("/users/:userId/info")
@@ -39,9 +52,21 @@ router
   .route("/users/statistic")
   .get(checkAuth, restriction("admin"), getUsersForStatistic);
 
+///////////////////////////////////
+////////// Registration //////////
+/////////////////////////////////
+
 router
   .route("/registrations/:registrationId")
   .get(checkAuth, restriction("admin"), getRegistration);
+
+router
+  .route("/label/registrations")
+  .get(checkAuth, restriction("admin"), getRegistrationLabels);
+
+//////////////////////////////////
+////////// Commercials //////////
+////////////////////////////////
 
 router
   .route("/commercials/:commercialId")
@@ -65,5 +90,23 @@ router
     resizeAndOptimiseMedia,
     addCommercial
   );
+
+////////////////////////////////////
+////////// Notifications //////////
+//////////////////////////////////
+
+router.route("/badges").get(checkAuth, restriction("admin"), getBadges);
+
+router
+  .route("/notifications")
+  .get(checkAuth, restriction("admin"), getNotifications)
+  .delete(checkAuth, restriction("admin"), deleteAllNotifications)
+  .patch(checkAuth, restriction("admin"), markNotificationsAsSeen);
+
+router
+  .route("/notifications/:notificationId")
+  .get(checkAuth, restriction("admin"), getNotification)
+  .delete(checkAuth, restriction("admin"), deleteNotification)
+  .patch(checkAuth, restriction("admin"), markNotificationAsRead);
 
 export default router;
