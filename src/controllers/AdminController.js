@@ -12,6 +12,7 @@ import AdminNotification from "../models/AdminNotification.js";
 
 import { uploadMedia, editMedia } from "../lib/multer.js";
 import { getServerHost } from "../lib/getOrigins.js";
+import { Email } from "../lib/sendEmail.js";
 
 import fs from "fs";
 import { promisify } from "util";
@@ -52,7 +53,7 @@ export const logIn = asyncWrapper(async function (req, res, next) {
 
   const { accessToken } = await asignToken(res, admin);
 
-  res.status(200).json({ accessToken });
+  res.status(200).json({ accessToken, adminId: admin._id });
 });
 
 ////////////////////////////
@@ -117,9 +118,9 @@ export const getRegistrationLabels = asyncWrapper(async function (
   if (filter)
     query.aproved = filter === "aproved" ? true : filter === "new" ? false : "";
 
-  const registrations = await Registration.find(query).select(
-    "userName email gender"
-  );
+  const registrations = await Registration.find(query)
+    .select("userName email gender")
+    .sort({ createdAt: -1 });
 
   res.status(200).json(registrations);
 });
@@ -251,21 +252,46 @@ export const updateCommercial = asyncWrapper(async function (req, res, next) {
   res.status(201).json({ updated: true });
 });
 
-async function createAdmin() {
-  const admin = new Admin({
-    userName: "admin_mark",
-    password: "sh12mk3tt_7xxAdmin",
-  });
+export const sendEmailToCommercialCustomer = asyncWrapper(async function (
+  req,
+  res,
+  next
+) {
+  const { email, subject, text } = req.body;
 
-  await admin.save();
-}
+  if (!email) return next(new AppError(404, "please provide us email"));
+
+  const customer = await Commercial.findOne({ email });
+
+  if (!customer)
+    return next(new AppError(404, "customer with this email does not exists"));
+
+  try {
+    await new Email({
+      adressat: email,
+      subject,
+      text,
+    }).send({});
+  } catch (error) {
+    return next(
+      new AppError(
+        500,
+        "There was an error sending the email. Try again later!"
+      )
+    );
+  }
+
+  res.status(201).json({ emailIsSent: true });
+});
 
 ////////////////////////////////////
 ////////// Notifications //////////
 //////////////////////////////////
 
 export const getBadges = asyncWrapper(async function (req, res, next) {
-  const regCounts = await Registration.find().countDocuments();
+  const regCounts = await Registration.find({
+    aproved: false,
+  }).countDocuments();
 
   const outdatedCommercialsCount = await Commercial.find({
     validUntil: { $lt: new Date() },
@@ -283,7 +309,12 @@ export const getBadges = asyncWrapper(async function (req, res, next) {
 });
 
 export const getNotifications = asyncWrapper(async function (req, res, next) {
-  const notifications = await AdminNotification.find();
+  const notifications = await AdminNotification.find()
+    .populate({
+      path: "from",
+      select: "userName profileImg",
+    })
+    .sort({ createdAt: -1 });
 
   res.status(200).json(notifications);
 });
@@ -291,7 +322,9 @@ export const getNotifications = asyncWrapper(async function (req, res, next) {
 export const getNotification = asyncWrapper(async function (req, res, next) {
   const { notificationId } = req.params;
 
-  const notification = await AdminNotification.findById(notificationId);
+  const notification = await AdminNotification.findById(
+    notificationId
+  ).populate({ path: "from", select: "userName profileImg email" });
 
   if (!notification)
     return next(new AppError(404, "notification does not exists"));
@@ -351,3 +384,13 @@ export const markNotificationAsRead = asyncWrapper(async function (
 
   res.status(201).json({ marked: true });
 });
+
+///////////////////////////////
+async function createAdmin() {
+  const admin = new Admin({
+    userName: "admin_mark",
+    password: "sh12mk3tt_7xxAdmin",
+  });
+
+  await admin.save();
+}

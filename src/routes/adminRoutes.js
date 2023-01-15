@@ -26,7 +26,8 @@ import {
   deleteNotification,
   markNotificationsAsSeen,
   markNotificationAsRead,
-} from "../controllers/AdminController.js";
+  sendEmailToCommercialCustomer,
+} from "../controllers/adminController.js";
 
 import {
   checkAuth,
@@ -67,6 +68,10 @@ router
 //////////////////////////////////
 ////////// Commercials //////////
 ////////////////////////////////
+
+router
+  .route("/commercials/customer")
+  .post(checkAuth, restriction("admin"), sendEmailToCommercialCustomer);
 
 router
   .route("/commercials/:commercialId")

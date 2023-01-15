@@ -1,5 +1,6 @@
 import { io } from "./index.js";
 import OnlineUsers from "./src/models/OnLineUsers.js";
+import { socket_name_placeholders } from "./src/utils/ioUtils.js";
 
 async function addOnlineUser(onlineUser) {
   try {
@@ -29,18 +30,22 @@ async function removeOnlineUser(socketId) {
 }
 
 export function socket() {
-  io.on("connection", (socket) => {
-    socket.on("userConnection", async (data) => {
+  io.on(socket_name_placeholders.connection, (socket) => {
+    socket.on(socket_name_placeholders.userConnection, async (data) => {
       await addOnlineUser({
         userId: data._id,
-        userName:data.userName,
-        email:data.email,
-        image:data.image,
         socketId: socket.id,
+        userName: data.userName,
+        email: data.email,
+        image: data.image,
       });
     });
 
-    socket.on("disconnect", async () => {
+    socket.on(socket_name_placeholders.userDisconnection, async () => {
+      await removeOnlineUser(socket.id);
+    });
+
+    socket.on(socket_name_placeholders.disconnect, async () => {
       await removeOnlineUser(socket.id);
     });
   });

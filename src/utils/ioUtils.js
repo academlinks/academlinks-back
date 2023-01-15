@@ -23,9 +23,17 @@ export async function useLazySocket(req) {
 }
 
 export const socket_name_placeholders = {
-  newNotification: "receive_new_notification",
-  newMessage: "receive_new_message",
-  messageIsRead: "receive_message_isRead",
+  // FOR BOTH
+  connection: "connection",
+  disconnect: "disconnect",
+  userConnection: "user_connection",
+  userDisconnection: "user_disconnection",
+  // FOR ADMIN
+  newUserIsRegistered: "new_user_is_registered",
+  userChangeEmail: "admin_change_email_notify",
+  // FOR USERS
   receiveNewFriendRequest: "receive_new_friend_request",
-  adminChangeEmail: "admin_change_email_notify",
+  receiveNewNotification: "receive_new_notification",
+  receiveNewMessage: "receive_new_message",
+  messageIsRead: "receive_message_isRead",
 };

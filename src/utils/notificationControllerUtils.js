@@ -439,7 +439,7 @@ async function generateNotifications(operations, sender) {
 
           await sender({
             adressatId: adressat,
-            operationName: socket_name_placeholders.newNotification,
+            operationName: socket_name_placeholders.receiveNewNotification,
             data: 1,
           });
         })

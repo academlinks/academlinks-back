@@ -107,7 +107,7 @@ export const sendMessage = asyncWrapper(async function (req, res, next) {
 
   await useSocket(req, {
     adressatId: adressat._id,
-    operationName: socket_name_placeholders.newMessage,
+    operationName: socket_name_placeholders.receiveNewMessage,
     data: { lastMessage: existingConversation.lastMessage, message: doc },
   });
 

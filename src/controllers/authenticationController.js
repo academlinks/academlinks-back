@@ -12,12 +12,16 @@ import { verifyToken } from "../lib/verifyToken.js";
 import { Email } from "../lib/sendEmail.js";
 import crypto from "crypto";
 
-import { useLazySocket, socket_name_placeholders } from "../utils/ioUtils.js";
+import { useSocket, socket_name_placeholders } from "../utils/ioUtils.js";
 
 import { getAppHost } from "../lib/getOrigins.js";
 
 export const registerUser = asyncWrapper(async function (req, res, next) {
   const { email } = req.body;
+
+  //////////////////////////////////////////
+  /////////// Send Email To User //////////
+  ////////////////////////////////////////
 
   // try {
   //   if (!email)
@@ -43,6 +47,18 @@ export const registerUser = asyncWrapper(async function (req, res, next) {
     return next(new AppError(403, "user with this email already exists"));
 
   const newReg = await Registration.create(req.body);
+
+  //////////////////////////////////////////////////
+  /////////// Send Notification To Admin //////////
+  ////////////////////////////////////////////////
+
+  const admin = await Admin.findOne({ role: "admin" });
+
+  await useSocket(req, {
+    adressatId: admin._id,
+    operationName: socket_name_placeholders.newUserIsRegistered,
+    data: newReg,
+  });
 
   res.status(200).json({
     msg: "Your registration request will be reviewed and we wil Email you in case of affirmation !",
@@ -209,8 +225,10 @@ export const loginUser = asyncWrapper(async function (req, res, next) {
 });
 
 export const logoutUser = asyncWrapper(async function (req, res, next) {
+  res.cookie("authorization", "");
   res.clearCookie("authorization");
-  res.status(200).json({ loggedOut: true, accessToken: "" });
+  res.end();
+  // res.status(200).json({ loggedOut: true, accessToken: "" });
 });
 
 export const changePassword = asyncWrapper(async function (req, res, next) {
@@ -248,7 +266,9 @@ export const changeEmail = asyncWrapper(async function (req, res, next) {
   if (userId !== currUser.id)
     return next(new AppError(403, "you are not authorised for tis operation"));
 
-  const user = await User.findOne({ _id: userId, email }).select("+password");
+  const user = await User.findOne({ _id: currUser.id, email }).select(
+    "+password"
+  );
 
   const validPassword = await user.checkPassword(password, user.password);
 
@@ -266,18 +286,21 @@ export const changeEmail = asyncWrapper(async function (req, res, next) {
 
   const adminNotify = await AdminNotification.create({
     from: currUser.id,
-    message: "user change email",
+    message: "change email",
     options: {
       newEmail: newEmail,
       oldEmail: email,
     },
   });
 
-  const sender = await useLazySocket(req);
+  await adminNotify.populate({
+    path: "from",
+    select: "userName profileImg email _id",
+  });
 
-  await sender({
+  await useSocket(req, {
     adressatId: admin._id,
-    operationName: socket_name_placeholders.adminChangeEmail,
+    operationName: socket_name_placeholders.userChangeEmail,
     data: adminNotify,
   });
 
@@ -300,10 +323,13 @@ export const checkAuth = asyncWrapper(async function (req, res, next) {
   const decodedUser = await verifyToken(token?.[1]);
   if (!decodedUser) return next(new AppError(401, "you are not authorized"));
 
-  const user = await User.findById(decodedUser.id);
+  let user;
 
-  if (decodedUser.role === "user" && !user)
-    return next(new AppError(404, "user does not exists"));
+  if (decodedUser.role === "user") user = await User.findById(decodedUser.id);
+  else if (decodedUser.role === "admin")
+    user = await Admin.findById(decodedUser.id);
+
+  if (!user) return next(new AppError(404, "user does not exists"));
 
   req.user = decodedUser;
 
@@ -332,28 +358,17 @@ export const refresh = asyncWrapper(async function (req, res, next) {
 
   let user;
   if (decodedUser.role === "user") user = await User.findById(decodedUser.id);
+  else if (decodedUser.role === "admin")
+    user = await Admin.findById(decodedUser.id);
 
-  if (decodedUser.role === "user" && !user)
-    return next(new AppError(404, "user does not exists"));
+  if (!user) return next(new AppError(404, "user does not exists"));
 
-  let admin;
-  if (decodedUser.role === "admin")
-    admin = await Admin.findById(decodedUser.id);
-
-  if (decodedUser.role === "admin" && !admin)
-    return next(new AppError(404, "user does not exists"));
-
-  const { accessToken } = await asignToken(
-    res,
-    decodedUser.role === "user"
-      ? {
-          _id: user._id,
-          role: user.role,
-          userName: user.userName,
-          email: user.email,
-        }
-      : admin
-  );
+  const { accessToken } = await asignToken(res, {
+    _id: user._id,
+    role: user.role,
+    userName: user.userName,
+    email: user?.email,
+  });
 
   res.status(200).json({ accessToken });
 });

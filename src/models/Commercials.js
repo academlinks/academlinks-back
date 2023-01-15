@@ -7,18 +7,31 @@ const CommercialSchema = new Schema(
       type: String,
       required: [true, "please enter the customer"],
     },
+
+    email: {
+      type: String,
+    },
+    
+    phone: {
+      type: String,
+    },
+
     validUntil: {
       type: Date,
       required: [true, "please enter the outdate point"],
     },
+
     isLinkable: {
       type: Boolean,
       default: false,
     },
+
     link: {
       type: String,
     },
+
     media: String,
+
     location: {
       page: {
         type: String,
