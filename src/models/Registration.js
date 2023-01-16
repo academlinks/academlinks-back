@@ -29,6 +29,11 @@ const RegistrationSchema = new Schema(
       required: [true, "please provide us your gender"],
     },
 
+    birthDate: {
+      type: Date,
+      required: [true, "please provide us your birthdate"],
+    },
+
     currentLivingPlace: {
       type: {
         city: {

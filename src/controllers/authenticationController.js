@@ -121,16 +121,16 @@ export const deleteRegistrationRequest = asyncWrapper(async function (
   const adressat = registration.email;
   await registration.delete();
 
-  try {
-    await new Email({
-      adressat,
-    }).sendRegistrationReject();
-  } catch (error) {
-    return next(
-      new AppError("There was an error sending the email. Try again later!"),
-      500
-    );
-  }
+  // try {
+  //   await new Email({
+  //     adressat,
+  //   }).sendRegistrationReject();
+  // } catch (error) {
+  //   return next(
+  //     new AppError("There was an error sending the email. Try again later!"),
+  //     500
+  //   );
+  // }
 
   res.status(204).json({ deleted: true });
 });
@@ -171,7 +171,7 @@ export const confirmRegistration = asyncWrapper(async function (
   });
 
   if (!registration)
-    return next(new AppError("Token is invalid or has expired", 400));
+    return next(new AppError(400, "Token is invalid or has expired"));
 
   const newUserBody = {
     password,
@@ -191,7 +191,7 @@ export const confirmRegistration = asyncWrapper(async function (
       else newUserBody[key] = registration._doc[key];
     });
 
-  const newUser = await User.create(newUserBody);
+  const newUser = await new User(newUserBody).save();
 
   await Friendship.create({
     user: newUser._id,
