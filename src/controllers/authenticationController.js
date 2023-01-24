@@ -1,5 +1,4 @@
-import AppError from "../lib/AppError.js";
-import { asyncWrapper } from "../lib/asyncWrapper.js";
+import crypto from "crypto";
 
 import Admin from "../models/Admin.js";
 import User from "../models/User.js";
@@ -7,17 +6,27 @@ import Friendship from "../models/Friendship.js";
 import Registration from "../models/Registration.js";
 import AdminNotification from "../models/AdminNotification.js";
 
+import AppError from "../lib/AppError.js";
+import { asyncWrapper } from "../lib/asyncWrapper.js";
+
 import asignToken from "../lib/asignToken.js";
 import { verifyToken } from "../lib/verifyToken.js";
 import { Email } from "../lib/sendEmail.js";
-import crypto from "crypto";
 
 import { useSocket, socket_name_placeholders } from "../utils/ioUtils.js";
 
 import { getAppHost } from "../lib/getOrigins.js";
 
+// SECTION: Registration
+
 export const registerUser = asyncWrapper(async function (req, res, next) {
   const { email } = req.body;
+
+  const isExistingUserWithEmail = await User.findOne({ email });
+  const isExistingUserRegistrationWithEmail = await User.findOne({ email });
+
+  if (isExistingUserWithEmail || isExistingUserRegistrationWithEmail)
+    return next(new AppError(403, "user with this email already exists"));
 
   //////////////////////////////////////////
   /////////// Send Email To User //////////
@@ -40,11 +49,6 @@ export const registerUser = asyncWrapper(async function (req, res, next) {
   //     )
   //   );
   // }
-
-  const isExistingEmail = await User.findOne({ email });
-
-  if (isExistingEmail)
-    return next(new AppError(403, "user with this email already exists"));
 
   const newReg = await Registration.create(req.body);
 
@@ -202,6 +206,8 @@ export const confirmRegistration = asyncWrapper(async function (
   res.status(200).json({ success: true });
 });
 
+// SECTION: Authorization
+
 export const loginUser = asyncWrapper(async function (req, res, next) {
   const { email, password } = req.body;
 
@@ -209,7 +215,7 @@ export const loginUser = asyncWrapper(async function (req, res, next) {
     "+password email firstName lastName userName profileImg coverImg createdAt role"
   );
 
-  const validPassword = await candidateUser.checkPassword(
+  const validPassword = await candidateUser?.checkPassword(
     password,
     candidateUser.password
   );
@@ -230,6 +236,8 @@ export const logoutUser = asyncWrapper(async function (req, res, next) {
   res.end();
   // res.status(200).json({ loggedOut: true, accessToken: "" });
 });
+
+// SECTION: Update User Credentials
 
 export const changePassword = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
@@ -275,6 +283,16 @@ export const changeEmail = asyncWrapper(async function (req, res, next) {
   if (!user || !validPassword)
     return next(new AppError(403, "incorect email or password"));
 
+  /////////////////////////////////////////////////////////
+  /////////// Validate New Email Availability ////////////
+  ///////////////////////////////////////////////////////
+
+  const isExistingUserWithEmail = await User.findOne({ email });
+  const isExistingUserRegistrationWithEmail = await User.findOne({ email });
+
+  if (isExistingUserWithEmail || isExistingUserRegistrationWithEmail)
+    return next(new AppError(403, "user with this email already exists"));
+
   user.email = newEmail;
   await user.save({ validateBeforeSave: false });
 
@@ -312,6 +330,78 @@ export const changeEmail = asyncWrapper(async function (req, res, next) {
 
   res.status(200).json({ accessToken, email: user.email });
 });
+
+export const createResetPasswordForForgotPassword = asyncWrapper(
+  async function (req, res, next) {
+    const { email } = req.body;
+
+    const user = await User.findOne({ email });
+
+    if (!user)
+      return next(new AppError(404, "user with this email does not exists"));
+
+    const passwordReset = user.createPasswordResetToken();
+
+    try {
+      if (!email)
+        return next(new AppError(403, "please provide us valid email"));
+
+      await Registration.create(req.body);
+
+      await new Email({
+        adressat: email,
+      }).sendPasswordReset(passwordReset);
+    } catch (error) {
+      return next(
+        new AppError(
+          500,
+          "There was an error sending the email. Try again later!"
+        )
+      );
+    }
+
+    await user.save({ validateBeforeSave: false });
+
+    res.status(201).json({
+      success: true,
+      message: "Your password reset token (valid for only 10 minutes).",
+    });
+  }
+);
+
+export const updateForgotPassword = asyncWrapper(async function (
+  req,
+  res,
+  next
+) {
+  const { token, password } = req.body;
+
+  const hashedPassword = crypto
+    .createHash("sha256")
+    .update(token)
+    .digest("hex");
+
+  const user = await User.findOne({
+    resetPassword: hashedPassword,
+    resetPasswordExpiresIn: { $gte: Date.now() },
+  });
+
+  if (!user)
+    return next(
+      new AppError(400, "password reset token is invalid or expird in")
+    );
+
+  user.password = password;
+  user.resetPassword = undefined;
+  user.resetPasswordExpiresIn = undefined;
+  await user.save();
+
+  user.password = undefined;
+
+  res.status(200).json({ message: "password is updated", success: true });
+});
+
+// SECTION: Authentication
 
 export const checkAuth = asyncWrapper(async function (req, res, next) {
   const { authorization } = req.headers;

@@ -58,10 +58,10 @@ export class Email {
     });
   }
 
-  async sendPasswordReset() {
+  async sendPasswordReset(resetToken) {
     await this.send({
       subject: "Password Reset",
-      text: "Your password reset token (valid for only 10 minutes)",
+      text: `Your password reset token (valid for only 10 minutes). Password : ${resetToken}`,
     });
   }
 }

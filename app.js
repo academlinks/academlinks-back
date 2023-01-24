@@ -2,6 +2,10 @@ import express from "express";
 
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import helmet from "helmet";
+import mongoSanitize from "express-mongo-sanitize";
+import xss from "xss-clean";
+import hpp from "hpp";
 import morgan from "morgan";
 
 import path from "path";
@@ -19,13 +23,21 @@ import userInfoRoutes from "./src/routes/userInfoRoutes.js";
 import notificationRoutes from "./src/routes/notificationRoutes.js";
 import conversationRoutes from "./src/routes/conversationRoutes.js";
 import adminRoutes from "./src/routes/adminRoutes.js";
+import commercialRoutes from "./src/routes/commercialRoutes.js";
 
 import { getOrigins } from "./src/lib/getOrigins.js";
 
 const App = express();
 
+process.env.NODE_MODE === "DEV" && App.use(morgan("dev"));
+App.use(helmet());
 App.use(express.json());
 App.use(express.urlencoded({ extended: false }));
+
+App.use(mongoSanitize());
+App.use(xss());
+App.use(hpp());
+
 App.use(cookieParser());
 App.use(
   cors({
@@ -42,7 +54,6 @@ App.use(
     },
   })
 );
-App.use(morgan("dev"));
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -56,6 +67,7 @@ App.use("/api/v1/user", userRoutes, friendsRoutes);
 App.use("/api/v1/about", userInfoRoutes);
 App.use("/api/v1/notifications", notificationRoutes);
 App.use("/api/v1/conversation", conversationRoutes);
+App.use("/api/v1/commercials", commercialRoutes);
 
 App.all("*", (req, res, next) => {
   next(new AppError(404, `can't find ${req.originalUrl} on this server`));

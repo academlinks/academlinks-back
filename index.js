@@ -10,7 +10,7 @@ const {
   parsed: { PORT, DB_APP_CONNECTION },
 } = config();
 
-export const SERVER = createServer(App);
+const SERVER = createServer(App);
 
 export const io = new Server(SERVER, {
   cors: { origin: getOrigins() },

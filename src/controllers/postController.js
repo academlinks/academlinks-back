@@ -531,7 +531,7 @@ export const getRelatedPosts = asyncWrapper(async function (req, res, next) {
       $match: {
         type: "blogPost",
         labels: { $in: labels },
-        category: category,
+        // category: category,
         _id: { $ne: mongoose.Types.ObjectId(postId) },
       },
     },
@@ -615,20 +615,20 @@ export const getRelatedPosts = asyncWrapper(async function (req, res, next) {
 
 /////////////////////////////////////////////////////////////////////
 
-export const getAllPosts = asyncWrapper(async function (req, res, next) {
-  const posts = await Post.find()
-    .populate("author")
-    .populate({
-      path: "authenticAuthor",
-      select: "userName email _id",
-    })
-    .populate({
-      path: "comments",
-      populate: { path: "author replies.author replies.adressat" },
-    });
+// export const getAllPosts = asyncWrapper(async function (req, res, next) {
+//   const posts = await Post.find()
+//     .populate("author")
+//     .populate({
+//       path: "authenticAuthor",
+//       select: "userName email _id",
+//     })
+//     .populate({
+//       path: "comments",
+//       populate: { path: "author replies.author replies.adressat" },
+//     });
 
-  res.status(200).json();
-});
+//   res.status(200).json();
+// });
 
 //////////////////////////////////////////////////////////////////////
-export const fnName = asyncWrapper(async function (req, res, next) {});
+// export const fnName = asyncWrapper(async function (req, res, next) {});

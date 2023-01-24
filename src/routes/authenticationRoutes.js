@@ -12,6 +12,8 @@ import {
   changePassword,
   checkAuth,
   restriction,
+  createResetPasswordForForgotPassword,
+  updateForgotPassword,
 } from "../controllers/authenticationController.js";
 
 const router = express.Router();
@@ -33,6 +35,10 @@ router
 router
   .route("/update/email/:userId")
   .post(checkAuth, restriction("user"), changeEmail);
+
+router.route("/forgot-password").post(createResetPasswordForForgotPassword);
+
+router.route("/forgot-password/update").post(updateForgotPassword);
 
 router.route("/register").post(registerUser);
 

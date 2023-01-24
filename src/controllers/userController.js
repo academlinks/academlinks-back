@@ -1,3 +1,5 @@
+import mongoose from "mongoose";
+
 import AppError from "../lib/AppError.js";
 import { asyncWrapper } from "../lib/asyncWrapper.js";
 
@@ -10,14 +12,13 @@ import Messages from "../models/Message.js";
 import Friendship from "../models/Friendship.js";
 import User from "../models/User.js";
 
-import { uploadMedia, editMedia } from "../lib/multer.js";
-import { getServerHost } from "../lib/getOrigins.js";
 import {
   deleteExistingImage,
   checkIfIsFriend,
   checkIfIsFriendOnEach,
 } from "../utils/userControllerUtils.js";
-import mongoose from "mongoose";
+import { uploadMedia, editMedia } from "../lib/multer.js";
+import { getServerHost } from "../lib/getOrigins.js";
 
 export const resizeAndOptimiseMedia = editMedia({
   multy: false,
