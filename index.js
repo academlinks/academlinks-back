@@ -5,6 +5,7 @@ const utils = require("util");
 const Redis = require("ioredis");
 const { Server } = require("socket.io");
 const { getOrigins } = require("./src/lib/getOrigins.js");
+require("dotenv").config();
 
 const { createServer } = http;
 

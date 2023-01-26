@@ -27,14 +27,14 @@ const {
   markNotificationsAsSeen,
   markNotificationAsRead,
   sendEmailToCommercialCustomer,
-} = require("../controllers/adminController.js");
+} = require("../controllers/adminController");
 
-const limiter = require("../lib/rateLimiter.js");
+const limiter = require("../lib/rateLimiter");
 
 const {
   checkAuth,
   restriction,
-} = require("../controllers/authenticationController.js");
+} = require("../controllers/authenticationController");
 
 const router = express.Router();
 
