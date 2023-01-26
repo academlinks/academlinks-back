@@ -33,23 +33,23 @@ export const registerUser = asyncWrapper(async function (req, res, next) {
   /////////// Send Email To User //////////
   ////////////////////////////////////////
 
-  // try {
-  //   if (!email)
-  //     return next(new AppError(403, "please provide us valid information"));
+  try {
+    if (!email)
+      return next(new AppError(403, "please provide us valid information"));
 
-  //   await Registration.create(req.body);
+    await Registration.create(req.body);
 
-  //   await new Email({
-  //     adressat: email,
-  //   }).sendWelcome();
-  // } catch (error) {
-  //   return next(
-  //     new AppError(
-  //       500,
-  //       "There was an error sending the email. Try again later!"
-  //     )
-  //   );
-  // }
+    await new Email({
+      adressat: email,
+    }).sendWelcome();
+  } catch (error) {
+    return next(
+      new AppError(
+        500,
+        "There was an error sending the email. Try again later!"
+      )
+    );
+  }
 
   const newReg = await Registration.create(req.body);
 
@@ -89,18 +89,18 @@ export const aproveRegistration = asyncWrapper(async function (req, res, next) {
   registration.aproved = true;
   await registration.save({ validateBeforeSave: false });
 
-  // try {
-  //   await new Email({
-  //     adressat: registration.email,
-  //   }).sendRegistrationAprovment({
-  //     url: `${getAppHost()}/confirmRegistration/${registration._id}/confirm/${registrationPasswordResetToken}`,
-  //   });
-  // } catch (error) {
-  //   return next(
-  //     new AppError("There was an error sending the email. Try again later!"),
-  //     500
-  //   );
-  // }
+  try {
+    await new Email({
+      adressat: registration.email,
+    }).sendRegistrationAprovment({
+      url: `${getAppHost()}/confirmRegistration/${registration._id}/confirm/${registrationPasswordResetToken}`,
+    });
+  } catch (error) {
+    return next(
+      new AppError("There was an error sending the email. Try again later!"),
+      500
+    );
+  }
 
   res
     .status(200)
@@ -126,16 +126,16 @@ export const deleteRegistrationRequest = asyncWrapper(async function (
   const adressat = registration.email;
   await registration.delete();
 
-  // try {
-  //   await new Email({
-  //     adressat,
-  //   }).sendRegistrationReject();
-  // } catch (error) {
-  //   return next(
-  //     new AppError("There was an error sending the email. Try again later!"),
-  //     500
-  //   );
-  // }
+  try {
+    await new Email({
+      adressat,
+    }).sendRegistrationReject();
+  } catch (error) {
+    return next(
+      new AppError("There was an error sending the email. Try again later!"),
+      500
+    );
+  }
 
   res.status(204).json({ deleted: true });
 });
