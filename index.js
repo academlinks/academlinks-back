@@ -25,7 +25,6 @@ const io = new Server(SERVER, {
 module.exports = io;
 
 const { socket } = require("./io.js");
-socket();
 
 App.set("socket", io);
 App.set("redis", redis);
@@ -40,6 +39,7 @@ mongoose
   .then(() => {
     console.log(`DB Is Connected Successfully`);
     SERVER.listen(PORT, () => console.log(`App Listens On Port ${PORT}`));
+    socket();
   })
   .catch((err) => {
     process.on("unhandledRejection", (err) => {
