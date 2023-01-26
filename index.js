@@ -2,12 +2,12 @@ const App = require("./app.js");
 const mongoose = require("mongoose");
 const utils = require("util");
 const Redis = require("ioredis");
-const SERVER = require("http").Server(App);
+const http = require("http");
 const { Server } = require("socket.io");
 const { getOrigins } = require("./src/lib/getOrigins.js");
 require("dotenv").config();
 
-// const { createServer } = http;
+const { createServer } = http;
 
 const PORT = process.env.PORT;
 const DB_APP_CONNECTION = process.env.DB_APP_CONNECTION;
@@ -16,7 +16,7 @@ const redisURL = "redis://127.0.0.1:6379";
 const redis = Redis.createClient(redisURL);
 redis.set = utils.promisify(redis.set);
 
-// const SERVER = createServer(App);
+const SERVER = createServer(App);
 
 const io = new Server(SERVER, {
   cors: { origin: getOrigins() },
