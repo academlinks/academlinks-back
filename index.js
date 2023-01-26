@@ -38,8 +38,10 @@ mongoose
   .connect(DB_APP_CONNECTION)
   .then(() => {
     console.log(`DB Is Connected Successfully`);
-    SERVER.listen(PORT, () => console.log(`App Listens On Port ${PORT}`));
-    socket();
+    SERVER.listen(PORT, () => {
+      socket();
+      console.log(`App Listens On Port ${PORT}`);
+    });
   })
   .catch((err) => {
     process.on("unhandledRejection", (err) => {
