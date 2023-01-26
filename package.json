@@ -4,8 +4,12 @@
   "description": "",
   "main": "index.js",
   "type": "module",
+  "engines": {
+    "node":"14.x"
+  },
   "scripts": {
-    "start": "nodemon server.js",
+    "start": "node server.js",
+    "start:dev": "nodemon server.js",
     "start:prod": "NODE_MODE=PROD nodemon server.js"
   },
   "keywords": [],
