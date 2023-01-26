@@ -1,5 +1,4 @@
 const App = require("./app.js");
-const { config } = require("dotenv");
 const mongoose = require("mongoose");
 const http = require("http");
 const utils = require("util");
@@ -8,9 +7,9 @@ const { Server } = require("socket.io");
 const { getOrigins } = require("./src/lib/getOrigins.js");
 
 const { createServer } = http;
-const {
-  parsed: { PORT, DB_APP_CONNECTION },
-} = config();
+
+const PORT = process.env.PORT;
+const DB_APP_CONNECTION = process.env.DB_APP_CONNECTION;
 
 const redisURL = "redis://127.0.0.1:6379";
 const redis = Redis.createClient(redisURL);
