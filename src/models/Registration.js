@@ -1,6 +1,6 @@
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
+const crypto = require("crypto");
 const { Schema, model } = mongoose;
-import crypto from "crypto";
 
 const RegistrationSchema = new Schema(
   {
@@ -124,4 +124,4 @@ RegistrationSchema.methods.createPasswordResetToken = function () {
 };
 
 const Registration = model("Registration", RegistrationSchema);
-export default Registration;
+module.exports = Registration;

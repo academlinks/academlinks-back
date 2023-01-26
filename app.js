@@ -1,38 +1,38 @@
-import express from "express";
+const express = require("express");
 
-import cors from "cors";
-import cookieParser from "cookie-parser";
-import helmet from "helmet";
-import mongoSanitize from "express-mongo-sanitize";
-import xss from "xss-clean";
-import hpp from "hpp";
-import morgan from "morgan";
+const cors = require("cors");
+const cookieParser = require("cookie-parser");
+const helmet = require("helmet");
+const mongoSanitize = require("express-mongo-sanitize");
+const xss = require("xss-clean");
+const hpp = require("hpp");
+const morgan = require("morgan");
 
-import path from "path";
-import { fileURLToPath } from "url";
+const path = require("path");
+// const { fileURLToPath } = require("url");
 
-import { errorController } from "./src/lib/errorController.js";
-import AppError from "./src/lib/AppError.js";
+const errorController = require("./src/lib/errorController.js");
+const AppError = require("./src/lib/AppError.js");
 
-import authenticationRoutes from "./src/routes/authenticationRoutes.js";
-import postRoutes from "./src/routes/postRoutes.js";
-import commentRoutes from "./src/routes/commentRoutes.js";
-import userRoutes from "./src/routes/userRoutes.js";
-import friendsRoutes from "./src/routes/friendsRoutes.js";
-import userInfoRoutes from "./src/routes/userInfoRoutes.js";
-import notificationRoutes from "./src/routes/notificationRoutes.js";
-import conversationRoutes from "./src/routes/conversationRoutes.js";
-import adminRoutes from "./src/routes/adminRoutes.js";
-import commercialRoutes from "./src/routes/commercialRoutes.js";
+const authenticationRoutes = require("./src/routes/authenticationRoutes.js");
+const postRoutes = require("./src/routes/postRoutes.js");
+const commentRoutes = require("./src/routes/commentRoutes.js");
+const userRoutes = require("./src/routes/userRoutes.js");
+const friendsRoutes = require("./src/routes/friendsRoutes.js");
+const userInfoRoutes = require("./src/routes/userInfoRoutes.js");
+const notificationRoutes = require("./src/routes/notificationRoutes.js");
+const conversationRoutes = require("./src/routes/conversationRoutes.js");
+const adminRoutes = require("./src/routes/adminRoutes.js");
+const commercialRoutes = require("./src/routes/commercialRoutes.js");
 
-import { getOrigins } from "./src/lib/getOrigins.js";
+const { getOrigins } = require("./src/lib/getOrigins.js");
 
 const App = express();
 
 process.env.NODE_MODE === "DEV" && App.use(morgan("dev"));
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// const __filename = fileURLToPath(import.meta.url);
+// const __dirname = path.dirname(__filename);
 App.use(express.static(path.join(__dirname, "public/images")));
 
 App.use(
@@ -85,4 +85,4 @@ App.all("*", (req, res, next) => {
 
 App.use(errorController);
 
-export default App;
+module.exports = App;

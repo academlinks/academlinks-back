@@ -1,5 +1,5 @@
-import express from "express";
-import {
+const express = require("express");
+const {
   getAllNotifications,
   deleteUserNotification,
   deleteAllUserNotification,
@@ -7,11 +7,11 @@ import {
   markAllUserNotificationAsRead,
   getUnseenNotificationsCount,
   markNotificationAsSeen,
-} from "../controllers/notificationController.js";
-import {
+} = require("../controllers/notificationController.js");
+const {
   checkAuth,
   restriction,
-} from "../controllers/authenticationController.js";
+} = require("../controllers/authenticationController.js");
 
 const router = express.Router();
 
@@ -34,4 +34,4 @@ router
   .delete(checkAuth, restriction("user"), deleteAllUserNotification)
   .patch(checkAuth, restriction("user"), markAllUserNotificationAsRead);
 
-export default router;
+module.exports = router;

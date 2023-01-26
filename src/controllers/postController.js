@@ -1,16 +1,16 @@
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
 
-import { uploadMedia, editMedia } from "../lib/multer.js";
+const { uploadMedia, editMedia } = require("../lib/multer.js");
 
-import AppError from "../lib/AppError.js";
-import { asyncWrapper } from "../lib/asyncWrapper.js";
+const AppError = require("../lib/AppError.js");
+const asyncWrapper = require("../lib/asyncWrapper.js");
 
-import Post from "../models/Post.js";
-import Comment from "../models/Comment.js";
-import Bookmarks from "../models/Bookmarks.js";
-import Friendship from "../models/Friendship.js";
+const Post = require("../models/Post.js");
+const Comment = require("../models/Comment.js");
+const Bookmarks = require("../models/Bookmarks.js");
+const Friendship = require("../models/Friendship.js");
 
-import {
+const {
   contollAudience,
   controllPostCreation,
   controllPostMediaDeletion,
@@ -18,30 +18,30 @@ import {
   controllPostMediaOnUpdate,
   controllPostReaction,
   controllShowOnProfile,
-} from "../utils/postControllerUtils.js";
+} = require("../utils/postControllerUtils.js");
 
-import {
+const {
   controllCreatePostNotification,
   controllSharePostNotification,
-} from "../utils/notificationControllerUtils.js";
+} = require("../utils/notificationControllerUtils.js");
 
-import { checkIfIsFriendOnEach } from "../utils/userControllerUtils.js";
+const { checkIfIsFriendOnEach } = require("../utils/userControllerUtils.js");
 
-import { getServerHost } from "../lib/getOrigins.js";
+const { getServerHost } = require("../lib/getOrigins.js");
 
-export const resizeAndOptimiseMedia = editMedia({
+exports.resizeAndOptimiseMedia = editMedia({
   multy: true,
   resize: false,
 });
 
-export const uploadPostMediaFiles = (imageName) =>
+exports.uploadPostMediaFiles = (imageName) =>
   uploadMedia({
     storage: "memoryStorage",
     upload: "any",
     filename: imageName,
   });
 
-export const createPost = asyncWrapper(async function (req, res, next) {
+exports.createPost = asyncWrapper(async function (req, res, next) {
   const { newPost, tags } = await controllPostCreation(req);
 
   if (req.files) {
@@ -69,7 +69,7 @@ export const createPost = asyncWrapper(async function (req, res, next) {
   res.status(201).json(newPost);
 });
 
-export const deletePost = asyncWrapper(async function (req, res, next) {
+exports.deletePost = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
   const { postId } = req.params;
 
@@ -100,7 +100,7 @@ export const deletePost = asyncWrapper(async function (req, res, next) {
   res.status(204).json({ deleted: true });
 });
 
-export const updatePost = asyncWrapper(async function (req, res, next) {
+exports.updatePost = asyncWrapper(async function (req, res, next) {
   const { postId } = req.params;
   const currUser = req.user;
 
@@ -139,7 +139,7 @@ export const updatePost = asyncWrapper(async function (req, res, next) {
   res.status(201).json(post);
 });
 
-export const sharePost = asyncWrapper(async function (req, res, next) {
+exports.sharePost = asyncWrapper(async function (req, res, next) {
   const { postId } = req.params;
   const { description, audience, tags } = req.body;
   const currUser = req.user;
@@ -177,7 +177,7 @@ export const sharePost = asyncWrapper(async function (req, res, next) {
   res.status(201).json(newPost);
 });
 
-export const savePost = asyncWrapper(async function (req, res, next) {
+exports.savePost = asyncWrapper(async function (req, res, next) {
   const { postId } = req.params;
   const currUser = req.user;
 
@@ -202,7 +202,7 @@ export const savePost = asyncWrapper(async function (req, res, next) {
   res.status(201).json(operation);
 });
 
-export const changePostAudience = asyncWrapper(async function (req, res, next) {
+exports.changePostAudience = asyncWrapper(async function (req, res, next) {
   const { postId } = req.params;
   const { audience } = req.body;
   const currUser = req.user;
@@ -219,7 +219,7 @@ export const changePostAudience = asyncWrapper(async function (req, res, next) {
   res.status(201).json({ audience: post.audience });
 });
 
-export const reactOnPost = asyncWrapper(async function (req, res, next) {
+exports.reactOnPost = asyncWrapper(async function (req, res, next) {
   const { postId } = req.params;
   const { reaction } = req.body;
   const currUser = req.user;
@@ -239,7 +239,7 @@ export const reactOnPost = asyncWrapper(async function (req, res, next) {
   });
 });
 
-export const getPost = asyncWrapper(async function (req, res, next) {
+exports.getPost = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
   const { postId } = req.params;
 
@@ -266,7 +266,7 @@ export const getPost = asyncWrapper(async function (req, res, next) {
   res.status(200).json(post);
 });
 
-export const getBlogPosts = asyncWrapper(async function (req, res, next) {
+exports.getBlogPosts = asyncWrapper(async function (req, res, next) {
   // const currUser = req.user;
   const { page, limit, hasMore, author, category } = req.query;
 
@@ -297,7 +297,7 @@ export const getBlogPosts = asyncWrapper(async function (req, res, next) {
   res.status(200).json({ data: blogPosts, results: postsLength });
 });
 
-export const getPostComments = asyncWrapper(async function (req, res, next) {
+exports.getPostComments = asyncWrapper(async function (req, res, next) {
   const { postId } = req.params;
 
   const post = await Post.findById(postId);
@@ -315,7 +315,7 @@ export const getPostComments = asyncWrapper(async function (req, res, next) {
   res.status(200).json(comments);
 });
 
-export const isUserPost = asyncWrapper(async function (req, res, next) {
+exports.isUserPost = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
   const { postId } = req.params;
 
@@ -346,7 +346,7 @@ export const isUserPost = asyncWrapper(async function (req, res, next) {
   res.status(200).json(info);
 });
 
-export const removeTagFromPost = asyncWrapper(async function (req, res, next) {
+exports.removeTagFromPost = asyncWrapper(async function (req, res, next) {
   const { postId } = req.params;
   const currUser = req.user;
 
@@ -364,7 +364,7 @@ export const removeTagFromPost = asyncWrapper(async function (req, res, next) {
   res.status(200).json({ removed: true, postId, tags: post.tags });
 });
 
-export const reviewTaggedPosts = asyncWrapper(async function (req, res, next) {
+exports.reviewTaggedPosts = asyncWrapper(async function (req, res, next) {
   const { postId } = req.params;
   const { show } = req.body;
   const currUser = req.user;
@@ -382,7 +382,7 @@ export const reviewTaggedPosts = asyncWrapper(async function (req, res, next) {
   res.status(201).json({ updated: true });
 });
 
-export const addPostToProfile = asyncWrapper(async function (req, res, next) {
+exports.addPostToProfile = asyncWrapper(async function (req, res, next) {
   const { postId } = req.params;
   const currUser = req.user;
 
@@ -411,7 +411,7 @@ export const addPostToProfile = asyncWrapper(async function (req, res, next) {
   res.status(201).json({ updated: true });
 });
 
-export const hidePostFromProfile = asyncWrapper(async function (
+exports.hidePostFromProfile = asyncWrapper(async function (
   req,
   res,
   next
@@ -444,7 +444,7 @@ export const hidePostFromProfile = asyncWrapper(async function (
   res.status(201).json({ updated: true });
 });
 
-export const getTopRatedBlogPosts = asyncWrapper(async function (
+exports.getTopRatedBlogPosts = asyncWrapper(async function (
   req,
   res,
   next
@@ -467,7 +467,7 @@ export const getTopRatedBlogPosts = asyncWrapper(async function (
   res.status(200).json(posts);
 });
 
-export const getTopRatedPublishers = asyncWrapper(async function (
+exports.getTopRatedPublishers = asyncWrapper(async function (
   req,
   res,
   next
@@ -518,7 +518,7 @@ export const getTopRatedPublishers = asyncWrapper(async function (
   res.status(200).json(topRatedPublishers);
 });
 
-export const getRelatedPosts = asyncWrapper(async function (req, res, next) {
+exports.getRelatedPosts = asyncWrapper(async function (req, res, next) {
   const { postId } = req.params;
   const { limit } = req.query;
 

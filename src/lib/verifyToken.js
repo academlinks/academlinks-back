@@ -1,7 +1,7 @@
-import JWT from 'jsonwebtoken';
-import { promisify } from 'util';
+const JWT = require("jsonwebtoken");
+const { promisify } = require("util");
 
-export const verifyToken = async (token, refresher = false) => {
+const verifyToken = async (token, refresher = false) => {
   const SECRET = process.env.JWT_SECRET;
   const REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
 
@@ -11,3 +11,5 @@ export const verifyToken = async (token, refresher = false) => {
 
   return user;
 };
+
+module.exports = verifyToken;

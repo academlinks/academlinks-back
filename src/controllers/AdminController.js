@@ -1,33 +1,33 @@
-import { asyncWrapper } from "../lib/asyncWrapper.js";
-import AppError from "../lib/AppError.js";
-import asignToken from "../lib/asignToken.js";
+const asyncWrapper = require("../lib/asyncWrapper.js");
+const AppError = require("../lib/AppError.js");
+const asignToken = require("../lib/asignToken.js");
 
-import API_Features from "../lib/API_Features.js";
+const API_Features = require("../lib/API_Features.js");
 
-import Admin from "../models/Admin.js";
-import User from "../models/User.js";
-import Registration from "../models/Registration.js";
-import Commercial from "../models/Commercials.js";
-import AdminNotification from "../models/AdminNotification.js";
+const Admin = require("../models/Admin.js");
+const User = require("../models/User.js");
+const Registration = require("../models/Registration.js");
+const Commercial = require("../models/Commercials.js");
+const AdminNotification = require("../models/AdminNotification.js");
 
-import { uploadMedia, editMedia } from "../lib/multer.js";
-import { getServerHost } from "../lib/getOrigins.js";
-import { Email } from "../lib/sendEmail.js";
+const { uploadMedia, editMedia } = require("../lib/multer.js");
+const { getServerHost } = require("../lib/getOrigins.js");
+const Email = require("../lib/sendEmail.js");
 
-import fs from "fs";
-import { promisify } from "util";
+const fs = require("fs");
+const { promisify } = require("util");
 
 ////////////////////////////
 ////////// Media //////////
 //////////////////////////
 
-export const resizeAndOptimiseMedia = editMedia({
+exports.resizeAndOptimiseMedia = editMedia({
   multy: false,
   resize: false,
   destination: "public/images/commercials",
 });
 
-export const uploadCommercialMediaFiles = (imageName) =>
+exports.uploadCommercialMediaFiles = (imageName) =>
   uploadMedia({
     storage: "memoryStorage",
     destination: "public/images/commercials",
@@ -39,7 +39,7 @@ export const uploadCommercialMediaFiles = (imageName) =>
 ////////// Authorization //////////
 //////////////////////////////////
 
-export const logIn = asyncWrapper(async function (req, res, next) {
+exports.logIn = asyncWrapper(async function (req, res, next) {
   const { userName, password } = req.body;
 
   const admin = await Admin.findOne({ userName }).select("+password");
@@ -60,7 +60,7 @@ export const logIn = asyncWrapper(async function (req, res, next) {
 ////////// Users //////////
 //////////////////////////
 
-export const getUserLabels = asyncWrapper(async function (req, res, next) {
+exports.getUserLabels = asyncWrapper(async function (req, res, next) {
   const docQuery = new API_Features(User.find(), req.query)
     .pagination()
     .selectFields(
@@ -79,7 +79,7 @@ export const getUserLabels = asyncWrapper(async function (req, res, next) {
   res.status(200).json(resBody);
 });
 
-export const getUserInfo = asyncWrapper(async function (req, res, next) {
+exports.getUserInfo = asyncWrapper(async function (req, res, next) {
   const { userId } = req.params;
 
   const userInfo = await User.findById(userId).select(
@@ -91,7 +91,7 @@ export const getUserInfo = asyncWrapper(async function (req, res, next) {
   res.status(200).json(userInfo);
 });
 
-export const getUsersForStatistic = asyncWrapper(async function (
+exports.getUsersForStatistic = asyncWrapper(async function (
   req,
   res,
   next
@@ -107,7 +107,7 @@ export const getUsersForStatistic = asyncWrapper(async function (
 ////////// Registration //////////
 /////////////////////////////////
 
-export const getRegistrationLabels = asyncWrapper(async function (
+exports.getRegistrationLabels = asyncWrapper(async function (
   req,
   res,
   next
@@ -125,7 +125,7 @@ export const getRegistrationLabels = asyncWrapper(async function (
   res.status(200).json(registrations);
 });
 
-export const getRegistration = asyncWrapper(async function (req, res, next) {
+exports.getRegistration = asyncWrapper(async function (req, res, next) {
   const { registrationId } = req.params;
 
   const registration = await Registration.findById(registrationId);
@@ -140,7 +140,7 @@ export const getRegistration = asyncWrapper(async function (req, res, next) {
 ////////// Commercials //////////
 ////////////////////////////////
 
-export const getCommercials = asyncWrapper(async function (req, res, next) {
+exports.getCommercials = asyncWrapper(async function (req, res, next) {
   const { all, outdated, active } = req.query;
 
   const clientQuery = {
@@ -159,7 +159,7 @@ export const getCommercials = asyncWrapper(async function (req, res, next) {
   res.status(200).json(commercials);
 });
 
-export const getCommercial = asyncWrapper(async function (req, res, next) {
+exports.getCommercial = asyncWrapper(async function (req, res, next) {
   const { commercialId } = req.params;
 
   const commercial = await Commercial.findById(commercialId);
@@ -169,7 +169,7 @@ export const getCommercial = asyncWrapper(async function (req, res, next) {
   res.status(200).json(commercial);
 });
 
-export const addCommercial = asyncWrapper(async function (req, res, next) {
+exports.addCommercial = asyncWrapper(async function (req, res, next) {
   const commercialBody = req.body;
 
   const newCommercial = {
@@ -187,7 +187,7 @@ export const addCommercial = asyncWrapper(async function (req, res, next) {
   res.status(201).json({ created: true });
 });
 
-export const deleteCommercial = asyncWrapper(async function (req, res, next) {
+exports.deleteCommercial = asyncWrapper(async function (req, res, next) {
   const { commercialId } = req.params;
 
   const commercial = await Commercial.findById(commercialId);
@@ -216,7 +216,7 @@ export const deleteCommercial = asyncWrapper(async function (req, res, next) {
   res.status(204).json({ deleted: true });
 });
 
-export const updateCommercial = asyncWrapper(async function (req, res, next) {
+exports.updateCommercial = asyncWrapper(async function (req, res, next) {
   const { commercialId } = req.params;
   const body = req.body;
 
@@ -251,7 +251,7 @@ export const updateCommercial = asyncWrapper(async function (req, res, next) {
   res.status(201).json({ updated: true });
 });
 
-export const sendEmailToCommercialCustomer = asyncWrapper(async function (
+exports.sendEmailToCommercialCustomer = asyncWrapper(async function (
   req,
   res,
   next
@@ -287,7 +287,7 @@ export const sendEmailToCommercialCustomer = asyncWrapper(async function (
 ////////// Notifications //////////
 //////////////////////////////////
 
-export const getBadges = asyncWrapper(async function (req, res, next) {
+exports.getBadges = asyncWrapper(async function (req, res, next) {
   const regCounts = await Registration.find({
     aproved: false,
   }).countDocuments();
@@ -307,7 +307,7 @@ export const getBadges = asyncWrapper(async function (req, res, next) {
   });
 });
 
-export const getNotifications = asyncWrapper(async function (req, res, next) {
+exports.getNotifications = asyncWrapper(async function (req, res, next) {
   const notifications = await AdminNotification.find()
     .populate({
       path: "from",
@@ -318,7 +318,7 @@ export const getNotifications = asyncWrapper(async function (req, res, next) {
   res.status(200).json(notifications);
 });
 
-export const getNotification = asyncWrapper(async function (req, res, next) {
+exports.getNotification = asyncWrapper(async function (req, res, next) {
   const { notificationId } = req.params;
 
   const notification = await AdminNotification.findById(
@@ -331,7 +331,7 @@ export const getNotification = asyncWrapper(async function (req, res, next) {
   res.status(200).json(notification);
 });
 
-export const deleteAllNotifications = asyncWrapper(async function (
+exports.deleteAllNotifications = asyncWrapper(async function (
   req,
   res,
   next
@@ -341,7 +341,7 @@ export const deleteAllNotifications = asyncWrapper(async function (
   res.status(204).json({ deleted: true });
 });
 
-export const deleteNotification = asyncWrapper(async function (req, res, next) {
+exports.deleteNotification = asyncWrapper(async function (req, res, next) {
   const { notificationId } = req.params;
 
   const deletedNotify = await AdminNotification.findByIdAndDelete(
@@ -354,7 +354,7 @@ export const deleteNotification = asyncWrapper(async function (req, res, next) {
   res.status(204).json({ deleted: true });
 });
 
-export const markNotificationsAsSeen = asyncWrapper(async function (
+exports.markNotificationsAsSeen = asyncWrapper(async function (
   req,
   res,
   next
@@ -364,7 +364,7 @@ export const markNotificationsAsSeen = asyncWrapper(async function (
   res.status(201).json({ updated: true });
 });
 
-export const markNotificationAsRead = asyncWrapper(async function (
+exports.markNotificationAsRead = asyncWrapper(async function (
   req,
   res,
   next

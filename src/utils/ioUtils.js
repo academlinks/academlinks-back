@@ -1,6 +1,6 @@
-import OnlineUsers from "../models/OnLineUsers.js";
+const OnlineUsers = require("../models/OnLineUsers.js");
 
-export async function useSocket(req, { adressatId, operationName, data }) {
+exports.useSocket = async function (req, { adressatId, operationName, data }) {
   const io = await req.app.get("socket");
 
   const isOnlineAdressat = await OnlineUsers.findOne({ userId: adressatId });
@@ -8,9 +8,9 @@ export async function useSocket(req, { adressatId, operationName, data }) {
   if (!isOnlineAdressat) return;
 
   io.to(isOnlineAdressat.socketId).emit(`${operationName}`, data);
-}
+};
 
-export async function useLazySocket(req) {
+exports.useLazySocket = async function (req) {
   const io = await req.app.get("socket");
 
   return async function sender({ adressatId, operationName, data }) {
@@ -20,9 +20,9 @@ export async function useLazySocket(req) {
 
     io.to(isOnlineAdressat.socketId).emit(`${operationName}`, data);
   };
-}
+};
 
-export const socket_name_placeholders = {
+exports.socket_name_placeholders = {
   // FOR BOTH
   connection: "connection",
   disconnect: "disconnect",

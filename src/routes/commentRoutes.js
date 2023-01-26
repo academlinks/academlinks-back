@@ -1,5 +1,5 @@
-import express from "express";
-import {
+const express = require("express");
+const {
   updateComment,
   deleteComment,
   pinComment,
@@ -9,11 +9,11 @@ import {
   deleteCommentReply,
   pinCommentReply,
   reactOnCommentReply,
-} from "../controllers/commentsController.js";
-import {
+} = require("../controllers/commentsController.js");
+const {
   checkAuth,
   restriction,
-} from "../controllers/authenticationController.js";
+} = require("../controllers/authenticationController.js");
 
 const router = express.Router();
 
@@ -45,4 +45,4 @@ router
   .patch(checkAuth, restriction("user"), updateComment)
   .delete(checkAuth, restriction("user", "admin"), deleteComment);
 
-export default router;
+module.exports = router;

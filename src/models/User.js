@@ -1,7 +1,8 @@
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
+const crypto = require("crypto");
+
 const { Schema, model } = mongoose;
-import bcrypt from "bcryptjs";
-import crypto from "crypto";
 
 const UserSchema = new Schema(
   {
@@ -192,7 +193,7 @@ UserSchema.methods.createPasswordResetToken = function () {
     .createHash("sha256")
     .update(resetToken)
     .digest("hex");
-    
+
   this.resetPasswordExpiresIn = Date.now() + 1000 * 60 * 10;
 
   return resetToken;
@@ -200,4 +201,4 @@ UserSchema.methods.createPasswordResetToken = function () {
 
 const User = model("User", UserSchema);
 
-export default User;
+module.exports = User;

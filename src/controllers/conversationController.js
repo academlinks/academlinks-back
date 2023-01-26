@@ -1,18 +1,18 @@
-import AppError from "../lib/AppError.js";
-import { asyncWrapper } from "../lib/asyncWrapper.js";
+const AppError = require("../lib/AppError.js");
+const asyncWrapper = require("../lib/asyncWrapper.js");
 
-import Conversation from "../models/Conversation.js";
-import Message from "../models/Message.js";
-import User from "../models/User.js";
-import { useSocket, socket_name_placeholders } from "../utils/ioUtils.js";
+const Conversation = require("../models/Conversation.js");
+const Message = require("../models/Message.js");
+const User = require("../models/User.js");
+const { useSocket, socket_name_placeholders } = require("../utils/ioUtils.js");
 
-import {
+const {
   createMessage,
   excludeDeletionField,
   deleteConversationPermanently,
-} from "../utils/controllConversationUtils.js";
+} = require("../utils/controllConversationUtils.js");
 
-export const createConvesation = asyncWrapper(async function (req, res, next) {
+exports.createConvesation = asyncWrapper(async function (req, res, next) {
   const { id: userId } = req.params;
   const currUser = req.user;
 
@@ -55,7 +55,7 @@ export const createConvesation = asyncWrapper(async function (req, res, next) {
   res.status(201).json({ conversationId: newConversation._id, isNew });
 });
 
-export const sendMessage = asyncWrapper(async function (req, res, next) {
+exports.sendMessage = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
   const { adressatId, conversationId } = req.params;
   const { message } = req.body;
@@ -116,7 +116,7 @@ export const sendMessage = asyncWrapper(async function (req, res, next) {
     .json({ lastMessage: existingConversation.lastMessage, message: doc });
 });
 
-export const getConversation = asyncWrapper(async function (req, res, next) {
+exports.getConversation = asyncWrapper(async function (req, res, next) {
   const { id: conversationId } = req.params;
   const currUser = req.user;
 
@@ -142,7 +142,7 @@ export const getConversation = asyncWrapper(async function (req, res, next) {
   res.status(200).json(conversation);
 });
 
-export const getLastConversation = asyncWrapper(async function (
+exports.getLastConversation = asyncWrapper(async function (
   req,
   res,
   next
@@ -175,7 +175,7 @@ export const getLastConversation = asyncWrapper(async function (
   res.status(200).json(lastConversation);
 });
 
-export const getAllConversation = asyncWrapper(async function (req, res, next) {
+exports.getAllConversation = asyncWrapper(async function (req, res, next) {
   const { userId } = req.params;
   const currUser = req.user;
 
@@ -203,7 +203,7 @@ export const getAllConversation = asyncWrapper(async function (req, res, next) {
   res.status(200).json(conversations);
 });
 
-export const deleteConversation = asyncWrapper(async function (req, res, next) {
+exports.deleteConversation = asyncWrapper(async function (req, res, next) {
   const { id: conversationId } = req.params;
   const currUser = req.user;
 
@@ -277,7 +277,7 @@ export const deleteConversation = asyncWrapper(async function (req, res, next) {
   res.status(204).json({ deleted: true });
 });
 
-export const markAsRead = asyncWrapper(async function (req, res, next) {
+exports.markAsRead = asyncWrapper(async function (req, res, next) {
   const { conversationId, adressatId } = req.params;
   const currUser = req.user;
 
@@ -311,7 +311,7 @@ export const markAsRead = asyncWrapper(async function (req, res, next) {
   res.status(200).json(body);
 });
 
-export const getUnseenConversationCount = asyncWrapper(async function (
+exports.getUnseenConversationCount = asyncWrapper(async function (
   req,
   res,
   next
@@ -331,7 +331,7 @@ export const getUnseenConversationCount = asyncWrapper(async function (
   res.status(200).json(count);
 });
 
-export const markConversationsAsSeen = asyncWrapper(async function (
+exports.markConversationsAsSeen = asyncWrapper(async function (
   req,
   res,
   next

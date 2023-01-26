@@ -1,6 +1,7 @@
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
+
 const { model, Schema } = mongoose;
-import bcrypt from "bcryptjs";
 
 const AdminSchema = new Schema({
   userName: {
@@ -34,4 +35,4 @@ AdminSchema.methods.checkPassword = async function (
 
 const Admin = model("Admin", AdminSchema);
 
-export default Admin;
+module.exports = Admin;

@@ -1,5 +1,5 @@
-import Notification from "../models/Notification.js";
-import { useLazySocket, socket_name_placeholders } from "./ioUtils.js";
+const Notification = require("../models/Notification.js");
+const { useLazySocket, socket_name_placeholders } = require("./ioUtils.js");
 
 const messages_placeholder = {
   // On Comments
@@ -27,7 +27,7 @@ const messages_placeholder = {
   onPostShare: (postType) => `share your ${postType}`,
 };
 
-export async function controllAddCommentNotification({
+exports.controllAddCommentNotification = async function ({
   req,
   post,
   comment,
@@ -216,9 +216,9 @@ export async function controllAddCommentNotification({
   }
 
   if (operations[0]) await generateNotifications(operations, sender);
-}
+};
 
-export async function controllUpdateCommentNotification({
+exports.controllUpdateCommentNotification = async function ({
   req,
   post,
   comment,
@@ -271,9 +271,9 @@ export async function controllUpdateCommentNotification({
   }
 
   if (operations[0]) await generateNotifications(operations, sender);
-}
+};
 
-export async function controllCreatePostNotification({
+exports.controllCreatePostNotification = async function ({
   req,
   post,
   tags,
@@ -309,9 +309,9 @@ export async function controllCreatePostNotification({
   ];
 
   await generateNotifications(operations, sender);
-}
+};
 
-export async function controllSharePostNotification({ req, post, tags }) {
+exports.controllSharePostNotification = async function ({ req, post, tags }) {
   const sender = await useLazySocket(req);
 
   const postAuthor = post.author._id.toString();
@@ -370,9 +370,9 @@ export async function controllSharePostNotification({ req, post, tags }) {
     );
 
   if (operations[0]) await generateNotifications(operations, sender);
-}
+};
 
-export async function controllFriendRequestNotification({
+exports.controllFriendRequestNotification = async function ({
   req,
   currUser,
   adressat,
@@ -417,7 +417,7 @@ export async function controllFriendRequestNotification({
     );
 
   if (operations[0]) await generateNotifications(operations, sender);
-}
+};
 
 ///////////////////////////////////
 ////////// MAIN HELPERS //////////
@@ -449,8 +449,7 @@ async function generateNotifications(operations, sender) {
 async function createNotification(body) {
   try {
     await Notification.create(body);
-  } catch (error) {
-  }
+  } catch (error) {}
 }
 
 //////////////////////////////////////

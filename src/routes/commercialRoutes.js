@@ -1,11 +1,11 @@
-import express from "express";
+const express = require("express");
 
-import { getCommercials } from "../controllers/commercialController.js";
+const { getCommercials } = require("../controllers/commercialController.js");
 
-import { checkAuth } from "../controllers/authenticationController.js";
+const { checkAuth } = require("../controllers/authenticationController.js");
 
 const router = express.Router();
 
 router.route("/").get(checkAuth, getCommercials);
 
-export default router;
+module.exports = router;

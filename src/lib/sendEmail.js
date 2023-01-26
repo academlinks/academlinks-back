@@ -1,6 +1,6 @@
-import nodemailer from "nodemailer";
+const nodemailer = require("nodemailer");
 
-export class Email {
+class Email {
   constructor({ adressat, subject, text }) {
     this.sender = process.env.APP_EMAIL;
     this.pass = process.env.APP_EMAIL_PASSWORD;
@@ -65,3 +65,5 @@ export class Email {
     });
   }
 }
+
+module.exports = Email;

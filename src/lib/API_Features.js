@@ -1,4 +1,4 @@
-export default class API_Features {
+class API_Features {
   constructor(doc, query) {
     this.doc = doc;
     this.query = query;
@@ -107,3 +107,5 @@ export default class API_Features {
     return { docCount, data };
   }
 }
+
+module.exports = API_Features;

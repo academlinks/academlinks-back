@@ -1,4 +1,4 @@
-import { config } from "dotenv";
+const { config } = require("dotenv");
 
 const {
   parsed: {
@@ -12,23 +12,23 @@ const {
   },
 } = config();
 
-export function getOrigins() {
+exports.getOrigins = () => {
   if (NODE_MODE === "DEV") return [ORIGIN_DEV_APP, ORIGIN_DEV_ADMIN];
   else if (NODE_MODE === "PROD") return [ORIGIN_PROD_APP, ORIGIN_PROD_ADMIN];
-}
+};
 
-export function getServerHost() {
+exports.getServerHost = () => {
   return NODE_MODE === "DEV"
     ? SERVER_HOST_DEV
     : NODE_MODE === "PROD"
     ? SERVER_HOST_PROD
     : "";
-}
+};
 
-export function getAppHost() {
+exports.getAppHost = () => {
   return NODE_MODE === "DEV"
     ? ORIGIN_DEV_APP
     : NODE_MODE === "PROD"
     ? ORIGIN_PROD_APP
     : "";
-}
+};

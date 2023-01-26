@@ -1,26 +1,28 @@
-import crypto from "crypto";
+const crypto = require("crypto");
 
-import Admin from "../models/Admin.js";
-import User from "../models/User.js";
-import Friendship from "../models/Friendship.js";
-import Registration from "../models/Registration.js";
-import AdminNotification from "../models/AdminNotification.js";
+const Admin = require("../models/Admin.js");
+const User = require("../models/User.js");
+const Friendship = require("../models/Friendship.js");
+const Registration = require("../models/Registration.js");
+const AdminNotification = require("../models/AdminNotification.js");
 
-import AppError from "../lib/AppError.js";
-import { asyncWrapper } from "../lib/asyncWrapper.js";
+const AppError = require("../lib/AppError.js");
+const asyncWrapper = require("../lib/asyncWrapper.js");
+const asignToken = require("../lib/asignToken.js");
+const verifyToken = require("../lib/verifyToken.js");
+const Email = require("../lib/sendEmail.js");
+const {
+  getBlackList,
+  updateBlackList,
+} = require("../lib/controllBlackList.js");
 
-import asignToken from "../lib/asignToken.js";
-import { verifyToken } from "../lib/verifyToken.js";
-import { Email } from "../lib/sendEmail.js";
-import { getBlackList, updateBlackList } from "../lib/controllBlackList.js";
+const { useSocket, socket_name_placeholders } = require("../utils/ioUtils.js");
 
-import { useSocket, socket_name_placeholders } from "../utils/ioUtils.js";
-
-import { getAppHost } from "../lib/getOrigins.js";
+const { getAppHost } = require("../lib/getOrigins.js");
 
 // SECTION: Registration
 
-export const registerUser = asyncWrapper(async function (req, res, next) {
+exports.registerUser = asyncWrapper(async function (req, res, next) {
   const { email } = req.body;
 
   const isExistingUserWithEmail = await User.findOne({ email });
@@ -71,7 +73,7 @@ export const registerUser = asyncWrapper(async function (req, res, next) {
   });
 });
 
-export const aproveRegistration = asyncWrapper(async function (req, res, next) {
+exports.aproveRegistration = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
   const { requestId } = req.params;
 
@@ -93,7 +95,9 @@ export const aproveRegistration = asyncWrapper(async function (req, res, next) {
     await new Email({
       adressat: registration.email,
     }).sendRegistrationAprovment({
-      url: `${getAppHost()}/confirmRegistration/${registration._id}/confirm/${registrationPasswordResetToken}`,
+      url: `${getAppHost()}/confirmRegistration/${
+        registration._id
+      }/confirm/${registrationPasswordResetToken}`,
     });
   } catch (error) {
     return next(
@@ -107,7 +111,7 @@ export const aproveRegistration = asyncWrapper(async function (req, res, next) {
     .json({ isAproved: true, resetToken: registrationPasswordResetToken });
 });
 
-export const deleteRegistrationRequest = asyncWrapper(async function (
+exports.deleteRegistrationRequest = asyncWrapper(async function (
   req,
   res,
   next
@@ -140,7 +144,7 @@ export const deleteRegistrationRequest = asyncWrapper(async function (
   res.status(204).json({ deleted: true });
 });
 
-export const checkRegistrationExistance = asyncWrapper(async function (
+exports.checkRegistrationExistance = asyncWrapper(async function (
   req,
   res,
   next
@@ -160,11 +164,7 @@ export const checkRegistrationExistance = asyncWrapper(async function (
   res.status(200).json({ isExistingRequest: true });
 });
 
-export const confirmRegistration = asyncWrapper(async function (
-  req,
-  res,
-  next
-) {
+exports.confirmRegistration = asyncWrapper(async function (req, res, next) {
   const { registerId, tokenId } = req.params;
   const { password } = req.body;
 
@@ -209,7 +209,7 @@ export const confirmRegistration = asyncWrapper(async function (
 
 // SECTION: Authorization
 
-export const loginUser = asyncWrapper(async function (req, res, next) {
+exports.loginUser = asyncWrapper(async function (req, res, next) {
   const { email, password } = req.body;
 
   const candidateUser = await User.findOne({ email }).select(
@@ -231,7 +231,7 @@ export const loginUser = asyncWrapper(async function (req, res, next) {
   res.status(200).json({ ...candidateUser._doc, accessToken });
 });
 
-export const logoutUser = asyncWrapper(async function (req, res, next) {
+exports.logoutUser = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
 
   await updateBlackList(req, currUser.id);
@@ -243,7 +243,7 @@ export const logoutUser = asyncWrapper(async function (req, res, next) {
 
 // SECTION: Update User Credentials
 
-export const changePassword = asyncWrapper(async function (req, res, next) {
+exports.changePassword = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
   const { userId } = req.params;
   const { password, newPassword } = req.body;
@@ -267,7 +267,7 @@ export const changePassword = asyncWrapper(async function (req, res, next) {
   res.status(200).json({ accessToken });
 });
 
-export const changeEmail = asyncWrapper(async function (req, res, next) {
+exports.changeEmail = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
   const { userId } = req.params;
   const { password, email, newEmail } = req.body;
@@ -340,49 +340,46 @@ export const changeEmail = asyncWrapper(async function (req, res, next) {
   res.status(201).json({ accessToken, email: user.email });
 });
 
-export const createResetPasswordForForgotPassword = asyncWrapper(
-  async function (req, res, next) {
-    const { email } = req.body;
-
-    const user = await User.findOne({ email });
-
-    if (!user)
-      return next(new AppError(404, "user with this email does not exists"));
-
-    const passwordReset = user.createPasswordResetToken();
-
-    try {
-      if (!email)
-        return next(new AppError(403, "please provide us valid email"));
-
-      await Registration.create(req.body);
-
-      await new Email({
-        adressat: email,
-      }).sendPasswordReset(passwordReset);
-    } catch (error) {
-      return next(
-        new AppError(
-          500,
-          "There was an error sending the email. Try again later!"
-        )
-      );
-    }
-
-    await user.save({ validateBeforeSave: false });
-
-    res.status(201).json({
-      success: true,
-      message: "Your password reset token (valid for only 10 minutes).",
-    });
-  }
-);
-
-export const updateForgotPassword = asyncWrapper(async function (
+exports.createResetPasswordForForgotPassword = asyncWrapper(async function (
   req,
   res,
   next
 ) {
+  const { email } = req.body;
+
+  const user = await User.findOne({ email });
+
+  if (!user)
+    return next(new AppError(404, "user with this email does not exists"));
+
+  const passwordReset = user.createPasswordResetToken();
+
+  try {
+    if (!email) return next(new AppError(403, "please provide us valid email"));
+
+    await Registration.create(req.body);
+
+    await new Email({
+      adressat: email,
+    }).sendPasswordReset(passwordReset);
+  } catch (error) {
+    return next(
+      new AppError(
+        500,
+        "There was an error sending the email. Try again later!"
+      )
+    );
+  }
+
+  await user.save({ validateBeforeSave: false });
+
+  res.status(201).json({
+    success: true,
+    message: "Your password reset token (valid for only 10 minutes).",
+  });
+});
+
+exports.updateForgotPassword = asyncWrapper(async function (req, res, next) {
   const { token, password } = req.body;
 
   const hashedPassword = crypto
@@ -412,7 +409,7 @@ export const updateForgotPassword = asyncWrapper(async function (
 
 // SECTION: Authentication
 
-export const checkAuth = asyncWrapper(async function (req, res, next) {
+exports.checkAuth = asyncWrapper(async function (req, res, next) {
   const { authorization } = req.headers;
 
   const token = authorization?.split(" ");
@@ -440,7 +437,7 @@ export const checkAuth = asyncWrapper(async function (req, res, next) {
   next();
 });
 
-export const restriction = (...roles) =>
+exports.restriction = (...roles) =>
   asyncWrapper(async function (req, res, next) {
     const currUser = req.user;
 
@@ -450,7 +447,7 @@ export const restriction = (...roles) =>
     next();
   });
 
-export const refresh = asyncWrapper(async function (req, res, next) {
+exports.refresh = asyncWrapper(async function (req, res, next) {
   const { authorization } = req.cookies;
   const token = authorization?.split(" ");
 

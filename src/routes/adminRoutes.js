@@ -1,6 +1,6 @@
-import express from "express";
+const express = require("express");
 
-import {
+const {
   logIn,
   // media upload
   resizeAndOptimiseMedia,
@@ -27,13 +27,14 @@ import {
   markNotificationsAsSeen,
   markNotificationAsRead,
   sendEmailToCommercialCustomer,
-} from "../controllers/adminController.js";
-import { limiter } from "../lib/rateLimiter.js";
+} = require("../controllers/adminController.js");
 
-import {
+const limiter = require("../lib/rateLimiter.js");
+
+const {
   checkAuth,
   restriction,
-} from "../controllers/authenticationController.js";
+} = require("../controllers/authenticationController.js");
 
 const router = express.Router();
 
@@ -117,4 +118,4 @@ router
   .delete(checkAuth, restriction("admin"), deleteNotification)
   .patch(checkAuth, restriction("admin"), markNotificationAsRead);
 
-export default router;
+module.exports = router;

@@ -1,5 +1,5 @@
-import express from "express";
-import {
+const express = require("express");
+const {
   uploadPostMediaFiles,
   resizeAndOptimiseMedia,
   createPost,
@@ -20,12 +20,12 @@ import {
   reviewTaggedPosts,
   addPostToProfile,
   hidePostFromProfile,
-} from "../controllers/postController.js";
-import { addComment } from "../controllers/commentsController.js";
-import {
+} = require("../controllers/postController.js");
+const {
   checkAuth,
   restriction,
-} from "../controllers/authenticationController.js";
+} = require("../controllers/authenticationController.js");
+const { addComment } = require("../controllers/commentsController.js");
 
 const router = express.Router();
 
@@ -105,4 +105,4 @@ router
     createPost
   );
 
-export default router;
+module.exports = router;

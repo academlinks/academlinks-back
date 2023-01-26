@@ -1,6 +1,6 @@
-import AppError from "./AppError.js";
+const AppError = require("./AppError.js");
 
-export const errorController = (err, req, res, next) => {
+const errorController = (err, req, res, next) => {
   let error = destructureError(err);
 
   if (error.name === "CastError") error = handleDBCastError(error);
@@ -78,3 +78,5 @@ function sendProductionError(res, error) {
     });
   }
 }
+
+module.exports = errorController;

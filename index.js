@@ -1,11 +1,11 @@
-import App from "./app.js";
-import { config } from "dotenv";
-import mongoose from "mongoose";
-import http from "http";
-import utils from "util";
-import Redis from "ioredis";
-import { Server } from "socket.io";
-import { getOrigins } from "./src/lib/getOrigins.js";
+const App = require("./app.js");
+const { config } = require("dotenv");
+const mongoose = require("mongoose");
+const http = require("http");
+const utils = require("util");
+const Redis = require("ioredis");
+const { Server } = require("socket.io");
+const { getOrigins } = require("./src/lib/getOrigins.js");
 
 const { createServer } = http;
 const {
@@ -18,11 +18,13 @@ redis.set = utils.promisify(redis.set);
 
 const SERVER = createServer(App);
 
-export const io = new Server(SERVER, {
+const io = new Server(SERVER, {
   cors: { origin: getOrigins() },
 });
 
-import { socket } from "./io.js";
+module.exports = io;
+
+const { socket } = require("./io.js");
 socket();
 
 App.set("socket", io);

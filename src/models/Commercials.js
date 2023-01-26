@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
 const { model, Schema } = mongoose;
 
 const CommercialSchema = new Schema(
@@ -11,7 +11,7 @@ const CommercialSchema = new Schema(
     email: {
       type: String,
     },
-    
+
     phone: {
       type: String,
     },
@@ -48,4 +48,4 @@ const CommercialSchema = new Schema(
 
 const Commercial = model("Commercial", CommercialSchema);
 
-export default Commercial;
+module.exports = Commercial;

@@ -1,15 +1,15 @@
-import express from "express";
-import {
+const express = require("express");
+const {
   getUserInfo,
   addUserInfo,
   updateUserNestedInfo,
   deleteUserInfo,
   deleteNestedUserInfo,
-} from "../controllers/userInfoController.js";
-import {
+} = require("../controllers/userInfoController.js");
+const {
   checkAuth,
   restriction,
-} from "../controllers/authenticationController.js";
+} = require("../controllers/authenticationController.js");
 
 const router = express.Router();
 
@@ -27,4 +27,4 @@ router
   .patch(checkAuth, restriction("user"), updateUserNestedInfo)
   .delete(checkAuth, restriction("user", "admin"), deleteNestedUserInfo);
 
-export default router;
+module.exports = router;

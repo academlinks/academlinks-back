@@ -1,5 +1,5 @@
-import express from "express";
-import {
+const express = require("express");
+const {
   sendFriendRequest,
   cancelFriendRequest,
   deleteFriendRequest,
@@ -10,11 +10,11 @@ import {
   getUserSentRequest,
   getPendingRequestsCount,
   markPendingRequestsAsSeen,
-} from "../controllers/friendsController.js";
-import {
+} = require("../controllers/friendsController.js");
+const {
   checkAuth,
   restriction,
-} from "../controllers/authenticationController.js";
+} = require("../controllers/authenticationController.js");
 
 const router = express.Router();
 
@@ -46,4 +46,4 @@ router
   .get(checkAuth, restriction("user"), getUserFriends)
   .delete(checkAuth, restriction("user"), deleteFriend);
 
-export default router;
+module.exports = router;

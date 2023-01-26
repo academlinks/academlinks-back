@@ -1,5 +1,5 @@
-import JWT from "jsonwebtoken";
-import { getOrigins } from "./getOrigins.js";
+const JWT = require("jsonwebtoken");
+const { getOrigins } = require("./getOrigins.js");
 
 async function signToken(res, user) {
   const SECRET = process.env.JWT_SECRET;
@@ -28,4 +28,4 @@ async function signToken(res, user) {
   return { accessToken };
 }
 
-export default signToken;
+module.exports = signToken;

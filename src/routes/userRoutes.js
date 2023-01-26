@@ -1,5 +1,5 @@
-import express from "express";
-import {
+const express = require("express");
+const {
   uploadUserProfileFile,
   resizeAndOptimiseMedia,
   searchUsers,
@@ -13,11 +13,11 @@ import {
   getPendingPosts,
   getHiddenPosts,
   deleteUser,
-} from "../controllers/userController.js";
-import {
+} = require("../controllers/userController.js");
+const {
   checkAuth,
   restriction,
-} from "../controllers/authenticationController.js";
+} = require("../controllers/authenticationController.js");
 
 const router = express.Router();
 
@@ -73,4 +73,4 @@ router
   .route("/:userId/delete-account")
   .post(checkAuth, restriction("user", "admin"), deleteUser);
 
-export default router;
+module.exports = router;

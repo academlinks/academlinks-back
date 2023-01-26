@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
 const { Schema, model } = mongoose;
 
 const CommentSchema = new Schema(
@@ -127,4 +127,4 @@ CommentSchema.methods.controllCommentReplyLikes = async function (replyId) {
 
 const Comment = model("Comment", CommentSchema);
 
-export default Comment;
+module.exports = Comment;

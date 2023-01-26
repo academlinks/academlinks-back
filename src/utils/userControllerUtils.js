@@ -1,17 +1,16 @@
-import fs from "fs";
-import { promisify } from "util";
-import Friendship from "../models/Friendship.js";
+const fs = require("fs");
+const { promisify } = require("util");
 
-export async function deleteExistingImage(originalFileNameFragments) {
+exports.deleteExistingImage = async function (originalFileNameFragments) {
   try {
     const deletion = promisify(fs.unlink);
     await deletion(`public/images/${originalFileNameFragments[0]}`);
   } catch (error) {
     throw new Error(error.message);
   }
-}
+};
 
-export function checkIfIsFriend({ userId, userFriendShip, currUser }) {
+exports.checkIfIsFriend = function ({ userId, userFriendShip, currUser }) {
   const isCurrUser = userId === currUser.id;
 
   const isFriend =
@@ -44,9 +43,9 @@ export function checkIfIsFriend({ userId, userFriendShip, currUser }) {
   }
 
   return { info, isFriend, isCurrUser };
-}
+};
 
-export function checkIfIsFriendOnEach({
+exports.checkIfIsFriendOnEach = function ({
   currUser,
   doc,
   docId,
@@ -69,4 +68,4 @@ export function checkIfIsFriendOnEach({
   } else {
     return doc;
   }
-}
+};

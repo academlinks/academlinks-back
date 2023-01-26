@@ -1,11 +1,11 @@
-import mongoose from 'mongoose';
+const mongoose = require("mongoose");
 const { model, Schema } = mongoose;
 
 const BookmarksSchema = new Schema(
   {
     post: {
       type: Schema.ObjectId,
-      ref: 'Post',
+      ref: "Post",
     },
     cachedId: {
       type: String,
@@ -21,11 +21,11 @@ const BookmarksSchema = new Schema(
   { timestamps: true }
 );
 
-BookmarksSchema.pre('save', function (next) {
+BookmarksSchema.pre("save", function (next) {
   if (this.isNew) this.cachedId = this.post;
   next();
 });
 
-const Bookmarks = model('Bookmark', BookmarksSchema);
+const Bookmarks = model("Bookmark", BookmarksSchema);
 
-export default Bookmarks;
+module.exports = Bookmarks;

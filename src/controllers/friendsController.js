@@ -1,14 +1,16 @@
-import mongoose from "mongoose";
-import AppError from "../lib/AppError.js";
-import { asyncWrapper } from "../lib/asyncWrapper.js";
-import { useSocket, socket_name_placeholders } from "../utils/ioUtils.js";
+const mongoose = require("mongoose");
+const AppError = require("../lib/AppError.js");
+const asyncWrapper = require("../lib/asyncWrapper.js");
+const { useSocket, socket_name_placeholders } = require("../utils/ioUtils.js");
 
-import Friendship from "../models/Friendship.js";
+const Friendship = require("../models/Friendship.js");
 
-import { controllUserExistence } from "../utils/friendsControllerUtils.js";
-import { controllFriendRequestNotification } from "../utils/notificationControllerUtils.js";
+const controllUserExistence = require("../utils/friendsControllerUtils.js");
+const {
+  controllFriendRequestNotification,
+} = require("../utils/notificationControllerUtils.js");
 
-export const sendFriendRequest = asyncWrapper(async function (req, res, next) {
+exports.sendFriendRequest = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
 
   const { user, adressatUser } = await controllUserExistence({ req, next });
@@ -39,7 +41,7 @@ export const sendFriendRequest = asyncWrapper(async function (req, res, next) {
   res.status(200).json({ sent: true });
 });
 
-export const cancelFriendRequest = asyncWrapper(async function (
+exports.cancelFriendRequest = asyncWrapper(async function (
   req,
   res,
   next
@@ -69,7 +71,7 @@ export const cancelFriendRequest = asyncWrapper(async function (
   res.status(200).json({ canceled: true });
 });
 
-export const deleteFriendRequest = asyncWrapper(async function (
+exports.deleteFriendRequest = asyncWrapper(async function (
   req,
   res,
   next
@@ -101,7 +103,7 @@ export const deleteFriendRequest = asyncWrapper(async function (
   res.status(200).json({ deleted: true });
 });
 
-export const confirmFriendRequest = asyncWrapper(async function (
+exports.confirmFriendRequest = asyncWrapper(async function (
   req,
   res,
   next
@@ -148,7 +150,7 @@ export const confirmFriendRequest = asyncWrapper(async function (
   });
 });
 
-export const deleteFriend = asyncWrapper(async function (req, res, next) {
+exports.deleteFriend = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
 
   const { user, adressatUser } = await controllUserExistence({ req, next });
@@ -178,7 +180,7 @@ export const deleteFriend = asyncWrapper(async function (req, res, next) {
   res.status(200).json({ deleted: true });
 });
 
-export const getUserFriends = asyncWrapper(async function (req, res, next) {
+exports.getUserFriends = asyncWrapper(async function (req, res, next) {
   const { userId } = req.params;
   const currUser = req.user;
 
@@ -311,7 +313,7 @@ export const getUserFriends = asyncWrapper(async function (req, res, next) {
   res.status(200).json(userFriends);
 });
 
-export const getUserPendingRequest = asyncWrapper(async function (
+exports.getUserPendingRequest = asyncWrapper(async function (
   req,
   res,
   next
@@ -427,7 +429,7 @@ export const getUserPendingRequest = asyncWrapper(async function (
   res.status(200).json(requests);
 });
 
-export const getUserSentRequest = asyncWrapper(async function (req, res, next) {
+exports.getUserSentRequest = asyncWrapper(async function (req, res, next) {
   const { userId } = req.params;
   const currUser = req.user;
 
@@ -539,7 +541,7 @@ export const getUserSentRequest = asyncWrapper(async function (req, res, next) {
   res.status(200).json(requests);
 });
 
-export const getPendingRequestsCount = asyncWrapper(async function (
+exports.getPendingRequestsCount = asyncWrapper(async function (
   req,
   res,
   next
@@ -560,7 +562,7 @@ export const getPendingRequestsCount = asyncWrapper(async function (
     });
 });
 
-export const markPendingRequestsAsSeen = asyncWrapper(async function (
+exports.markPendingRequestsAsSeen = asyncWrapper(async function (
   req,
   res,
   next

@@ -1,12 +1,12 @@
-import fs from "fs";
-import { promisify } from "util";
+const fs = require("fs");
+const { promisify } = require("util");
 
-import AppError from "../lib/AppError.js";
+const AppError = require("../lib/AppError.js");
 
-import Post from "../models/Post.js";
-import { getServerHost } from "../lib/getOrigins.js";
+const Post = require("../models/Post.js");
+const { getServerHost } = require("../lib/getOrigins.js");
 
-export function contollAudience(post, audience, type) {
+exports.contollAudience = function (post, audience, type) {
   const audienceForBlogPost = ["public", "users"];
   const audienceForPost = ["public", "friends", "private"];
 
@@ -15,9 +15,9 @@ export function contollAudience(post, audience, type) {
   else if (type === "blogPost" && !audienceForBlogPost.includes(audience))
     post.audience = "public";
   else post.audience = audience;
-}
+};
 
-export async function controllPostCreation(req) {
+exports.controllPostCreation = async function (req) {
   const {
     type,
     description,
@@ -48,9 +48,9 @@ export async function controllPostCreation(req) {
   }
 
   return { newPost, tags };
-}
+};
 
-export async function controllPostMediaDeletion(
+exports.controllPostMediaDeletion = async function (
   media,
   next,
   destination = "public/images"
@@ -72,9 +72,13 @@ export async function controllPostMediaDeletion(
       }
     })
   );
-}
+};
 
-export async function controllPostUpdateBody({ req, postType, existingTags }) {
+exports.controllPostUpdateBody = async function ({
+  req,
+  postType,
+  existingTags,
+}) {
   const body = {};
 
   const availableKeys = [
@@ -118,9 +122,9 @@ export async function controllPostUpdateBody({ req, postType, existingTags }) {
   }
 
   return { body, newTags };
-}
+};
 
-export async function controllPostMediaOnUpdate({ req, next, post }) {
+exports.controllPostMediaOnUpdate = async function ({ req, next, post }) {
   const { media } = req.body;
 
   const existingMedia = post.media;
@@ -160,9 +164,9 @@ export async function controllPostMediaOnUpdate({ req, next, post }) {
 
     post.media = [...modifiedExistingFiles, ...newFiles];
   } else if (!shared && filteredMedia[0]) post.media = media;
-}
+};
 
-export async function controllPostReaction({ post, currUserId, reaction }) {
+exports.controllPostReaction = async function ({ post, currUserId, reaction }) {
   const existingReaction = post.reactions.find(
     (reaction) => reaction.author.toString() === currUserId
   );
@@ -179,16 +183,16 @@ export async function controllPostReaction({ post, currUserId, reaction }) {
       reaction,
       author: currUserId,
     });
-}
+};
 
-export async function controllUserRelationToPost({ post, currUser }) {
+exports.controllUserRelationToPost = async function ({ post, currUser }) {
   const isAuthor = post.author.toString() === currUser.id;
   const isTagged = post.tags.some((tag) => tag.user.toString() === currUser.id);
 
   return { isAuthor, isTagged };
-}
+};
 
-export async function controllShowOnProfile({ currUser, post, task }) {
+exports.controllShowOnProfile = async function ({ currUser, post, task }) {
   const { isAuthor, isTagged } = await controllUserRelationToPost({
     post,
     currUser,
@@ -201,4 +205,4 @@ export async function controllShowOnProfile({ currUser, post, task }) {
     post.tags[i].hidden =
       task === "add" ? false : task === "hide" ? true : undefined;
   }
-}
+};

@@ -1,5 +1,5 @@
-import express from "express";
-import {
+const express = require("express");
+const {
   registerUser,
   checkRegistrationExistance,
   loginUser,
@@ -14,8 +14,8 @@ import {
   restriction,
   createResetPasswordForForgotPassword,
   updateForgotPassword,
-} from "../controllers/authenticationController.js";
-import { limiter } from "../lib/rateLimiter.js";
+} = require("../controllers/authenticationController.js");
+const limiter = require("../lib/rateLimiter.js");
 
 const router = express.Router();
 
@@ -69,4 +69,4 @@ router.route("/logout").post(checkAuth, logoutUser);
 
 router.route("/refresh").get(refresh);
 
-export default router;
+module.exports = router;

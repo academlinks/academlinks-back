@@ -1,6 +1,6 @@
-import { io } from "./index.js";
-import OnlineUsers from "./src/models/OnLineUsers.js";
-import { socket_name_placeholders } from "./src/utils/ioUtils.js";
+const io = require("./index.js");
+const OnlineUsers = require("./src/models/OnLineUsers.js");
+const { socket_name_placeholders } = require("./src/utils/ioUtils.js");
 
 async function addOnlineUser(onlineUser) {
   try {
@@ -29,7 +29,7 @@ async function removeOnlineUser(socketId) {
   }
 }
 
-export function socket() {
+exports.socket = function () {
   io.on(socket_name_placeholders.connection, (socket) => {
     socket.on(socket_name_placeholders.userConnection, async (data) => {
       await addOnlineUser({
@@ -49,4 +49,4 @@ export function socket() {
       await removeOnlineUser(socket.id);
     });
   });
-}
+};

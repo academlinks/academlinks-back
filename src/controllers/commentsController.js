@@ -1,16 +1,16 @@
-import AppError from "../lib/AppError.js";
-import { asyncWrapper } from "../lib/asyncWrapper.js";
+const AppError = require("../lib/AppError.js");
+const asyncWrapper = require("../lib/asyncWrapper.js");
 
-import Post from "../models/Post.js";
-import Comment from "../models/Comment.js";
+const Post = require("../models/Post.js");
+const Comment = require("../models/Comment.js");
 
-import {
+const {
   controllAddCommentNotification,
   controllUpdateCommentNotification,
-} from "../utils/notificationControllerUtils.js";
-import { controllCommentAccess } from "../utils/commentControllerUtils.js";
+} = require("../utils/notificationControllerUtils.js");
+const controllCommentAccess = require("../utils/commentControllerUtils.js");
 
-export const addComment = asyncWrapper(async function (req, res, next) {
+exports.addComment = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
   const { postId } = req.params;
   const { text, tags } = req.body;
@@ -38,7 +38,7 @@ export const addComment = asyncWrapper(async function (req, res, next) {
   res.status(200).json(comment);
 });
 
-export const addCommentReply = asyncWrapper(async function (req, res, next) {
+exports.addCommentReply = asyncWrapper(async function (req, res, next) {
   const { text, tags } = req.body;
   const currUser = req.user;
 
@@ -75,7 +75,7 @@ export const addCommentReply = asyncWrapper(async function (req, res, next) {
   res.status(200).json(commentReply);
 });
 
-export const updateComment = asyncWrapper(async function (req, res, next) {
+exports.updateComment = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
   const { text, tags } = req.body;
 
@@ -112,7 +112,7 @@ export const updateComment = asyncWrapper(async function (req, res, next) {
   res.status(200).json(updatedComment);
 });
 
-export const updateCommentReply = asyncWrapper(async function (req, res, next) {
+exports.updateCommentReply = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
   const { text, tags } = req.body;
 
@@ -159,7 +159,7 @@ export const updateCommentReply = asyncWrapper(async function (req, res, next) {
   res.status(200).json(updatedCommentReply);
 });
 
-export const deleteComment = asyncWrapper(async function (req, res, next) {
+exports.deleteComment = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
 
   const { post, comment } = await controllCommentAccess({
@@ -183,7 +183,7 @@ export const deleteComment = asyncWrapper(async function (req, res, next) {
   res.status(204).json({ deleted: true });
 });
 
-export const deleteCommentReply = asyncWrapper(async function (req, res, next) {
+exports.deleteCommentReply = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
 
   const { post, comment, commentReply } = await controllCommentAccess({
@@ -213,7 +213,7 @@ export const deleteCommentReply = asyncWrapper(async function (req, res, next) {
   res.status(204).json({ deleted: true });
 });
 
-export const reactOnComment = asyncWrapper(async function (req, res, next) {
+exports.reactOnComment = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
 
   const { comment } = await controllCommentAccess({
@@ -243,7 +243,7 @@ export const reactOnComment = asyncWrapper(async function (req, res, next) {
     .json({ likesAmount: comment.likesAmount, reactions: comment.reactions });
 });
 
-export const reactOnCommentReply = asyncWrapper(async function (
+exports.reactOnCommentReply = asyncWrapper(async function (
   req,
   res,
   next
@@ -281,7 +281,7 @@ export const reactOnCommentReply = asyncWrapper(async function (
   });
 });
 
-export const pinComment = asyncWrapper(async function (req, res, next) {
+exports.pinComment = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
 
   const { post, comment } = await controllCommentAccess({
@@ -300,7 +300,7 @@ export const pinComment = asyncWrapper(async function (req, res, next) {
   res.status(200).json({ pin: comment.pin });
 });
 
-export const pinCommentReply = asyncWrapper(async function (req, res, next) {
+exports.pinCommentReply = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
 
   const { post, comment, commentReply } = await controllCommentAccess({

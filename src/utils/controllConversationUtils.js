@@ -1,6 +1,6 @@
-import Message from '../models/Message.js';
+const Message = require("../models/Message.js");
 
-export async function createMessage({ conversation, author, message }) {
+exports.createMessage = async function ({ conversation, author, message }) {
   const newMessage = await Message.create({
     conversation,
     author,
@@ -8,18 +8,18 @@ export async function createMessage({ conversation, author, message }) {
   });
 
   return newMessage;
-}
+};
 
-export function excludeDeletionField(doc) {
+exports.excludeDeletionField = function (doc) {
   const excludedDoc = {};
   Object.keys(doc)
-    .filter((key) => key !== 'deletion')
+    .filter((key) => key !== "deletion")
     .forEach((key) => (excludedDoc[key] = doc[key]));
 
   return excludedDoc;
-}
+};
 
-export async function deleteConversationPermanently({ conversation }) {
+exports.deleteConversationPermanently = async function ({ conversation }) {
   await conversation.delete();
   await Message.deleteMany({ conversation: conversation._id });
-}
+};

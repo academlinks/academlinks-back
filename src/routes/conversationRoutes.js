@@ -1,7 +1,6 @@
-import express from "express";
-const { Router } = express;
+const express = require("express");
 
-import {
+const {
   deleteConversation,
   sendMessage,
   getConversation,
@@ -11,13 +10,13 @@ import {
   markAsRead,
   getUnseenConversationCount,
   markConversationsAsSeen,
-} from "../controllers/conversationController.js";
-import {
+} = require("../controllers/conversationController.js");
+const {
   checkAuth,
   restriction,
-} from "../controllers/authenticationController.js";
+} = require("../controllers/authenticationController.js");
 
-const router = Router();
+const router = express.Router();
 
 router
   .route("/:userId/last")
@@ -46,4 +45,4 @@ router
   .delete(checkAuth, restriction("user"), deleteConversation)
   .get(checkAuth, restriction("user"), getConversation);
 
-export default router;
+module.exports = router;

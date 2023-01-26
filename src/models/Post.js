@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
 const { Schema, model } = mongoose;
 
 const PostSchema = new Schema(
@@ -79,7 +79,7 @@ const PostSchema = new Schema(
     article: {
       type: String,
     },
-    
+
     title: {
       type: String,
     },
@@ -148,4 +148,4 @@ PostSchema.pre("save", function (next) {
 
 const Post = model("Post", PostSchema);
 
-export default Post;
+module.exports = Post;

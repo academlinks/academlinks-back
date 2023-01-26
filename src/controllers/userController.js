@@ -1,39 +1,39 @@
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
 
-import AppError from "../lib/AppError.js";
-import { asyncWrapper } from "../lib/asyncWrapper.js";
+const AppError = require("../lib/AppError.js");
+const  asyncWrapper  = require("../lib/asyncWrapper.js");
 
-import Bookmarks from "../models/Bookmarks.js";
-import Post from "../models/Post.js";
-import Comments from "../models/Comment.js";
-import Notifications from "../models/Notification.js";
-import Conversation from "../models/Conversation.js";
-import Messages from "../models/Message.js";
-import Friendship from "../models/Friendship.js";
-import User from "../models/User.js";
+const Bookmarks = require("../models/Bookmarks.js");
+const Post = require("../models/Post.js");
+const Comments = require("../models/Comment.js");
+const Notifications = require("../models/Notification.js");
+const Conversation = require("../models/Conversation.js");
+const Messages = require("../models/Message.js");
+const Friendship = require("../models/Friendship.js");
+const User = require("../models/User.js");
 
-import {
+const {
   deleteExistingImage,
   checkIfIsFriend,
   checkIfIsFriendOnEach,
-} from "../utils/userControllerUtils.js";
-import { uploadMedia, editMedia } from "../lib/multer.js";
-import { getServerHost } from "../lib/getOrigins.js";
-import { updateBlackList } from "../lib/controllBlackList.js";
+} = require("../utils/userControllerUtils.js");
+const { uploadMedia, editMedia } = require("../lib/multer.js");
+const { getServerHost } = require("../lib/getOrigins.js");
+const { updateBlackList } = require("../lib/controllBlackList.js");
 
-export const resizeAndOptimiseMedia = editMedia({
+exports.resizeAndOptimiseMedia = editMedia({
   multy: false,
   resize: false,
 });
 
-export const uploadUserProfileFile = (imageName) =>
+exports.uploadUserProfileFile = (imageName) =>
   uploadMedia({
     storage: "memoryStorage",
     upload: "single",
     filename: imageName,
   });
 
-export const updateProfileImage = asyncWrapper(async function (req, res, next) {
+exports.updateProfileImage = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
 
   const user = await User.findById(currUser.id);
@@ -66,7 +66,7 @@ export const updateProfileImage = asyncWrapper(async function (req, res, next) {
   res.status(201).json(mediaUrl);
 });
 
-export const updateCoverImage = asyncWrapper(async function (req, res, next) {
+exports.updateCoverImage = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
 
   const user = await User.findById(currUser.id);
@@ -98,7 +98,7 @@ export const updateCoverImage = asyncWrapper(async function (req, res, next) {
   res.status(201).json(mediaUrl);
 });
 
-export const deleteUser = asyncWrapper(async function (req, res, next) {
+exports.deleteUser = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
   const { userId } = req.params;
   const { password } = req.body;
@@ -275,7 +275,7 @@ export const deleteUser = asyncWrapper(async function (req, res, next) {
   } else res.status(200).json({ done: true });
 });
 
-export const searchUsers = asyncWrapper(async function (req, res, next) {
+exports.searchUsers = asyncWrapper(async function (req, res, next) {
   const { key } = req.query;
 
   const users = await User.find({ userName: { $regex: key } }).select(
@@ -285,7 +285,7 @@ export const searchUsers = asyncWrapper(async function (req, res, next) {
   res.status(200).json(users);
 });
 
-export const getUserProfile = asyncWrapper(async function (req, res, next) {
+exports.getUserProfile = asyncWrapper(async function (req, res, next) {
   const { userId } = req.params;
   // const currUser = req.user;
 
@@ -310,7 +310,7 @@ export const getUserProfile = asyncWrapper(async function (req, res, next) {
   res.status(200).json(userProfile);
 });
 
-export const getBadges = asyncWrapper(async function (req, res, next) {
+exports.getBadges = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
   const { userId } = req.params;
 
@@ -338,7 +338,7 @@ export const getBadges = asyncWrapper(async function (req, res, next) {
     });
 });
 
-export const getProfilePosts = asyncWrapper(async function (req, res, next) {
+exports.getProfilePosts = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
   const { userId } = req.params;
   const { page, limit, hasMore } = req.query;
@@ -397,7 +397,7 @@ export const getProfilePosts = asyncWrapper(async function (req, res, next) {
   res.status(200).json({ data: posts, results: postsLength });
 });
 
-export const getPendingPosts = asyncWrapper(async function (req, res, next) {
+exports.getPendingPosts = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
   const { userId } = req.params;
 
@@ -429,7 +429,7 @@ export const getPendingPosts = asyncWrapper(async function (req, res, next) {
   res.status(200).json(pendingPosts);
 });
 
-export const getHiddenPosts = asyncWrapper(async function (req, res, next) {
+exports.getHiddenPosts = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
   const { userId } = req.params;
 
@@ -458,7 +458,7 @@ export const getHiddenPosts = asyncWrapper(async function (req, res, next) {
   res.status(200).json(hiddenPosts);
 });
 
-export const getUserFeed = asyncWrapper(async function (req, reqs, next) {
+exports.getUserFeed = asyncWrapper(async function (req, reqs, next) {
   const currUser = req.user;
   const { userId } = req.params;
   const { page, limit, hasMore } = req.query;
@@ -507,7 +507,7 @@ export const getUserFeed = asyncWrapper(async function (req, reqs, next) {
   reqs.status(200).json({ data: feedPosts, results: postsLength });
 });
 
-export const getBookmarks = asyncWrapper(async function (req, res, next) {
+exports.getBookmarks = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
   const { userId } = req.params;
   const { page, limit, hasMore } = req.query;
@@ -550,7 +550,7 @@ export const getBookmarks = asyncWrapper(async function (req, res, next) {
   res.status(200).json({ data: savedPosts, results: postsLength });
 });
 
-export const isFriend = asyncWrapper(async function (req, res, next) {
+exports.isFriend = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
   const { userId } = req.params;
 
@@ -567,7 +567,7 @@ export const isFriend = asyncWrapper(async function (req, res, next) {
 
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
-export const getUser = asyncWrapper(async function (req, res, next) {
+exports.getUser = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
 
   const user = await User.findById(currUser.id);
@@ -578,13 +578,13 @@ export const getUser = asyncWrapper(async function (req, res, next) {
   res.status(200).json();
 });
 
-export const getAllUsers = asyncWrapper(async function (req, res, next) {
+exports.getAllUsers = asyncWrapper(async function (req, res, next) {
   const users = await User.find({ userName: { $regex: key } });
 
   res.status(200).json();
 });
 
-export const updater = asyncWrapper(async function (req, res, next) {
+exports.updater = asyncWrapper(async function (req, res, next) {
   // await User.updateMany(
   //   { birthDate: { $exists: false } },
   //   {

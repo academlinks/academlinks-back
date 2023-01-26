@@ -1,6 +1,6 @@
-import Post from "../models/Post.js";
-import Comment from "../models/Comment.js";
-import AppError from "../lib/AppError.js";
+const Post = require("../models/Post.js");
+const Comment = require("../models/Comment.js");
+const AppError = require("../lib/AppError.js");
 
 /**
  * takes commentId and replyId from req.params and base on that finds and checks existance of comment,commentReply and post on which comment was writen
@@ -11,7 +11,7 @@ import AppError from "../lib/AppError.js";
  * @param checkReplyAccess boolean | by default is false | if true it checks if specific comment replies thread includes comment reply on which request happens. If is true and comment reply does not exists throws an error
  * @returns {Post Comment, CommentReply}
  */
-export async function controllCommentAccess({
+async function controllCommentAccess({
   req,
   next,
   checkBody = true,
@@ -57,3 +57,5 @@ export async function controllCommentAccess({
 
   return credentials;
 }
+
+module.exports = controllCommentAccess;

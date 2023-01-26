@@ -1,9 +1,9 @@
-import AppError from "../lib/AppError.js";
-import { asyncWrapper } from "../lib/asyncWrapper.js";
+const AppError = require("../lib/AppError.js");
+const asyncWrapper = require("../lib/asyncWrapper.js");
 
-import Commercial from "../models/Commercials.js";
+const Commercial = require("../models/Commercials.js");
 
-export const getCommercials = asyncWrapper(async function (req, res, next) {
+exports.getCommercials = asyncWrapper(async function (req, res, next) {
   const { location } = req.query;
 
   const commercials = await Commercial.find({

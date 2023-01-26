@@ -1,11 +1,9 @@
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
+const AppError = require("../lib/AppError.js");
+const  asyncWrapper  = require("../lib/asyncWrapper.js");
+const Notification = require("../models/Notification.js");
 
-import AppError from "../lib/AppError.js";
-import { asyncWrapper } from "../lib/asyncWrapper.js";
-
-import Notification from "../models/Notification.js";
-
-export const getAllNotifications = asyncWrapper(async function (
+exports.getAllNotifications = asyncWrapper(async function (
   req,
   res,
   next
@@ -27,7 +25,7 @@ export const getAllNotifications = asyncWrapper(async function (
   res.status(200).json(notifies);
 });
 
-export const markAsRead = asyncWrapper(async function (req, res, next) {
+exports.markAsRead = asyncWrapper(async function (req, res, next) {
   const { notifyId } = req.params;
   const currUser = req.user;
 
@@ -48,7 +46,7 @@ export const markAsRead = asyncWrapper(async function (req, res, next) {
   res.status(200).json(notify);
 });
 
-export const markAllUserNotificationAsRead = asyncWrapper(async function (
+exports.markAllUserNotificationAsRead = asyncWrapper(async function (
   req,
   res,
   next
@@ -63,7 +61,7 @@ export const markAllUserNotificationAsRead = asyncWrapper(async function (
   res.status(201).json({ updated: true });
 });
 
-export const deleteAllUserNotification = asyncWrapper(async function (
+exports.deleteAllUserNotification = asyncWrapper(async function (
   req,
   res,
   next
@@ -75,7 +73,7 @@ export const deleteAllUserNotification = asyncWrapper(async function (
   res.status(204).json({ deleted: true });
 });
 
-export const deleteUserNotification = asyncWrapper(async function (
+exports.deleteUserNotification = asyncWrapper(async function (
   req,
   res,
   next
@@ -94,7 +92,7 @@ export const deleteUserNotification = asyncWrapper(async function (
   res.status(204).json({ deleted: true });
 });
 
-export const getUnseenNotificationsCount = asyncWrapper(async function (
+exports.getUnseenNotificationsCount = asyncWrapper(async function (
   req,
   res,
   next
@@ -113,7 +111,7 @@ export const getUnseenNotificationsCount = asyncWrapper(async function (
   res.status(200).json(unreadNotifications);
 });
 
-export const markNotificationAsSeen = asyncWrapper(async function (
+exports.markNotificationAsSeen = asyncWrapper(async function (
   req,
   res,
   next

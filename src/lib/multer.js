@@ -1,6 +1,6 @@
-import multer from "multer";
-import sharp from "sharp";
-import AppError from "./AppError.js";
+const multer = require("multer");
+const sharp = require("sharp");
+const AppError = require("./AppError.js");
 
 // UPLOAD MEDIA
 function createDestination(destination = "public/images", storage) {
@@ -39,7 +39,7 @@ const media = (params) =>
  * @filename must be the String (is field name of form)
  * @returns
  */
-export const uploadMedia = (params) => media(params);
+exports.uploadMedia = (params) => media(params);
 
 // EDIT AND RESIZE MEDIA
 /**
@@ -50,7 +50,7 @@ export const uploadMedia = (params) => media(params);
  * @param height must be The Number (height of file to resize). By Default is undefined
  * @returns
  */
-export const editMedia = (params) => async (req, res, next) => {
+exports.editMedia = (params) => async (req, res, next) => {
   const key = params.multy ? "files" : "file";
   const destination = params.destination || "public/images";
 

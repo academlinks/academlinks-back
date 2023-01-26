@@ -1,9 +1,8 @@
-import AppError from "../lib/AppError.js";
-import { asyncWrapper } from "../lib/asyncWrapper.js";
+const AppError = require("../lib/AppError.js");
+const  asyncWrapper  = require("../lib/asyncWrapper.js");
+const User = require("../models/User.js");
 
-import User from "../models/User.js";
-
-export const getUserInfo = asyncWrapper(async function (req, res, next) {
+exports.getUserInfo = asyncWrapper(async function (req, res, next) {
   const { userId } = req.params;
 
   const user = await User.findById(userId).select(
@@ -13,7 +12,7 @@ export const getUserInfo = asyncWrapper(async function (req, res, next) {
   res.status(200).json(user);
 });
 
-export const addUserInfo = asyncWrapper(async function (req, res, next) {
+exports.addUserInfo = asyncWrapper(async function (req, res, next) {
   const { userId } = req.params;
   const currUser = req.user;
 
@@ -31,7 +30,7 @@ export const addUserInfo = asyncWrapper(async function (req, res, next) {
     "currentLivingPlace",
     "gender",
     "from",
-    "currentWorkplace"
+    "currentWorkplace",
   ];
 
   if (!availableUpdates.includes(dataToAdd))
@@ -51,7 +50,7 @@ export const addUserInfo = asyncWrapper(async function (req, res, next) {
   res.status(200).json(user[dataToAdd]);
 });
 
-export const updateUserNestedInfo = asyncWrapper(async function (
+exports.updateUserNestedInfo = asyncWrapper(async function (
   req,
   res,
   next
@@ -78,7 +77,7 @@ export const updateUserNestedInfo = asyncWrapper(async function (
   res.status(200).json(user[field]);
 });
 
-export const deleteUserInfo = asyncWrapper(async function (req, res, next) {
+exports.deleteUserInfo = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
   const { userId, field } = req.params;
 
@@ -106,7 +105,7 @@ export const deleteUserInfo = asyncWrapper(async function (req, res, next) {
   res.status(204).json({ deleted: true });
 });
 
-export const deleteNestedUserInfo = asyncWrapper(async function (
+exports.deleteNestedUserInfo = asyncWrapper(async function (
   req,
   res,
   next
