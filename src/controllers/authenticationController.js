@@ -12,6 +12,7 @@ import { asyncWrapper } from "../lib/asyncWrapper.js";
 import asignToken from "../lib/asignToken.js";
 import { verifyToken } from "../lib/verifyToken.js";
 import { Email } from "../lib/sendEmail.js";
+import { getBlackList, updateBlackList } from "../lib/controllBlackList.js";
 
 import { useSocket, socket_name_placeholders } from "../utils/ioUtils.js";
 
@@ -231,6 +232,9 @@ export const loginUser = asyncWrapper(async function (req, res, next) {
 });
 
 export const logoutUser = asyncWrapper(async function (req, res, next) {
+  const currUser = req.user;
+
+  await updateBlackList(req, currUser.id);
   res.cookie("authorization", "");
   res.clearCookie("authorization");
   res.end();
@@ -257,6 +261,7 @@ export const changePassword = asyncWrapper(async function (req, res, next) {
   user.password = newPassword;
   await user.save({ validateBeforeSave: false });
 
+  await updateBlackList(req, userId);
   const { accessToken } = await asignToken(res, user);
 
   res.status(200).json({ accessToken });
@@ -272,13 +277,11 @@ export const changeEmail = asyncWrapper(async function (req, res, next) {
   ////////////////////////////////////////////////
 
   if (userId !== currUser.id)
-    return next(new AppError(403, "you are not authorised for tis operation"));
+    return next(new AppError(403, "you are not authorised for this operation"));
 
-  const user = await User.findOne({ _id: currUser.id, email }).select(
-    "+password"
-  );
+  const user = await User.findOne({ _id: userId, email }).select("+password");
 
-  const validPassword = await user.checkPassword(password, user.password);
+  const validPassword = await user?.checkPassword(password, user.password);
 
   if (!user || !validPassword)
     return next(new AppError(403, "incorect email or password"));
@@ -287,11 +290,15 @@ export const changeEmail = asyncWrapper(async function (req, res, next) {
   /////////// Validate New Email Availability ////////////
   ///////////////////////////////////////////////////////
 
-  const isExistingUserWithEmail = await User.findOne({ email });
-  const isExistingUserRegistrationWithEmail = await User.findOne({ email });
+  const isExistingUserWithEmail = await User.findOne({ email: newEmail });
+  const isExistingUserRegistrationWithEmail = await Registration.findOne({
+    email: newEmail,
+  });
 
   if (isExistingUserWithEmail || isExistingUserRegistrationWithEmail)
-    return next(new AppError(403, "user with this email already exists"));
+    return next(
+      new AppError(403, `user with email - ${newEmail} already exists`)
+    );
 
   user.email = newEmail;
   await user.save({ validateBeforeSave: false });
@@ -326,9 +333,11 @@ export const changeEmail = asyncWrapper(async function (req, res, next) {
   /////////// Asign New Token To User //////////
   /////////////////////////////////////////////
 
+  await updateBlackList(req, userId);
+
   const { accessToken } = await asignToken(res, user);
 
-  res.status(200).json({ accessToken, email: user.email });
+  res.status(201).json({ accessToken, email: user.email });
 });
 
 export const createResetPasswordForForgotPassword = asyncWrapper(
@@ -407,11 +416,16 @@ export const checkAuth = asyncWrapper(async function (req, res, next) {
   const { authorization } = req.headers;
 
   const token = authorization?.split(" ");
+
   if (!authorization || token?.[0] !== "Bearer" || !token?.[1])
     return next(new AppError(401, "you are not authorized"));
 
   const decodedUser = await verifyToken(token?.[1]);
   if (!decodedUser) return next(new AppError(401, "you are not authorized"));
+
+  const blacklisted = await getBlackList(req, decodedUser.id);
+  if (blacklisted === token?.[1])
+    return next(new AppError(401, "you are not authorized - black list"));
 
   let user;
 
@@ -447,6 +461,7 @@ export const refresh = asyncWrapper(async function (req, res, next) {
   if (!decodedUser) return next(new AppError(401, "you are not authorized"));
 
   let user;
+
   if (decodedUser.role === "user") user = await User.findById(decodedUser.id);
   else if (decodedUser.role === "admin")
     user = await Admin.findById(decodedUser.id);

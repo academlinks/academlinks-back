@@ -19,6 +19,7 @@ import {
 } from "../utils/userControllerUtils.js";
 import { uploadMedia, editMedia } from "../lib/multer.js";
 import { getServerHost } from "../lib/getOrigins.js";
+import { updateBlackList } from "../lib/controllBlackList.js";
 
 export const resizeAndOptimiseMedia = editMedia({
   multy: false,
@@ -100,18 +101,25 @@ export const updateCoverImage = asyncWrapper(async function (req, res, next) {
 export const deleteUser = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
   const { userId } = req.params;
+  const { password } = req.body;
 
-  if (currUser.role !== "admin" && currUser.id !== userId)
+  if (
+    (currUser.role !== "admin" && currUser.id !== userId) ||
+    (currUser.role !== "admin" && !password)
+  )
     return next(new AppError(403, "you are not authorized for this operation"));
 
-  const user = await User.findById(userId);
+  const user = await User.findById(userId).select("+password");
 
   if (!user) return next(new AppError(403, "user does not exists"));
+
+  const validPassword = await user.checkPassword(password, user.password);
+  if (currUser.role !== "admin" && !validPassword)
+    return next(new AppError(403, "you are not authorized for this operation"));
 
   // ================================================ //
   // ========== Delete CurrUser Bookmarks ========== //
   // ============================================== //
-
   // 1.0
   await Bookmarks.deleteMany({ author: userId });
 
@@ -259,9 +267,12 @@ export const deleteUser = asyncWrapper(async function (req, res, next) {
   // ==================================== //
 
   // 8.0
-  if (currUser.role === "user") res.clearCookie("authorization");
-
-  res.status(200).json({ done: true });
+  if (currUser.role === "user") {
+    await updateBlackList(req, currUser.id);
+    res.cookie("authorization", "");
+    res.clearCookie("authorization");
+    res.end();
+  } else res.status(200).json({ done: true });
 });
 
 export const searchUsers = asyncWrapper(async function (req, res, next) {
@@ -297,6 +308,34 @@ export const getUserProfile = asyncWrapper(async function (req, res, next) {
   };
 
   res.status(200).json(userProfile);
+});
+
+export const getBadges = asyncWrapper(async function (req, res, next) {
+  const currUser = req.user;
+  const { userId } = req.params;
+
+  if (currUser.id !== userId)
+    return next(new AppError(403, "you are not authorized for this operation"));
+
+  const count = await Conversation.find({
+    users: currUser.id,
+    "lastMessage.author": { $ne: currUser.id },
+    seen: false,
+  }).select("_id");
+
+  const unreadNotifications = await Notification.find({
+    adressat: currUser.id,
+    seen: false,
+  }).select("_id read");
+
+  Friendship.findOne({ user: currUser.id })
+    .select("pendingRequests._id pendingRequests.seen")
+    .exec(function (err, data) {
+      const notSeen = [...data.pendingRequests].filter(
+        (req) => req.seen === false
+      );
+      res.status(200).json(notSeen);
+    });
 });
 
 export const getProfilePosts = asyncWrapper(async function (req, res, next) {
@@ -553,7 +592,6 @@ export const updater = asyncWrapper(async function (req, res, next) {
   //   }
   // );
   // const users = await User.find();
-  // console.log(users);
   // users.forEach(async (user) => {
   //   user.birthDate = "02-02-1990";
   //   user.currentWorkplace = {

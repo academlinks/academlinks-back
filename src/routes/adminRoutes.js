@@ -28,6 +28,7 @@ import {
   markNotificationAsRead,
   sendEmailToCommercialCustomer,
 } from "../controllers/adminController.js";
+import { limiter } from "../lib/rateLimiter.js";
 
 import {
   checkAuth,
@@ -36,7 +37,9 @@ import {
 
 const router = express.Router();
 
-router.route("/login").post(logIn);
+router
+  .route("/login")
+  .post(limiter("You exceed max ogin request count"), logIn);
 
 ////////////////////////////
 ////////// Users //////////

@@ -200,7 +200,6 @@ export const deleteCommercial = asyncWrapper(async function (req, res, next) {
   if (commercialMedia) {
     try {
       const originalFileName = commercialMedia.split("/")?.slice(4)[0];
-      console.log(originalFileName);
       await deletion(`public/images/commercials/${originalFileName}`);
     } catch (error) {
       return next(

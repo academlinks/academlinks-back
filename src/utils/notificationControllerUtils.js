@@ -137,7 +137,6 @@ export async function controllAddCommentNotification({
       parentCommentAuthor !== commentAuthor &&
       !isReplyToUserTaggedOnPost
     ) {
-      // console.log(13, ' - parentCommentAuthor - ', 4);
       createOperation({
         message: `replied your comment on ${"PostAuthorPlaceholder"}'s ${postType}`,
         options: { postAuthorUserName },
@@ -150,7 +149,6 @@ export async function controllAddCommentNotification({
     }
 
     if (usersTaggedOnPost[0] && isReplyToUserTaggedOnPost) {
-      // console.log(13, ' - parentCommentAuthor - ', 5);
       createOperation({
         message: `replied your comment on the ${"PostAuthorPlaceholder"}'s ${postType} on which you are tagged in`,
         options: { postAuthorUserName },
@@ -452,7 +450,6 @@ async function createNotification(body) {
   try {
     await Notification.create(body);
   } catch (error) {
-    console.log(error);
   }
 }
 

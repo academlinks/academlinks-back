@@ -70,7 +70,7 @@ router.route("/:userId/feed").get(checkAuth, restriction("user"), getUserFeed);
 router.route("/:userId/isFriend").get(checkAuth, restriction("user"), isFriend);
 
 router
-  .route("/:userId")
-  .delete(checkAuth, restriction("user", "admin"), deleteUser);
+  .route("/:userId/delete-account")
+  .post(checkAuth, restriction("user", "admin"), deleteUser);
 
 export default router;

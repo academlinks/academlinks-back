@@ -15,6 +15,7 @@ import {
   createResetPasswordForForgotPassword,
   updateForgotPassword,
 } from "../controllers/authenticationController.js";
+import { limiter } from "../lib/rateLimiter.js";
 
 const router = express.Router();
 
@@ -26,25 +27,45 @@ router
 router
   .route("/confirm-register/:registerId/confirm/:tokenId")
   .get(checkRegistrationExistance)
-  .post(confirmRegistration);
+  .post(
+    limiter("You exceed max confirm registration request count"),
+    confirmRegistration
+  );
 
 router
   .route("/update/pass/:userId")
-  .post(checkAuth, restriction("user"), changePassword);
+  .post(
+    limiter("You exceed max change password request count"),
+    checkAuth,
+    restriction("user"),
+    changePassword
+  );
 
 router
   .route("/update/email/:userId")
-  .post(checkAuth, restriction("user"), changeEmail);
+  .post(
+    limiter("You exceed max change email request count"),
+    checkAuth,
+    restriction("user"),
+    changeEmail
+  );
 
 router.route("/forgot-password").post(createResetPasswordForForgotPassword);
 
-router.route("/forgot-password/update").post(updateForgotPassword);
+router
+  .route("/forgot-password/update")
+  .post(
+    limiter("You exceed max update password request count"),
+    updateForgotPassword
+  );
 
 router.route("/register").post(registerUser);
 
-router.route("/login").post(loginUser);
+router
+  .route("/login")
+  .post(limiter("You exceed max login request count"), loginUser);
 
-router.route("/logout").post(logoutUser);
+router.route("/logout").post(checkAuth, logoutUser);
 
 router.route("/refresh").get(refresh);
 

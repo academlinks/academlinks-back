@@ -30,7 +30,17 @@ import { getOrigins } from "./src/lib/getOrigins.js";
 const App = express();
 
 process.env.NODE_MODE === "DEV" && App.use(morgan("dev"));
-App.use(helmet());
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+App.use(express.static(path.join(__dirname, "public/images")));
+
+App.use(
+  helmet({
+    crossOriginEmbedderPolicy: false,
+  })
+);
+
 App.use(express.json());
 App.use(express.urlencoded({ extended: false }));
 
@@ -54,10 +64,6 @@ App.use(
     },
   })
 );
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-App.use(express.static(path.join(__dirname, "public/images")));
 
 App.use("/api/v1/administration", adminRoutes);
 App.use("/api/v1/authentication", authenticationRoutes);
