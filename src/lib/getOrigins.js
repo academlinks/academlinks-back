@@ -10,7 +10,7 @@ const {
     SERVER_HOST_DEV,
     SERVER_HOST_PROD,
   },
-} = config({path:"../../"});
+} = config();
 
 exports.getOrigins = () => {
   if (NODE_MODE === "DEV") return [ORIGIN_DEV_APP, ORIGIN_DEV_ADMIN];
