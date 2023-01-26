@@ -30,7 +30,8 @@ async function removeOnlineUser(socketId) {
 }
 
 exports.socket = function () {
-  return io.on(socket_name_placeholders.connection, (socket) => {
+
+  io.on(socket_name_placeholders.connection, (socket) => {
     socket.on(socket_name_placeholders.userConnection, async (data) => {
       await addOnlineUser({
         userId: data._id,
