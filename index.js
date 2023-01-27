@@ -5,6 +5,8 @@ const Redis = require("ioredis");
 const http = require("http");
 const { Server } = require("socket.io");
 const { getOrigins } = require("./src/lib/getOrigins");
+const { socket_name_placeholders } = require("./src/utils/ioUtils");
+const { addOnlineUser, removeOnlineUser } = require("./io");
 require("dotenv").config();
 
 const { createServer } = http;
@@ -18,9 +20,29 @@ redis.set = utils.promisify(redis.set);
 
 const SERVER = createServer(App);
 
-// const io = new Server(SERVER, {
-//   cors: { origin: getOrigins() },
-// });
+const io = new Server(SERVER, {
+  cors: { origin: getOrigins() },
+});
+
+io.on(socket_name_placeholders.connection, (socket) => {
+  socket.on(socket_name_placeholders.userConnection, async (data) => {
+    await addOnlineUser({
+      userId: data._id,
+      socketId: socket.id,
+      userName: data.userName,
+      email: data.email,
+      image: data.image,
+    });
+  });
+
+  socket.on(socket_name_placeholders.userDisconnection, async () => {
+    await removeOnlineUser(socket.id);
+  });
+
+  socket.on(socket_name_placeholders.disconnect, async () => {
+    await removeOnlineUser(socket.id);
+  });
+});
 
 // module.exports = io;
 
