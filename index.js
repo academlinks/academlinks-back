@@ -18,15 +18,15 @@ redis.set = utils.promisify(redis.set);
 
 const SERVER = createServer(App);
 
-const io = new Server(SERVER, {
-  cors: { origin: getOrigins() },
-});
+// const io = new Server(SERVER, {
+//   cors: { origin: getOrigins() },
+// });
 
 module.exports = io;
 
-const { socket } = require("./io.js");
+// const { socket } = require("./io.js");
 
-App.set("socket", io);
+// App.set("socket", io);
 App.set("redis", redis);
 
 process.on("uncaughtException", (err) => {
