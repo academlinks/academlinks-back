@@ -1,9 +1,8 @@
 const { io } = require("./index");
 const OnlineUsers = require("./src/models/OnLineUsers");
-const { addOnlineUser, removeOnlineUser } = require("./io");
 const { socket_name_placeholders } = require("./src/utils/ioUtils");
 
-exports.addOnlineUser = async function (onlineUser) {
+async function addOnlineUser(onlineUser) {
   try {
     const onlineUserId = onlineUser.userId;
     const isAlreadyActive = await OnlineUsers.findOne({ userId: onlineUserId });
@@ -20,15 +19,15 @@ exports.addOnlineUser = async function (onlineUser) {
   } catch (error) {
     console.log(error);
   }
-};
+}
 
-exports.removeOnlineUser = async function (socketId) {
+async function removeOnlineUser(socketId) {
   try {
     await OnlineUsers.findOneAndDelete({ socketId });
   } catch (error) {
     console.log(error);
   }
-};
+}
 
 io.on(socket_name_placeholders.connection, (socket) => {
   socket.on(socket_name_placeholders.userConnection, async (data) => {

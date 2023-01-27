@@ -5,8 +5,6 @@ const Redis = require("ioredis");
 const http = require("http");
 const { Server } = require("socket.io");
 const { getOrigins } = require("./src/lib/getOrigins");
-// const { socket_name_placeholders } = require("./src/utils/ioUtils");
-// const { addOnlineUser, removeOnlineUser } = require("./io");
 require("dotenv").config();
 
 const { createServer } = http;
@@ -40,7 +38,6 @@ mongoose
   .then(() => {
     console.log(`DB Is Connected Successfully`);
     SERVER.listen(PORT, () => {
-      // socket();
       console.log(`App Listens On Port ${PORT}`);
     });
   })
