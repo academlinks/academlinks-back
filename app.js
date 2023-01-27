@@ -65,6 +65,9 @@ App.use(
   })
 );
 
+App.get("/", (req, res) => {
+  res.status(200).json("wellcome to Academlinks REST API");
+});
 App.use("/api/v1/administration", adminRoutes);
 App.use("/api/v1/authentication", authenticationRoutes);
 App.use("/api/v1/posts", postRoutes);
@@ -74,10 +77,6 @@ App.use("/api/v1/about", userInfoRoutes);
 App.use("/api/v1/notifications", notificationRoutes);
 App.use("/api/v1/conversation", conversationRoutes);
 App.use("/api/v1/commercials", commercialRoutes);
-
-App.get("/api/v1/home", (req, res) => {
-  res.status(200).json({ isEffected: true });
-});
 
 App.all("*", (req, res, next) => {
   next(new AppError(404, `can't find ${req.originalUrl} on this server`));

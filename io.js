@@ -1,6 +1,6 @@
-// const io = require("./index");
+const io = require("./index");
 const OnlineUsers = require("./src/models/OnLineUsers");
-// const { socket_name_placeholders } = require("./src/utils/ioUtils");
+const { socket_name_placeholders } = require("./src/utils/ioUtils");
 
 exports.addOnlineUser = async function (onlineUser) {
   try {
@@ -28,3 +28,23 @@ exports.removeOnlineUser = async function (socketId) {
     console.log(error);
   }
 };
+
+io.on(socket_name_placeholders.connection, (socket) => {
+  socket.on(socket_name_placeholders.userConnection, async (data) => {
+    await addOnlineUser({
+      userId: data._id,
+      socketId: socket.id,
+      userName: data.userName,
+      email: data.email,
+      image: data.image,
+    });
+  });
+
+  socket.on(socket_name_placeholders.userDisconnection, async () => {
+    await removeOnlineUser(socket.id);
+  });
+
+  socket.on(socket_name_placeholders.disconnect, async () => {
+    await removeOnlineUser(socket.id);
+  });
+});

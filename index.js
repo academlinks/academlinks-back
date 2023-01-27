@@ -24,31 +24,10 @@ const io = new Server(SERVER, {
   cors: { origin: getOrigins() },
 });
 
-io.on(socket_name_placeholders.connection, (socket) => {
-  socket.on(socket_name_placeholders.userConnection, async (data) => {
-    await addOnlineUser({
-      userId: data._id,
-      socketId: socket.id,
-      userName: data.userName,
-      email: data.email,
-      image: data.image,
-    });
-  });
+module.exports = io;
+require("./io.js");
 
-  socket.on(socket_name_placeholders.userDisconnection, async () => {
-    await removeOnlineUser(socket.id);
-  });
-
-  socket.on(socket_name_placeholders.disconnect, async () => {
-    await removeOnlineUser(socket.id);
-  });
-});
-
-// module.exports = io;
-
-// const { socket } = require("./io.js");
-
-// App.set("socket", io);
+App.set("socket", io);
 App.set("redis", redis);
 
 process.on("uncaughtException", (err) => {
