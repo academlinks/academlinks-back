@@ -5,8 +5,8 @@ const Redis = require("ioredis");
 const http = require("http");
 const { Server } = require("socket.io");
 const { getOrigins } = require("./src/lib/getOrigins");
-const { socket_name_placeholders } = require("./src/utils/ioUtils");
-const { addOnlineUser, removeOnlineUser } = require("./io");
+// const { socket_name_placeholders } = require("./src/utils/ioUtils");
+// const { addOnlineUser, removeOnlineUser } = require("./io");
 require("dotenv").config();
 
 const { createServer } = http;
@@ -24,7 +24,7 @@ const io = new Server(SERVER, {
   cors: { origin: getOrigins() },
 });
 
-module.exports = io;
+exports.io;
 require("./io.js");
 
 App.set("socket", io);

@@ -1,5 +1,6 @@
 const io = require("./index");
 const OnlineUsers = require("./src/models/OnLineUsers");
+const { addOnlineUser, removeOnlineUser } = require("./io");
 const { socket_name_placeholders } = require("./src/utils/ioUtils");
 
 exports.addOnlineUser = async function (onlineUser) {
