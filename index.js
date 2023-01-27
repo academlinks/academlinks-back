@@ -39,8 +39,7 @@ mongoose
   .then(() => {
     console.log(`DB Is Connected Successfully`);
     SERVER.listen(PORT, () => {
-      io.listen(SERVER);
-      socket();
+      // socket();
       console.log(`App Listens On Port ${PORT}`);
     });
   })
