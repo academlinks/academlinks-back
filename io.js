@@ -1,6 +1,6 @@
-const io = require("./index.js");
-const OnlineUsers = require("./src/models/OnLineUsers.js");
-const { socket_name_placeholders } = require("./src/utils/ioUtils.js");
+const io = require("./index");
+const OnlineUsers = require("./src/models/OnLineUsers");
+const { socket_name_placeholders } = require("./src/utils/ioUtils");
 
 async function addOnlineUser(onlineUser) {
   try {

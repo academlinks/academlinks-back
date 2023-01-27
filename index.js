@@ -1,10 +1,10 @@
-const App = require("./app.js");
+const App = require("./app");
 const mongoose = require("mongoose");
 const utils = require("util");
 const Redis = require("ioredis");
 const http = require("http");
 const { Server } = require("socket.io");
-const { getOrigins } = require("./src/lib/getOrigins.js");
+const { getOrigins } = require("./src/lib/getOrigins");
 require("dotenv").config();
 
 const { createServer } = http;
@@ -22,7 +22,7 @@ const SERVER = createServer(App);
 //   cors: { origin: getOrigins() },
 // });
 
-module.exports = io;
+// module.exports = io;
 
 // const { socket } = require("./io.js");
 

@@ -11,21 +11,21 @@ const morgan = require("morgan");
 const path = require("path");
 // const { fileURLToPath } = require("url");
 
-const errorController = require("./src/lib/errorController.js");
-const AppError = require("./src/lib/AppError.js");
+const errorController = require("./src/lib/errorController");
+const AppError = require("./src/lib/AppError");
 
-const authenticationRoutes = require("./src/routes/authenticationRoutes.js");
-const postRoutes = require("./src/routes/postRoutes.js");
-const commentRoutes = require("./src/routes/commentRoutes.js");
-const userRoutes = require("./src/routes/userRoutes.js");
-const friendsRoutes = require("./src/routes/friendsRoutes.js");
-const userInfoRoutes = require("./src/routes/userInfoRoutes.js");
-const notificationRoutes = require("./src/routes/notificationRoutes.js");
-const conversationRoutes = require("./src/routes/conversationRoutes.js");
-const adminRoutes = require("./src/routes/adminRoutes.js");
-const commercialRoutes = require("./src/routes/commercialRoutes.js");
+const authenticationRoutes = require("./src/routes/authenticationRoutes");
+const postRoutes = require("./src/routes/postRoutes");
+const commentRoutes = require("./src/routes/commentRoutes");
+const userRoutes = require("./src/routes/userRoutes");
+const friendsRoutes = require("./src/routes/friendsRoutes");
+const userInfoRoutes = require("./src/routes/userInfoRoutes");
+const notificationRoutes = require("./src/routes/notificationRoutes");
+const conversationRoutes = require("./src/routes/conversationRoutes");
+const adminRoutes = require("./src/routes/adminRoutes");
+const commercialRoutes = require("./src/routes/commercialRoutes");
 
-const { getOrigins } = require("./src/lib/getOrigins.js");
+const { getOrigins } = require("./src/lib/getOrigins");
 
 const App = express();
 
