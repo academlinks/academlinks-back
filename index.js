@@ -24,7 +24,7 @@ const io = new Server(SERVER, {
   cors: { origin: getOrigins() },
 });
 
-exports.io;
+exports.io = io;
 require("./io.js");
 
 App.set("socket", io);
