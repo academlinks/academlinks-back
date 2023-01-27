@@ -74,7 +74,7 @@ function sendProductionError(res, error) {
     console.error("error 💥", error);
     res.status(500).json({
       status: "error",
-      message: "something went very wrong !",
+      message: error.message || "something went very wrong !",
     });
   }
 }
