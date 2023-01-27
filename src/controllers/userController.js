@@ -19,7 +19,7 @@ const {
 } = require("../utils/userControllerUtils.js");
 const { uploadMedia, editMedia } = require("../lib/multer.js");
 const { getServerHost } = require("../lib/getOrigins.js");
-const { updateBlackList } = require("../lib/controllBlackList.js");
+// const { updateBlackList } = require("../lib/controllBlackList.js");
 
 exports.resizeAndOptimiseMedia = editMedia({
   multy: false,
@@ -268,7 +268,7 @@ exports.deleteUser = asyncWrapper(async function (req, res, next) {
 
   // 8.0
   if (currUser.role === "user") {
-    await updateBlackList(req, currUser.id);
+    // await updateBlackList(req, currUser.id);
     res.cookie("authorization", "");
     res.clearCookie("authorization");
     res.end();

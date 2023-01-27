@@ -13,9 +13,9 @@ const { createServer } = http;
 
 const PORT = process.env.PORT;
 
-const redisURL = "redis://127.0.0.1:6379";
-const redis = Redis.createClient(redisURL);
-redis.set = utils.promisify(redis.set);
+// const redisURL = "redis://127.0.0.1:6379";
+// const redis = Redis.createClient(redisURL);
+// redis.set = utils.promisify(redis.set);
 
 const SERVER = createServer(App);
 
@@ -27,7 +27,7 @@ exports.io = io;
 require("./io.js");
 
 App.set("socket", io);
-App.set("redis", redis);
+// App.set("redis", redis);
 
 process.on("uncaughtException", (err) => {
   console.log("uncaughtException ! process is exited", err);

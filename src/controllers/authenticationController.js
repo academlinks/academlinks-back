@@ -11,10 +11,10 @@ const asyncWrapper = require("../lib/asyncWrapper.js");
 const asignToken = require("../lib/asignToken.js");
 const verifyToken = require("../lib/verifyToken.js");
 const Email = require("../lib/sendEmail.js");
-const {
-  getBlackList,
-  updateBlackList,
-} = require("../lib/controllBlackList.js");
+// const {
+//   getBlackList,
+//   updateBlackList,
+// } = require("../lib/controllBlackList.js");
 
 const { useSocket, socket_name_placeholders } = require("../utils/ioUtils.js");
 
@@ -234,7 +234,7 @@ exports.loginUser = asyncWrapper(async function (req, res, next) {
 exports.logoutUser = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
 
-  await updateBlackList(req, currUser.id);
+  // await updateBlackList(req, currUser.id);
   res.cookie("authorization", "");
   res.clearCookie("authorization");
   res.end();
@@ -261,7 +261,7 @@ exports.changePassword = asyncWrapper(async function (req, res, next) {
   user.password = newPassword;
   await user.save({ validateBeforeSave: false });
 
-  await updateBlackList(req, userId);
+  // await updateBlackList(req, userId);
   const { accessToken } = await asignToken(res, user);
 
   res.status(200).json({ accessToken });
@@ -333,7 +333,7 @@ exports.changeEmail = asyncWrapper(async function (req, res, next) {
   /////////// Asign New Token To User //////////
   /////////////////////////////////////////////
 
-  await updateBlackList(req, userId);
+  // await updateBlackList(req, userId);
 
   const { accessToken } = await asignToken(res, user);
 
@@ -420,9 +420,9 @@ exports.checkAuth = asyncWrapper(async function (req, res, next) {
   const decodedUser = await verifyToken(token?.[1]);
   if (!decodedUser) return next(new AppError(401, "you are not authorized"));
 
-  const blacklisted = await getBlackList(req, decodedUser.id);
-  if (blacklisted === token?.[1])
-    return next(new AppError(401, "you are not authorized - black list"));
+  // const blacklisted = await getBlackList(req, decodedUser.id);
+  // if (blacklisted === token?.[1])
+  //   return next(new AppError(401, "you are not authorized - black list"));
 
   let user;
 
