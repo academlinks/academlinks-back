@@ -1,3 +1,5 @@
+require("dotenv").config();
+
 const App = require("./app");
 const mongoose = require("mongoose");
 const utils = require("util");
@@ -5,12 +7,11 @@ const Redis = require("ioredis");
 const http = require("http");
 const { Server } = require("socket.io");
 const { getOrigins } = require("./src/lib/getOrigins");
-require("dotenv").config();
+const getAppConnection = require("./src/lib/getAppConnection");
 
 const { createServer } = http;
 
 const PORT = process.env.PORT;
-const DB_APP_CONNECTION = process.env.DB_APP_CONNECTION;
 
 const redisURL = "redis://127.0.0.1:6379";
 const redis = Redis.createClient(redisURL);
@@ -34,7 +35,7 @@ process.on("uncaughtException", (err) => {
 });
 
 mongoose
-  .connect(DB_APP_CONNECTION)
+  .connect(getAppConnection())
   .then(() => {
     console.log(`DB Is Connected Successfully`);
     SERVER.listen(PORT, () => {
