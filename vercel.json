@@ -20,7 +20,7 @@
         },
         {
           "key": "Access-Control-Allow-Origin",
-          "value": "['https://academind-front.vercel.app']"
+          "value": "https://academind-front.vercel.app"
         },
         {
           "key": "Access-Control-Allow-Methods",
