@@ -2,8 +2,8 @@ require("dotenv").config();
 
 const App = require("./app");
 const mongoose = require("mongoose");
-const utils = require("util");
-const Redis = require("ioredis");
+// const utils = require("util");
+// const Redis = require("ioredis");
 const http = require("http");
 const { Server } = require("socket.io");
 const { getOrigins } = require("./src/lib/getOrigins");
