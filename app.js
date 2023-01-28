@@ -65,14 +65,6 @@ App.use(
   })
 );
 
-App.use((req, res, next) => {
-  res.setHeader(
-    "X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, authorization"
-  );
-
-  next();
-});
-
 App.get("/", (req, res) => {
   res.status(200).json("wellcome to Academlinks REST API");
 });
