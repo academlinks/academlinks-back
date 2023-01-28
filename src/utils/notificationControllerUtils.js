@@ -27,7 +27,7 @@ const messages_placeholder = {
   onPostShare: (postType) => `share your ${postType}`,
 };
 
-exports.controllAddCommentNotification = async function ({
+async function controllAddCommentNotification({
   req,
   post,
   comment,
@@ -216,9 +216,9 @@ exports.controllAddCommentNotification = async function ({
   }
 
   if (operations[0]) await generateNotifications(operations, sender);
-};
+}
 
-exports.controllUpdateCommentNotification = async function ({
+async function controllUpdateCommentNotification({
   req,
   post,
   comment,
@@ -271,14 +271,9 @@ exports.controllUpdateCommentNotification = async function ({
   }
 
   if (operations[0]) await generateNotifications(operations, sender);
-};
+}
 
-exports.controllCreatePostNotification = async function ({
-  req,
-  post,
-  tags,
-  newTags,
-}) {
+async function controllCreatePostNotification({ req, post, tags, newTags }) {
   const sender = await useLazySocket(req);
 
   const postAuthor = post.author._id.toString();
@@ -309,9 +304,9 @@ exports.controllCreatePostNotification = async function ({
   ];
 
   await generateNotifications(operations, sender);
-};
+}
 
-exports.controllSharePostNotification = async function ({ req, post, tags }) {
+async function controllSharePostNotification({ req, post, tags }) {
   const sender = await useLazySocket(req);
 
   const postAuthor = post.author._id.toString();
@@ -370,9 +365,9 @@ exports.controllSharePostNotification = async function ({ req, post, tags }) {
     );
 
   if (operations[0]) await generateNotifications(operations, sender);
-};
+}
 
-exports.controllFriendRequestNotification = async function ({
+async function controllFriendRequestNotification({
   req,
   currUser,
   adressat,
@@ -417,7 +412,7 @@ exports.controllFriendRequestNotification = async function ({
     );
 
   if (operations[0]) await generateNotifications(operations, sender);
-};
+}
 
 ///////////////////////////////////
 ////////// MAIN HELPERS //////////
@@ -510,3 +505,9 @@ async function generateOperation({ post, comment, postType, parentCommentId }) {
 
   return { operations, createOperation };
 }
+
+exports.controllAddCommentNotification = controllAddCommentNotification;
+exports.controllUpdateCommentNotification = controllUpdateCommentNotification;
+exports.controllCreatePostNotification = controllCreatePostNotification;
+exports.controllSharePostNotification = controllSharePostNotification;
+exports.controllFriendRequestNotification = controllFriendRequestNotification;

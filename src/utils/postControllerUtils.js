@@ -6,7 +6,7 @@ const AppError = require("../lib/AppError.js");
 const Post = require("../models/Post.js");
 const { getServerHost } = require("../lib/getOrigins.js");
 
-exports.contollAudience = function (post, audience, type) {
+function contollAudience(post, audience, type) {
   const audienceForBlogPost = ["public", "users"];
   const audienceForPost = ["public", "friends", "private"];
 
@@ -15,9 +15,9 @@ exports.contollAudience = function (post, audience, type) {
   else if (type === "blogPost" && !audienceForBlogPost.includes(audience))
     post.audience = "public";
   else post.audience = audience;
-};
+}
 
-exports.controllPostCreation = async function (req) {
+async function controllPostCreation(req) {
   const {
     type,
     description,
@@ -48,9 +48,9 @@ exports.controllPostCreation = async function (req) {
   }
 
   return { newPost, tags };
-};
+}
 
-exports.controllPostMediaDeletion = async function (
+async function controllPostMediaDeletion(
   media,
   next,
   destination = "public/images"
@@ -72,13 +72,9 @@ exports.controllPostMediaDeletion = async function (
       }
     })
   );
-};
+}
 
-exports.controllPostUpdateBody = async function ({
-  req,
-  postType,
-  existingTags,
-}) {
+async function controllPostUpdateBody({ req, postType, existingTags }) {
   const body = {};
 
   const availableKeys = [
@@ -122,9 +118,9 @@ exports.controllPostUpdateBody = async function ({
   }
 
   return { body, newTags };
-};
+}
 
-exports.controllPostMediaOnUpdate = async function ({ req, next, post }) {
+async function controllPostMediaOnUpdate({ req, next, post }) {
   const { media } = req.body;
 
   const existingMedia = post.media;
@@ -164,9 +160,9 @@ exports.controllPostMediaOnUpdate = async function ({ req, next, post }) {
 
     post.media = [...modifiedExistingFiles, ...newFiles];
   } else if (!shared && filteredMedia[0]) post.media = media;
-};
+}
 
-exports.controllPostReaction = async function ({ post, currUserId, reaction }) {
+async function controllPostReaction({ post, currUserId, reaction }) {
   const existingReaction = post.reactions.find(
     (reaction) => reaction.author.toString() === currUserId
   );
@@ -183,16 +179,16 @@ exports.controllPostReaction = async function ({ post, currUserId, reaction }) {
       reaction,
       author: currUserId,
     });
-};
+}
 
-exports.controllUserRelationToPost = async function ({ post, currUser }) {
+async function controllUserRelationToPost({ post, currUser }) {
   const isAuthor = post.author.toString() === currUser.id;
   const isTagged = post.tags.some((tag) => tag.user.toString() === currUser.id);
 
   return { isAuthor, isTagged };
-};
+}
 
-exports.controllShowOnProfile = async function ({ currUser, post, task }) {
+async function controllShowOnProfile({ currUser, post, task }) {
   const { isAuthor, isTagged } = await controllUserRelationToPost({
     post,
     currUser,
@@ -205,4 +201,13 @@ exports.controllShowOnProfile = async function ({ currUser, post, task }) {
     post.tags[i].hidden =
       task === "add" ? false : task === "hide" ? true : undefined;
   }
-};
+}
+
+exports.contollAudience = contollAudience;
+exports.controllPostCreation = controllPostCreation;
+exports.controllPostMediaDeletion = controllPostMediaDeletion;
+exports.controllPostUpdateBody = controllPostUpdateBody;
+exports.controllPostMediaOnUpdate = controllPostMediaOnUpdate;
+exports.controllPostReaction = controllPostReaction;
+exports.controllUserRelationToPost = controllUserRelationToPost;
+exports.controllShowOnProfile = controllShowOnProfile;

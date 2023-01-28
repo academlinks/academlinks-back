@@ -1,16 +1,16 @@
 const fs = require("fs");
 const { promisify } = require("util");
 
-exports.deleteExistingImage = async function (originalFileNameFragments) {
+async function deleteExistingImage(originalFileNameFragments) {
   try {
     const deletion = promisify(fs.unlink);
     await deletion(`public/images/${originalFileNameFragments[0]}`);
   } catch (error) {
     throw new Error(error.message);
   }
-};
+}
 
-exports.checkIfIsFriend = function ({ userId, userFriendShip, currUser }) {
+function checkIfIsFriend({ userId, userFriendShip, currUser }) {
   const isCurrUser = userId === currUser.id;
 
   const isFriend =
@@ -43,14 +43,9 @@ exports.checkIfIsFriend = function ({ userId, userFriendShip, currUser }) {
   }
 
   return { info, isFriend, isCurrUser };
-};
+}
 
-exports.checkIfIsFriendOnEach = function ({
-  currUser,
-  doc,
-  docId,
-  userFriendShip,
-}) {
+function checkIfIsFriendOnEach({ currUser, doc, docId, userFriendShip }) {
   if (doc === null) return { restricted: true, _id: docId };
 
   const userId = doc.author._id.toString();
@@ -68,4 +63,8 @@ exports.checkIfIsFriendOnEach = function ({
   } else {
     return doc;
   }
-};
+}
+
+exports.checkIfIsFriend = checkIfIsFriend;
+exports.deleteExistingImage = deleteExistingImage;
+exports.checkIfIsFriendOnEach = checkIfIsFriendOnEach;
