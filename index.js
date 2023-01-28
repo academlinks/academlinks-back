@@ -20,7 +20,8 @@ const PORT = process.env.PORT;
 const SERVER = createServer(App);
 
 const io = new Server(SERVER, {
-  cors: { origin: getOrigins() },
+  allowEIO3: true,
+  cors: { origin: getOrigins(), credentials: true },
 });
 
 exports.io = io;
