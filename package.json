@@ -1,18 +1,15 @@
 {
   "name": "academlinks",
+  "author": "JohnRuss",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "engines": {
-    "node": "14.x"
-  },
   "scripts": {
     "start": "node index.js",
     "start:dev": "nodemon index.js",
     "start:prod": "NODE_MODE=PROD nodemon server.js"
   },
   "keywords": [],
-  "author": "JohnRuss",
   "license": "ISC",
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -30,7 +27,7 @@
     "morgan": "^1.10.0",
     "multer": "^1.4.5-lts.1",
     "nodemailer": "^6.8.0",
-    "sharp": "^0.31.0",
+    "sharp": "^0.31.3",
     "socket.io": "^4.5.3",
     "xss-clean": "^0.1.1"
   }
