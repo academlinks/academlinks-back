@@ -52,14 +52,24 @@ App.use(function (req, res, next) {
   res.header("Access-Control-Allow-Origin", req.headers.origin);
   res.header(
     "Access-Control-Allow-Headers",
-    "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, authorization"
+    "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Origin, authorization"
   );
   res.header(
     "Access-Control-Allow-Methods",
     "GET, POST, PUT, DELETE, UPDATE, OPTIONS"
   );
 
-  if (req.method === "OPTIONS") res.status("ok");
+  // if (req.method === "OPTIONS") {
+  //   res.header(
+  //     "Access-Control-Request-Methods",
+  //     "GET, POST, PUT, DELETE, UPDATE, OPTIONS"
+  //   );
+  //   res.header(
+  //     "Access-Control-Request-Headers",
+  //     "GET, POST, PUT, DELETE, UPDATE, OPTIONS"
+  //   );
+  //   res.header("Origin", "GET, POST, PUT, DELETE, UPDATE, OPTIONS");
+  // }
 
   next();
 });
