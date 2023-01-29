@@ -29,22 +29,22 @@ const { getOrigins } = require("./src/lib/getOrigins");
 
 const App = express();
 
-// App.use(function (req, res, next) {
-//   // res.header("Access-Control-Allow-Origin", "*");
-//   const allowedOrigins = getOrigins();
-//   const origin = req.headers.origin;
-//   if (allowedOrigins.includes(origin)) {
-//     res.setHeader("Access-Control-Allow-Origin", origin);
-//   }
-//   res.header(
-//     "Access-Control-Allow-Headers",
-//     "Origin, X-Requested-With, Content-Type, Accept, Authorization"
-//   );
-//   res.header("Access-Control-Allow-credentials", true);
-//   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, UPDATE, OPTIONS");
+App.use(function (req, res, next) {
+  // res.header("Access-Control-Allow-Origin", "*");
+  const allowedOrigins = getOrigins();
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+  }
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Origin, X-Requested-With, Content-Type, Accept, Authorization"
+  );
+  res.header("Access-Control-Allow-credentials", true);
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, UPDATE, OPTIONS");
 
-//   next();
-// });
+  next();
+});
 
 process.env.NODE_MODE === "DEV" && App.use(morgan("dev"));
 
@@ -70,6 +70,7 @@ App.use(
   cors({
     credentials: true,
     origin: function (origin, callback) {
+      console.log(getOrigins());
       if (!origin) return callback(null, true);
       if (getOrigins().indexOf(origin) === -1) {
         const msg = `This site ${origin} does not have an access. Only specific domains are allowed to access it.`;
