@@ -30,7 +30,6 @@ const { getOrigins } = require("./src/lib/getOrigins");
 const App = express();
 
 App.use(function (req, res, next) {
-  console.log(req.headers);
   res.header("Access-Control-Allow-Origin", req.headers.origin);
 
   const allowedOrigins = getOrigins();
