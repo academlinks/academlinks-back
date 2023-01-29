@@ -48,6 +48,21 @@ App.use(hpp());
 App.use(cookieParser());
 
 App.options("/*", function (req, res, next) {
+  // res.header("Access-Control-Allow-credentials", true);
+  res.header("Access-Control-Allow-Origin", req.headers.origin);
+  res.header(
+    "Access-Control-Allow-Methods",
+    "GET, POST, PUT, DELETE, UPDATE, OPTIONS"
+  );
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization, Content-Length, X-Requested-With Origin"
+  );
+
+  res.sendStatus(200);
+});
+
+App.use(function (req, res, next) {
   res.header("Access-Control-Allow-credentials", true);
   res.header("Access-Control-Allow-Origin", req.headers.origin);
   res.header(
@@ -59,7 +74,7 @@ App.options("/*", function (req, res, next) {
     "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Origin, Authorization"
   );
 
-  res.sendStatus(200);
+  next();
 });
 App.use(
   cors({
