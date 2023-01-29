@@ -4,6 +4,7 @@ const { getOrigins } = require("./getOrigins.js");
 async function signToken(res, user) {
   const SECRET = process.env.JWT_SECRET;
   const REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
+  const NODE_MODE = process.env.NODE_MODE;
 
   const payload = {
     id: user._id,
@@ -20,7 +21,7 @@ async function signToken(res, user) {
     secure: false,
   };
 
-  if (process.env.NODE_MODE !== "DEV") cookieOptions.secure = true;
+  if (NODE_MODE !== "DEV") cookieOptions.secure = true;
 
   const refreshToken = JWT.sign(payload, REFRESH_SECRET);
   res.cookie("authorization", `Bearer ${refreshToken}`, cookieOptions);
