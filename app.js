@@ -48,8 +48,6 @@ App.use(hpp());
 App.use(cookieParser());
 
 App.use(function (req, res, next) {
-  if (req.method === "OPTIONS") res.sendStatus(200);
-
   res.header("Access-Control-Allow-credentials", true);
   res.header("Access-Control-Allow-Origin", req.headers.origin);
   res.header(
@@ -60,6 +58,8 @@ App.use(function (req, res, next) {
     "Access-Control-Allow-Methods",
     "GET, POST, PUT, DELETE, UPDATE, OPTIONS"
   );
+  
+  if (req.method === "OPTIONS") res.sendStatus(200);
 
   next();
 });
