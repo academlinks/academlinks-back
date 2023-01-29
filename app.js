@@ -47,7 +47,7 @@ App.use(hpp());
 
 App.use(cookieParser());
 
-App.options("/api/v1/*", function (req, res, next) {
+App.options("/*", function (req, res, next) {
   res.header("Access-Control-Allow-credentials", true);
   res.header("Access-Control-Allow-Origin", req.headers.origin);
   res.header(
@@ -59,7 +59,7 @@ App.options("/api/v1/*", function (req, res, next) {
     "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Origin, Authorization"
   );
 
-  res.send(200);
+  res.sendStatus(200);
 });
 App.use(
   cors({
