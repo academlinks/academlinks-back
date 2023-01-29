@@ -105,9 +105,7 @@ exports.aproveRegistration = asyncWrapper(async function (req, res, next) {
     );
   }
 
-  res
-    .status(200)
-    .json({ isAproved: true, resetToken: registrationPasswordResetToken });
+  res.status(200).json({ isAproved: true });
 });
 
 exports.deleteRegistrationRequest = asyncWrapper(async function (

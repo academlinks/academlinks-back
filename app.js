@@ -50,7 +50,7 @@ App.use(cookieParser());
 App.use(function (req, res, next) {
   res.header("Access-Control-Allow-credentials", true);
   res.header("Access-Control-Allow-Origin", req.headers.origin);
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, UPDATE");
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE");
   res.header(
     "Access-Control-Allow-Headers",
     "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Origin, Authorization"
