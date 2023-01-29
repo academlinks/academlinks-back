@@ -58,8 +58,8 @@ App.use(function (req, res, next) {
     "Access-Control-Allow-Methods",
     "GET, POST, PUT, DELETE, UPDATE, OPTIONS"
   );
-  
-  if (req.method === "OPTIONS") res.sendStatus(200);
+
+  if (req.method === "OPTIONS") res.status(200);
 
   next();
 });
