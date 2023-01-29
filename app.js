@@ -59,7 +59,7 @@ App.use(function (req, res, next) {
     "GET, POST, PUT, DELETE, UPDATE, OPTIONS"
   );
 
-  if (req.method === "OPTIONS") res.status(200);
+  if (req.method === "OPTIONS") res.status("ok");
 
   next();
 });
