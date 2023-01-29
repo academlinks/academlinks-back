@@ -60,8 +60,12 @@ App.use(function (req, res, next) {
   );
 
   if (req.method === "OPTIONS") {
-    req.header("Origin", req.headers.origin);
-    req.header("method", req.method);
+    req.header(
+      "access-control-request-headers",
+      "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Origin, Authorization"
+    );
+
+    // req.header("Origin", req.headers.origin);
 
     // res.header(
     //   "Access-Control-Request-Methods",
