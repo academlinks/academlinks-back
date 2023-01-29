@@ -44,12 +44,12 @@ exports.updateProfileImage = asyncWrapper(async function (req, res, next) {
   let mediaUrl;
   try {
     if (
-      !originalFileNameFragments[1] &&
+      originalFileNameFragments[1] &&
       originalFileNameFragments[1] !== "profile-default.jpg"
     )
       await deleteExistingImage(originalFileNameFragments);
 
-    mediaUrl = `${req.protocol}://${getServerHost()}/${req.xOriginal}`;
+    mediaUrl = `${getServerHost()}/${req.xOriginal}`;
   } catch (error) {
     return next(
       new AppError(
@@ -77,11 +77,11 @@ exports.updateCoverImage = asyncWrapper(async function (req, res, next) {
   let mediaUrl;
   try {
     if (
-      !originalFileNameFragments[1] &&
+      originalFileNameFragments[1] &&
       originalFileNameFragments[1] !== "cover-default.webp"
     )
       await deleteExistingImage(originalFileNameFragments);
-    mediaUrl = `${req.protocol}://${getServerHost()}/${req.xOriginal}`;
+    mediaUrl = `${getServerHost()}/${req.xOriginal}`;
   } catch (error) {
     return next(
       new AppError(

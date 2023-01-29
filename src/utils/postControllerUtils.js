@@ -150,7 +150,7 @@ async function controllPostMediaOnUpdate({ req, next, post }) {
 
   if (!shared && req.files) {
     const newFiles = req.xOriginal.map(
-      (fileName) => `${req.protocol}://${getServerHost()}/${fileName}`
+      (fileName) => `${getServerHost()}/${fileName}`
     );
 
     const modifiedExistingFiles = filteredMedia[0] ? filteredMedia : [];

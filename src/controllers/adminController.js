@@ -177,7 +177,7 @@ exports.addCommercial = asyncWrapper(async function (req, res, next) {
   };
 
   if (req.file) {
-    newCommercial.media = `${req.protocol}://${getServerHost()}/commercials/${
+    newCommercial.media = `${getServerHost()}/commercials/${
       req.xOriginal
     }`;
   }
@@ -231,7 +231,7 @@ exports.updateCommercial = asyncWrapper(async function (req, res, next) {
     try {
       const originalFileName = media.split("/")?.slice(4)[0];
       await deletion(`public/images/commercials/${originalFileName}`);
-      body.media = `${req.protocol}://${getServerHost()}/commercials/${
+      body.media = `${getServerHost()}/commercials/${
         req.xOriginal
       }`;
     } catch (error) {

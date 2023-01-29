@@ -48,7 +48,7 @@ exports.createPost = asyncWrapper(async function (req, res, next) {
     // If multer storage is diskStorage use this
     // req?.files?.map((file) => file.filename);
     newPost.media = req.xOriginal.map(
-      (fileName) => `${req.protocol}://${getServerHost()}/${fileName}`
+      (fileName) => `${getServerHost()}/${fileName}`
     );
   }
 
@@ -267,16 +267,16 @@ exports.getPost = asyncWrapper(async function (req, res, next) {
 });
 
 exports.getBlogPosts = asyncWrapper(async function (req, res, next) {
-  // const currUser = req.user;
   const { page, limit, hasMore, author, category } = req.query;
 
   const skip = page * limit - limit;
 
   const postQuery = {
     type: "blogPost",
-    [author ? "author" : ""]: author ? author : "",
-    [category ? "category" : ""]: category ? { $in: category.split(",") } : "",
   };
+
+  if (category) postQuery.category = { $in: category.split(",") };
+  if (author) postQuery.author = author;
 
   // if (currUser.role === "guest") postQuery.audience = "public";
 
@@ -411,11 +411,7 @@ exports.addPostToProfile = asyncWrapper(async function (req, res, next) {
   res.status(201).json({ updated: true });
 });
 
-exports.hidePostFromProfile = asyncWrapper(async function (
-  req,
-  res,
-  next
-) {
+exports.hidePostFromProfile = asyncWrapper(async function (req, res, next) {
   const { postId } = req.params;
   const currUser = req.user;
 
@@ -444,11 +440,7 @@ exports.hidePostFromProfile = asyncWrapper(async function (
   res.status(201).json({ updated: true });
 });
 
-exports.getTopRatedBlogPosts = asyncWrapper(async function (
-  req,
-  res,
-  next
-) {
+exports.getTopRatedBlogPosts = asyncWrapper(async function (req, res, next) {
   const { limit } = req.query;
   const monthAgo = new Date(new Date().setMonth(new Date().getMonth() - 1));
 
@@ -467,11 +459,7 @@ exports.getTopRatedBlogPosts = asyncWrapper(async function (
   res.status(200).json(posts);
 });
 
-exports.getTopRatedPublishers = asyncWrapper(async function (
-  req,
-  res,
-  next
-) {
+exports.getTopRatedPublishers = asyncWrapper(async function (req, res, next) {
   const { limit } = req.query;
 
   const topRatedPublishers = await Post.aggregate([
