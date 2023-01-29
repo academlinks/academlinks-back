@@ -9,7 +9,6 @@ const hpp = require("hpp");
 const morgan = require("morgan");
 
 const path = require("path");
-// const { fileURLToPath } = require("url");
 
 const errorController = require("./src/lib/errorController");
 const AppError = require("./src/lib/AppError");
@@ -31,8 +30,6 @@ const App = express();
 
 process.env.NODE_MODE === "DEV" && App.use(morgan("dev"));
 
-// const __filename = fileURLToPath(import.meta.url);
-// const __dirname = path.dirname(__filename);
 App.use(express.static(path.join(__dirname, "public/images")));
 
 App.use(
@@ -64,7 +61,6 @@ App.use(function (req, res, next) {
 
   next();
 });
-
 App.use(
   cors({
     credentials: true,
