@@ -64,6 +64,7 @@ App.use(
     credentials: true,
     origin: function (origin, callback) {
       if (!origin) return callback(null, true);
+      console.log({ incomingOrigin: origin, allowedOrigins: getOrigins() });
       if (getOrigins().indexOf(origin) === -1) {
         const msg = `This site ${origin} does not have an access. Only specific domains are allowed to access it.`;
         return callback(new Error(msg), false);
