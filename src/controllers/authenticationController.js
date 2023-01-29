@@ -26,10 +26,14 @@ exports.registerUser = asyncWrapper(async function (req, res, next) {
   const { email } = req.body;
 
   const isExistingUserWithEmail = await User.findOne({ email });
-  const isExistingUserRegistrationWithEmail = await User.findOne({ email });
+  const isExistingUserRegistrationWithEmail = await Registration.findOne({
+    email,
+  });
 
   if (isExistingUserWithEmail || isExistingUserRegistrationWithEmail)
     return next(new AppError(403, "user with this email already exists"));
+
+  const newReg = await Registration.create(req.body);
 
   //////////////////////////////////////////
   /////////// Send Email To User //////////
@@ -38,8 +42,6 @@ exports.registerUser = asyncWrapper(async function (req, res, next) {
   try {
     if (!email)
       return next(new AppError(403, "please provide us valid information"));
-
-    await Registration.create(req.body);
 
     await new Email({
       adressat: email,
@@ -52,8 +54,6 @@ exports.registerUser = asyncWrapper(async function (req, res, next) {
       )
     );
   }
-
-  const newReg = await Registration.create(req.body);
 
   //////////////////////////////////////////////////
   /////////// Send Notification To Admin //////////
@@ -69,7 +69,6 @@ exports.registerUser = asyncWrapper(async function (req, res, next) {
 
   res.status(200).json({
     msg: "Your registration request will be reviewed and we wil Email you in case of affirmation !",
-    id: newReg._id,
   });
 });
 
@@ -354,6 +353,8 @@ exports.createResetPasswordForForgotPassword = asyncWrapper(async function (
 
   const passwordReset = user.createPasswordResetToken();
 
+  await user.save({ validateBeforeSave: false });
+
   try {
     if (!email) return next(new AppError(403, "please provide us valid email"));
 
@@ -370,8 +371,6 @@ exports.createResetPasswordForForgotPassword = asyncWrapper(async function (
       )
     );
   }
-
-  await user.save({ validateBeforeSave: false });
 
   res.status(201).json({
     success: true,
