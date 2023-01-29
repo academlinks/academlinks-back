@@ -48,6 +48,7 @@ App.use(hpp());
 App.use(cookieParser());
 
 App.use(function (req, res, next) {
+  console.log({ method: req.method });
   res.header("Access-Control-Allow-credentials", true);
   res.header("Access-Control-Allow-Origin", req.headers.origin);
   res.header(
