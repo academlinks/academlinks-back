@@ -22,8 +22,9 @@ async function signToken(res, user) {
   };
 
   if (NODE_MODE !== "DEV") {
+    console.log("runs cookie assign secure");
     cookieOptions.secure = true;
-    sameSite = "None";
+    sameSite = "none";
   }
 
   const refreshToken = JWT.sign(payload, REFRESH_SECRET);
