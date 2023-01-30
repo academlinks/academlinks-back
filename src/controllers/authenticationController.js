@@ -408,7 +408,6 @@ exports.updateForgotPassword = asyncWrapper(async function (req, res, next) {
 
 exports.checkAuth = asyncWrapper(async function (req, res, next) {
   const { authorization } = req.headers;
-  console.log({ cookieHeader: req.cookies?.authorization });
   const token = authorization?.split(" ");
 
   if (!authorization || token?.[0] !== "Bearer" || !token?.[1])
