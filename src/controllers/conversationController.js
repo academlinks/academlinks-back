@@ -142,11 +142,7 @@ exports.getConversation = asyncWrapper(async function (req, res, next) {
   res.status(200).json(conversation);
 });
 
-exports.getLastConversation = asyncWrapper(async function (
-  req,
-  res,
-  next
-) {
+exports.getLastConversation = asyncWrapper(async function (req, res, next) {
   const { userId } = req.params;
   const currUser = req.user;
 
@@ -325,17 +321,14 @@ exports.getUnseenConversationCount = asyncWrapper(async function (
   const count = await Conversation.find({
     users: currUser.id,
     "lastMessage.author": { $ne: currUser.id },
-    seen: false,
+    "lastMessage.isRead": false,
+    // seen: false,
   }).select("_id");
 
   res.status(200).json(count);
 });
 
-exports.markConversationsAsSeen = asyncWrapper(async function (
-  req,
-  res,
-  next
-) {
+exports.markConversationsAsSeen = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
   const { userId } = req.params;
 

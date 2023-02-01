@@ -1,10 +1,10 @@
 const rateLimiter = require("express-rate-limit");
 
-const limiter = (message) =>
+const limiter = (message, limit = 4) =>
   rateLimiter({
-    max: 4,
+    max: limit,
     windowMs: 1000 * 60 * 60,
-    message: `${message}. Please try again after an hour again.`,
+    message: { message: `${message}. Please try again after an hour.` },
     standardHeaders: true,
   });
 

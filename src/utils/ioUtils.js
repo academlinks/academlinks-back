@@ -6,7 +6,7 @@ exports.useSocket = async function (req, { adressatId, operationName, data }) {
   const isOnlineAdressat = await OnlineUsers.findOne({ userId: adressatId });
 
   if (!isOnlineAdressat) return;
-
+  
   io.to(isOnlineAdressat.socketId).emit(`${operationName}`, data);
 };
 

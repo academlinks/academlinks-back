@@ -40,7 +40,7 @@ const router = express.Router();
 
 router
   .route("/login")
-  .post(limiter("You exceed max ogin request count"), logIn);
+  .post(limiter("You exceed max ogin request count", 5), logIn);
 
 ////////////////////////////
 ////////// Users //////////
