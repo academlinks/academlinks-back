@@ -39,7 +39,7 @@ class Email {
   async sendWelcome() {
     await this.send({
       subject: "WellCome",
-      text: "Welcome to App. Your registration request will be reviewed and we wil Email you in case of affirmation !",
+      text: "Welcome to Academlinks. Your registration request will be reviewed and we wil Email you in case of affirmation !",
     });
   }
 
