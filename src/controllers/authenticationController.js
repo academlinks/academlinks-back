@@ -451,7 +451,12 @@ exports.refresh = asyncWrapper(async function (req, res, next) {
     return next(new AppError(401, "you are not authorized"));
 
   const decodedUser = await verifyToken(token[1], true);
-  if (!decodedUser) return next(new AppError(401, "you are not authorized"));
+  if (!decodedUser) {
+    res.cookie("authorization", "");
+    res.clearCookie("authorization");
+    res.end();
+    return next(new AppError(403, "you are not authorized"));
+  }
 
   let user;
 
