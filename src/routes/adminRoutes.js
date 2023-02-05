@@ -29,7 +29,7 @@ const {
   sendEmailToCommercialCustomer,
 } = require("../controllers/adminController");
 
-const limiter = require("../lib/rateLimiter");
+// const limiter = require("../lib/rateLimiter");
 
 const {
   checkAuth,
@@ -38,9 +38,10 @@ const {
 
 const router = express.Router();
 
-router
-  .route("/login")
-  .post(limiter("You exceed max ogin request count", 5), logIn);
+router.route("/login").post(
+  // limiter("You exceed max ogin request count", 5),
+  logIn
+);
 
 ////////////////////////////
 ////////// Users //////////
