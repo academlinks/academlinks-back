@@ -27,38 +27,28 @@ router
 router
   .route("/confirm-register/:registerId/confirm/:tokenId")
   .get(checkRegistrationExistance)
-  .post(
-    // limiter("You exceed max confirm registration request count", 3),
-    confirmRegistration
-  );
+  .post(confirmRegistration);
+// limiter("You exceed max confirm registration request count", 3),
 
-router.route("/update/pass/:userId").post(
-  // limiter("You exceed max change password request count", 3),
-  checkAuth,
-  restriction("user"),
-  changePassword
-);
+// limiter("You exceed max change password request count", 3),
+router
+  .route("/update/pass/:userId")
+  .post(checkAuth, restriction("user"), changePassword);
 
-router.route("/update/email/:userId").post(
-  // limiter("You exceed max change email request count", 3),
-  checkAuth,
-  restriction("user"),
-  changeEmail
-);
+// limiter("You exceed max change email request count", 3),
+router
+  .route("/update/email/:userId")
+  .post(checkAuth, restriction("user"), changeEmail);
 
 router.route("/forgot-password").post(createResetPasswordForForgotPassword);
 
-router.route("/forgot-password/update").post(
-  // limiter("You exceed max update password request count", 3),
-  updateForgotPassword
-);
+// limiter("You exceed max update password request count", 3),
+router.route("/forgot-password/update").post(updateForgotPassword);
 
 router.route("/register").post(registerUser);
 
-router.route("/login").post(
-  // limiter("You exceed max login request count", 5),
-  loginUser
-);
+// limiter("You exceed max login request count", 5),
+router.route("/login").post(loginUser);
 
 router.route("/logout").post(checkAuth, logoutUser);
 
