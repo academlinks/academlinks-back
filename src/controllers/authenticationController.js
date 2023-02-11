@@ -234,7 +234,7 @@ exports.logoutUser = asyncWrapper(async function (req, res, next) {
   // await updateBlackList(req, currUser.id);
   res.cookie("authorization", "");
   res.clearCookie("authorization");
-  res.end();
+  // res.end();
   // res.status(200).json({ loggedOut: true, accessToken: "" });
 });
 
