@@ -40,12 +40,11 @@ App.use(
 
 App.use(express.json());
 App.use(express.urlencoded({ extended: false }));
+App.use(cookieParser());
 
 App.use(mongoSanitize());
 App.use(xss());
 App.use(hpp());
-
-App.use(cookieParser());
 
 App.use(function (req, res, next) {
   res.header("Access-Control-Allow-credentials", true);

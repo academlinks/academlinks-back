@@ -91,11 +91,7 @@ exports.getUserInfo = asyncWrapper(async function (req, res, next) {
   res.status(200).json(userInfo);
 });
 
-exports.getUsersForStatistic = asyncWrapper(async function (
-  req,
-  res,
-  next
-) {
+exports.getUsersForStatistic = asyncWrapper(async function (req, res, next) {
   const users = await User.find().select(
     "age currentWorkplace.institution currentWorkplace.position gender createdAt currentLivingPlace.country from.country"
   );
@@ -107,11 +103,7 @@ exports.getUsersForStatistic = asyncWrapper(async function (
 ////////// Registration //////////
 /////////////////////////////////
 
-exports.getRegistrationLabels = asyncWrapper(async function (
-  req,
-  res,
-  next
-) {
+exports.getRegistrationLabels = asyncWrapper(async function (req, res, next) {
   const { filter } = req.query;
 
   const query = {};
@@ -177,9 +169,7 @@ exports.addCommercial = asyncWrapper(async function (req, res, next) {
   };
 
   if (req.file) {
-    newCommercial.media = `${getServerHost()}/commercials/${
-      req.xOriginal
-    }`;
+    newCommercial.media = `${getServerHost()}/commercials/${req.xOriginal}`;
   }
 
   await Commercial.create(newCommercial);
@@ -231,9 +221,7 @@ exports.updateCommercial = asyncWrapper(async function (req, res, next) {
     try {
       const originalFileName = media.split("/")?.slice(4)[0];
       await deletion(`public/images/commercials/${originalFileName}`);
-      body.media = `${getServerHost()}/commercials/${
-        req.xOriginal
-      }`;
+      body.media = `${getServerHost()}/commercials/${req.xOriginal}`;
     } catch (error) {
       return next(
         new AppError(
@@ -331,11 +319,7 @@ exports.getNotification = asyncWrapper(async function (req, res, next) {
   res.status(200).json(notification);
 });
 
-exports.deleteAllNotifications = asyncWrapper(async function (
-  req,
-  res,
-  next
-) {
+exports.deleteAllNotifications = asyncWrapper(async function (req, res, next) {
   await AdminNotification.deleteMany();
 
   res.status(204).json({ deleted: true });
@@ -354,21 +338,13 @@ exports.deleteNotification = asyncWrapper(async function (req, res, next) {
   res.status(204).json({ deleted: true });
 });
 
-exports.markNotificationsAsSeen = asyncWrapper(async function (
-  req,
-  res,
-  next
-) {
+exports.markNotificationsAsSeen = asyncWrapper(async function (req, res, next) {
   await AdminNotification.updateMany({ seen: false }, { $set: { seen: true } });
 
   res.status(201).json({ updated: true });
 });
 
-exports.markNotificationAsRead = asyncWrapper(async function (
-  req,
-  res,
-  next
-) {
+exports.markNotificationAsRead = asyncWrapper(async function (req, res, next) {
   const { notificationId } = req.params;
 
   const updatedNotify = await AdminNotification.findByIdAndUpdate(
@@ -387,9 +363,11 @@ exports.markNotificationAsRead = asyncWrapper(async function (
 ///////////////////////////////
 async function createAdmin() {
   const admin = new Admin({
-    userName: "admin_mark",
-    password: "sh12mk3tt_7xxAdmin",
+    userName: "",
+    password: "",
   });
 
   await admin.save();
 }
+
+// createAdmin();

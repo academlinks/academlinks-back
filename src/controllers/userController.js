@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 
 const AppError = require("../lib/AppError.js");
-const  asyncWrapper  = require("../lib/asyncWrapper.js");
+const asyncWrapper = require("../lib/asyncWrapper.js");
 
 const Bookmarks = require("../models/Bookmarks.js");
 const Post = require("../models/Post.js");
@@ -45,7 +45,7 @@ exports.updateProfileImage = asyncWrapper(async function (req, res, next) {
   try {
     if (
       originalFileNameFragments[1] &&
-      originalFileNameFragments[1] !== "profile-default.jpg"
+      !originalFileNameFragments[1].startsWith("avatar-")
     )
       await deleteExistingImage(originalFileNameFragments);
 
@@ -584,23 +584,27 @@ exports.getAllUsers = asyncWrapper(async function (req, res, next) {
   res.status(200).json();
 });
 
-exports.updater = asyncWrapper(async function (req, res, next) {
-  // await User.updateMany(
-  //   { birthDate: { $exists: false } },
-  //   {
-  //     birthDate: "02-02-1990",
-  //   }
-  // );
-  // const users = await User.find();
-  // users.forEach(async (user) => {
-  //   user.birthDate = "02-02-1990";
-  //   user.currentWorkplace = {
-  //     institution: "university",
-  //     position: "associate professor",
-  //     description: "one two three four five six seven eight nine ten",
-  //   };
-  //   await user.save({ validateBeforeSave: false });
-  // });
-});
+async function updater(req, res, next) {
+  await User.create({
+    gender: "female",
+    email: "test2@io.com",
+    firstName: "john",
+    lastName: "russ",
+    birthDate: "02-02-1996",
+    currentLivingPlace: {
+      country: "georgia",
+      city: "ozurgeti",
+    },
+    from: {
+      country: "georgia",
+      city: "ozurgeti",
+    },
+    currentWorkplace: {
+      institution: "tsu",
+      position: "researcher",
+      description: "one two",
+    },
+  });
+}
 
 // updater();
