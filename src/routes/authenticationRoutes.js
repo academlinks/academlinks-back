@@ -50,7 +50,7 @@ router.route("/register").post(registerUser);
 // limiter("You exceed max login request count", 5),
 router.route("/login").post(loginUser);
 
-router.route("/logout").post(checkAuth, logoutUser);
+router.route("/logout").post(logoutUser);
 
 router.route("/refresh").get(refresh);
 

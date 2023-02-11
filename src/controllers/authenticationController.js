@@ -229,13 +229,8 @@ exports.loginUser = asyncWrapper(async function (req, res, next) {
 });
 
 exports.logoutUser = asyncWrapper(async function (req, res, next) {
-  const currUser = req.user;
-
-  // await updateBlackList(req, currUser.id);
   res.cookie("authorization", "");
-  res.clearCookie("authorization");
-  // res.end();
-  // res.status(200).json({ loggedOut: true, accessToken: "" });
+  res.end();
 });
 
 // SECTION: Update User Credentials

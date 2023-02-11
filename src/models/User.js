@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
+const { getServerHost } = require("../lib/getOrigins");
 
 const { Schema, model } = mongoose;
 
@@ -129,7 +130,6 @@ const UserSchema = new Schema(
 
     profileImg: {
       type: String,
-      default: "http://localhost:4000/avatars/profile-default.webp",
     },
 
     coverImg: {
@@ -157,6 +157,20 @@ const UserSchema = new Schema(
 );
 
 UserSchema.index({ userName: 1 });
+
+UserSchema.pre("save", function (next) {
+  if (!this.isNew) return next();
+  const maleAvatar = "/avatars/avatar-male.webp";
+  const femaleAvatar = "/avatars/avatar-female.webp";
+
+  if (this.gender === "male") {
+    this.profileImg = getServerHost().concat(maleAvatar);
+  } else if (this.gender === "female") {
+    this.profileImg = getServerHost().concat(femaleAvatar);
+  }
+
+  next();
+});
 
 UserSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
