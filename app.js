@@ -29,9 +29,9 @@ const { getOrigins } = require("./src/lib/getOrigins");
 const App = express();
 
 process.env.NODE_MODE === "DEV" && App.use(morgan("dev"));
-
+// at /opt/render/project/src/src/controllers/authenticationController.js:416:29\n'
 App.use(express.static(path.join(__dirname, "public/images")));
-
+console.log(__dirname);
 App.use(
   helmet({
     crossOriginEmbedderPolicy: false,
