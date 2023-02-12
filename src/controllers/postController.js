@@ -83,7 +83,7 @@ exports.deletePost = asyncWrapper(async function (req, res, next) {
 
   const postMedia = postToDelete.media;
 
-  if (!postMedia.shared && postMedia?.[0])
+  if (!postToDelete.shared && postMedia?.[0])
     await controllPostMediaDeletion(postMedia, next);
 
   await postToDelete.delete();
