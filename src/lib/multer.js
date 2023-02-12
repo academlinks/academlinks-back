@@ -68,11 +68,14 @@ exports.editMedia = (params) => async (req, res, next) => {
       .toFile(`${destination}/${fileName}`);
   }
 
+  const dest = "../../../../../public/images";
+
   async function writeOriginal({ file, fileName }) {
     await sharp(file)
       .toFormat("webp")
       .webp({ quality: 90 })
-      .toFile(`${destination}/${fileName}`);
+      .toFile(`${temp}/${fileName}`);
+      // .toFile(`${destination}/${fileName}`);
   }
 
   const currentDate = Date.now();
