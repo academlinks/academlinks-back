@@ -74,7 +74,7 @@ exports.editMedia = (params) => async (req, res, next) => {
     await sharp(file)
       .toFormat("webp")
       .webp({ quality: 90 })
-      .toFile(`${temp}/${fileName}`);
+      .toFile(`${dest}/${fileName}`);
       // .toFile(`${destination}/${fileName}`);
   }
 
