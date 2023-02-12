@@ -72,10 +72,8 @@ exports.editMedia = (params) => async (req, res, next) => {
   }
 
   async function writeOriginal({ file, fileName }) {
-    await sharp(file)
-      .toFormat("webp")
-      .webp({ quality: 90 })
-      .toFile(`${destination ? `${destination}/` : ""}${fileName}`);
+    await sharp(file).toFormat("webp").webp({ quality: 90 }).toFile(fileName);
+    // .toFile(`${destination ? `${destination}/` : ""}${fileName}`);
   }
 
   const currentDate = Date.now();
