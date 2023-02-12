@@ -30,8 +30,19 @@ const App = express();
 
 process.env.NODE_MODE === "DEV" && App.use(morgan("dev"));
 // at /opt/render/project/src/src/controllers/authenticationController.js:416:29\n'
-App.use(express.static(path.join(__dirname, "public/images")));
-console.log(__dirname);
+function getStaticFileDestination() {
+  const NODE_MODE = process.env.NODE_MODE;
+  const staticPath =
+    NODE_MODE === "DEV"
+      ? path.join(__dirname, "public/images")
+      : path.join("", "public/images");
+
+  console.log({ staticPath });
+
+  return staticPath;
+}
+App.use(express.static(getStaticFileDestination()));
+
 App.use(
   helmet({
     crossOriginEmbedderPolicy: false,
