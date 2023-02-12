@@ -35,7 +35,7 @@ function getStaticFileDestination() {
   const staticPath =
     NODE_MODE === "DEV"
       ? path.join(__dirname, "public/images")
-      : path.join(__dirname, "../../../../", "public/images");
+      : path.join(__dirname, "../../../..", "public/images");
 
   console.log({ dir: __dirname, staticPath });
 
