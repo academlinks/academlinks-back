@@ -52,7 +52,10 @@ exports.uploadMedia = (params) => media(params);
  */
 exports.editMedia = (params) => async (req, res, next) => {
   const key = params.multy ? "files" : "file";
-  const destination = params.destination || "public/images";
+  const destination = params.destination || "public/images"
+    // ? "../../../../../public/images"
+    // : "../../../../../public/images";
+  // || process.env.STATIC_FILE_DESTINATION;
 
   if (!req[key]) return next();
 
@@ -68,14 +71,11 @@ exports.editMedia = (params) => async (req, res, next) => {
       .toFile(`${destination}/${fileName}`);
   }
 
-  const dest = "../../../../../public/images";
-
   async function writeOriginal({ file, fileName }) {
     await sharp(file)
       .toFormat("webp")
       .webp({ quality: 90 })
-      .toFile(`${dest}/${fileName}`);
-      // .toFile(`${destination}/${fileName}`);
+      .toFile(`${destination}/${fileName}`);
   }
 
   const currentDate = Date.now();
