@@ -52,7 +52,7 @@ exports.uploadMedia = (params) => media(params);
  */
 exports.editMedia = (params) => async (req, res, next) => {
   const key = params.multy ? "files" : "file";
-  const destination = params.destination || "";
+  const destination = params.destination || "public/images";
   // ? "../../../../../public/images"
   // : "../../../../../public/images";
   // || process.env.STATIC_FILE_DESTINATION;
@@ -72,8 +72,11 @@ exports.editMedia = (params) => async (req, res, next) => {
   }
 
   async function writeOriginal({ file, fileName }) {
-    await sharp(file).toFormat("webp").webp({ quality: 90 }).toFile(fileName);
-    // .toFile(`${destination ? `${destination}/` : ""}${fileName}`);
+    await sharp(file)
+      .toFormat("webp")
+      .webp({ quality: 90 })
+      .toFile(`${destination}/${fileName}`);
+    // .toFile(fileName);
   }
 
   const currentDate = Date.now();
