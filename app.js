@@ -29,13 +29,14 @@ const { getOrigins } = require("./src/lib/getOrigins");
 const App = express();
 
 process.env.NODE_MODE === "DEV" && App.use(morgan("dev"));
-// at /opt/render/project/src/src/controllers/authenticationController.js:416:29\n'
+// at /opt/render/project/src/app.js
+// at /user/dev/academlinks/server/app.js
 function getStaticFileDestination() {
   const NODE_MODE = process.env.NODE_MODE;
   const staticPath =
     NODE_MODE === "DEV"
       ? path.join(__dirname, "public/images")
-      : path.join(__dirname, "../../../../public/images");
+      : path.resove(__dirname, "../../../../../", "public/images");
 
   console.log({ dir: __dirname, staticPath });
 
