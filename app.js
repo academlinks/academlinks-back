@@ -36,13 +36,13 @@ function getStaticFileDestination() {
   const staticPath =
     NODE_MODE === "DEV"
       ? path.join(__dirname, "public/images")
-      : path.resolve(__dirname, "../../../../../", "public/images");
+      : path.resove(__dirname, "../../../../public/images");
 
   console.log({ dir: __dirname, staticPath });
 
   return staticPath;
 }
-App.use(express.static(getStaticFileDestination()));
+App.use(express.static(path.join(__dirname, "public/images")));
 
 App.use(
   helmet({
