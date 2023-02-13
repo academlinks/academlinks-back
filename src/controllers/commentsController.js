@@ -243,11 +243,7 @@ exports.reactOnComment = asyncWrapper(async function (req, res, next) {
     .json({ likesAmount: comment.likesAmount, reactions: comment.reactions });
 });
 
-exports.reactOnCommentReply = asyncWrapper(async function (
-  req,
-  res,
-  next
-) {
+exports.reactOnCommentReply = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
 
   const { comment, commentReply } = await controllCommentAccess({
@@ -307,12 +303,13 @@ exports.pinCommentReply = asyncWrapper(async function (req, res, next) {
     req,
     next,
     checkBody: false,
+    checkReplyAccess: true,
   });
 
   if (post.author.toString() !== currUser.id)
     return next(new AppError(404, "you are not authorized for this operation"));
 
-  commentReply.pin = !commentReply.pin;
+  if (commentReply) commentReply.pin = !commentReply.pin;
 
   await comment.save();
 

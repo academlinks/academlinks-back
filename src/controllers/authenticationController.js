@@ -351,8 +351,6 @@ exports.createResetPasswordForForgotPassword = asyncWrapper(async function (
   try {
     if (!email) return next(new AppError(403, "please provide us valid email"));
 
-    await Registration.create(req.body);
-
     await new Email({
       adressat: email,
     }).sendPasswordReset(passwordReset);
@@ -373,7 +371,7 @@ exports.createResetPasswordForForgotPassword = asyncWrapper(async function (
 
 exports.updateForgotPassword = asyncWrapper(async function (req, res, next) {
   const { token, password } = req.body;
-
+  console.log({ token, password });
   const hashedPassword = crypto
     .createHash("sha256")
     .update(token)
@@ -392,7 +390,7 @@ exports.updateForgotPassword = asyncWrapper(async function (req, res, next) {
   user.password = password;
   user.resetPassword = undefined;
   user.resetPasswordExpiresIn = undefined;
-  await user.save();
+  await user.save({ validateBeforeSave: false });
 
   user.password = undefined;
 

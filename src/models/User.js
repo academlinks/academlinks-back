@@ -134,7 +134,6 @@ const UserSchema = new Schema(
 
     coverImg: {
       type: String,
-      default: "http://localhost:4000/avatars/cover-default.webp",
     },
 
     password: {
@@ -168,6 +167,8 @@ UserSchema.pre("save", function (next) {
   } else if (this.gender === "female") {
     this.profileImg = getServerHost().concat(femaleAvatar);
   }
+
+  this.coverImg = getServerHost().concat("/avatars/cover-default.webp");
 
   next();
 });
