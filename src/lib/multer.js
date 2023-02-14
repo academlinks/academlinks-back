@@ -52,7 +52,7 @@ exports.uploadMedia = (params) => media(params);
  */
 exports.editMedia = (params) => async (req, res, next) => {
   const key = params.multy ? "files" : "file";
-  const destination = params.destination || "public/images";
+  const destination = params.destination || "public/images/uploads";
 
   if (!req[key]) return next();
 

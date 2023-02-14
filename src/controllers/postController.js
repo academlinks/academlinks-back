@@ -48,7 +48,7 @@ exports.createPost = asyncWrapper(async function (req, res, next) {
     // If multer storage is diskStorage use this
     // req?.files?.map((file) => file.filename);
     newPost.media = req.xOriginal.map(
-      (fileName) => `${getServerHost()}/${fileName}`
+      (fileName) => `${getServerHost()}/uploads/${fileName}`
     );
   }
 

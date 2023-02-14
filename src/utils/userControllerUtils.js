@@ -4,7 +4,7 @@ const { promisify } = require("util");
 async function deleteExistingImage(originalFileNameFragments) {
   try {
     const deletion = promisify(fs.unlink);
-    await deletion(`public/images/${originalFileNameFragments[0]}`);
+    await deletion(`public/images/uploads/${originalFileNameFragments[0]}`);
   } catch (error) {
     throw new Error(error.message);
   }

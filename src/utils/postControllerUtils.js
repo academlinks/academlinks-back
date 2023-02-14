@@ -53,14 +53,14 @@ async function controllPostCreation(req) {
 async function controllPostMediaDeletion(
   media,
   next,
-  destination = "public/images"
+  destination = "public/images/uploads"
 ) {
   const deletion = promisify(fs.unlink);
 
   Promise.all(
     media.map(async (media) => {
       try {
-        const originalFileName = media.split("/")?.slice(3)[0];
+        const originalFileName = media.split("/")?.slice(4)[0];
         await deletion(`${destination}/${originalFileName}`);
       } catch (error) {
         return next(
@@ -134,8 +134,8 @@ async function controllPostMediaOnUpdate({ req, next, post }) {
       existingMedia.map(async (file) => {
         try {
           if (!media?.includes(file)) {
-            const originalFileName = file.split("/")?.slice(3)[0];
-            await deletion(`public/images/${originalFileName}`);
+            const originalFileName = file.split("/")?.slice(4)[0];
+            await deletion(`public/images/uploads/${originalFileName}`);
           } else filteredMedia.push(file);
         } catch (error) {
           return next(
@@ -150,7 +150,7 @@ async function controllPostMediaOnUpdate({ req, next, post }) {
 
   if (!shared && req.files) {
     const newFiles = req.xOriginal.map(
-      (fileName) => `${getServerHost()}/${fileName}`
+      (fileName) => `${getServerHost()}/uploads/${fileName}`
     );
 
     const modifiedExistingFiles = filteredMedia[0] ? filteredMedia : [];

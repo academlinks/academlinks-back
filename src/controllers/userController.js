@@ -39,17 +39,17 @@ exports.updateProfileImage = asyncWrapper(async function (req, res, next) {
   const user = await User.findById(currUser.id);
 
   const existingProfileImg = user.profileImg;
-  const originalFileNameFragments = existingProfileImg.split("/")?.slice(3);
+  const originalFileNameFragments = existingProfileImg.split("/")?.slice(4);
 
   let mediaUrl;
   try {
     if (
-      originalFileNameFragments[1] &&
-      !originalFileNameFragments[1].startsWith("avatar-")
+      originalFileNameFragments[0] &&
+      !originalFileNameFragments[0].startsWith("avatar-")
     )
       await deleteExistingImage(originalFileNameFragments);
 
-    mediaUrl = `${getServerHost()}/${req.xOriginal}`;
+    mediaUrl = `${getServerHost()}/uploads/${req.xOriginal}`;
   } catch (error) {
     return next(
       new AppError(
@@ -72,16 +72,17 @@ exports.updateCoverImage = asyncWrapper(async function (req, res, next) {
   const user = await User.findById(currUser.id);
 
   const existingProfileImg = user.coverImg;
-  const originalFileNameFragments = existingProfileImg.split("/")?.slice(3);
+  const originalFileNameFragments = existingProfileImg.split("/")?.slice(4);
 
   let mediaUrl;
   try {
     if (
-      originalFileNameFragments[1] &&
-      originalFileNameFragments[1] !== "cover-default.webp"
+      originalFileNameFragments[0] &&
+      originalFileNameFragments[0] !== "cover-default.webp"
     )
       await deleteExistingImage(originalFileNameFragments);
-    mediaUrl = `${getServerHost()}/${req.xOriginal}`;
+
+    mediaUrl = `${getServerHost()}/uploads/${req.xOriginal}`;
   } catch (error) {
     return next(
       new AppError(

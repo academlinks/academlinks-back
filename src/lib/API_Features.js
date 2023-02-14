@@ -60,6 +60,8 @@ class API_Features {
 
     if (this.query.position)
       queryToModify["workplace.position"] = this.query.position;
+    if (this.query.currentWorkplace)
+      queryToModify["currentWorkplace.position"] = this.query.currentWorkplace;
 
     const finalQuery = JSON.parse(
       JSON.stringify(queryToModify).replace(
