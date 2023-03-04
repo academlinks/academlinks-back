@@ -3,23 +3,22 @@ const { useLazySocket, socket_name_placeholders } = require("./ioUtils.js");
 
 const messages_placeholder = {
   // On Comments
-  onParentCommentToPostAuthor: (postType) => `commented on your ${postType}`,
-  onParentCommentToPostAuthorMentioned: (postType) =>
+  onCommentToPostAuthor: (postType) => `commented on your ${postType}`,
+  onCommentToPostAuthorMentioned: (postType) =>
     `you're mentioned in the comment on your ${postType}`,
-  onReplyCommentToPostAuthorReply: (postType) =>
-    `your comment is replied on your ${postType}`,
-  onReplyCommentToPostAuthorMentioned: (postType) =>
-    `you're mentioned in the comment on your ${postType}`,
-  onReplyCommentToPostAuthor: (postType) => `commented on your ${postType}`,
   onCommentToUserAreTagedOnPostAndOnCommentTo: (postType) =>
-    `you're mentioned in the comment on ${"PostAuthorPlaceholder"}'s ${postType} on which you are tagged`,
+    `you're mentioned in the comment on ${"PostAuthorPlaceholder"}'s ${postType} on which you are tagged in`,
+  onCommentReplyToUserAreTagedOnPostAndOnCommentTo: (postType) =>
+    `replied on your comment on the ${"PostAuthorPlaceholder"}'s ${postType} on which you are tagged in`,
   onCommentToUserAreTagedOnPost: (postType) =>
-    `commented on ${"PostAuthorPlaceholder"}'s ${postType} on which you are tagged`,
+    `commented on ${"PostAuthorPlaceholder"}'s ${postType} on which you are tagged in`,
   onCommentUsersAreTaggedOnComment: (postType) =>
     `you're mentioned in the comment on ${"PostAuthorPlaceholder"}'s ${postType}`,
+  onCommentAuthor: (postType) =>
+    `replied on your comment on ${"PostAuthorPlaceholder"}'s ${postType}`,
   // Friend Requests
   sendRequest: `sent you friend request`,
-  confirmRequest: `confirm your friend request`,
+  confirmRequest: `confirmed your friend request`,
   // Post
   onPostTag: (postType) => `mentioned you in the ${postType}`,
   onPostShareAndTagAuthor: (postType) =>
@@ -73,13 +72,12 @@ async function controllAddCommentNotification({
     ///////////////////////////////////
     if (postAuthor !== commentAuthor && !commentTagsIncludesPostAuthor) {
       createOperation({
-        message: messages_placeholder.onParentCommentToPostAuthor(postType),
+        message: messages_placeholder.onCommentToPostAuthor(postType),
         adressats: [postAuthor],
       });
     } else if (postAuthor !== commentAuthor && commentTagsIncludesPostAuthor) {
       createOperation({
-        message:
-          messages_placeholder.onParentCommentToPostAuthorMentioned(postType),
+        message: messages_placeholder.onCommentToPostAuthorMentioned(postType),
         adressats: [postAuthor],
       });
 
@@ -101,7 +99,7 @@ async function controllAddCommentNotification({
       parentCommentAuthor !== commentAuthor
     ) {
       createOperation({
-        message: messages_placeholder.onReplyCommentToPostAuthorReply(postType),
+        message: messages_placeholder.onCommentToPostAuthorMentioned(postType),
         adressats: [postAuthor],
       });
     } else if (
@@ -110,8 +108,7 @@ async function controllAddCommentNotification({
       commentTagsIncludesPostAuthor
     ) {
       createOperation({
-        message:
-          messages_placeholder.onReplyCommentToPostAuthorMentioned(postType),
+        message: messages_placeholder.onCommentToPostAuthorMentioned(postType),
         adressats: [postAuthor],
       });
 
@@ -124,7 +121,7 @@ async function controllAddCommentNotification({
       !commentTagsIncludesPostAuthor
     ) {
       createOperation({
-        message: messages_placeholder.onReplyCommentToPostAuthor(postType),
+        message: messages_placeholder.onCommentToPostAuthor(postType),
         adressats: [postAuthor],
       });
     }
@@ -138,7 +135,7 @@ async function controllAddCommentNotification({
       !isReplyToUserTaggedOnPost
     ) {
       createOperation({
-        message: `replied your comment on ${"PostAuthorPlaceholder"}'s ${postType}`,
+        message: messages_placeholder.onCommentAuthor(postType),
         options: { postAuthorUserName },
         adressats: [parentCommentAuthor],
       });
@@ -150,7 +147,10 @@ async function controllAddCommentNotification({
 
     if (usersTaggedOnPost[0] && isReplyToUserTaggedOnPost) {
       createOperation({
-        message: `replied your comment on the ${"PostAuthorPlaceholder"}'s ${postType} on which you are tagged in`,
+        message:
+          messages_placeholder.onCommentReplyToUserAreTagedOnPostAndOnCommentTo(
+            postType
+          ),
         options: { postAuthorUserName },
         adressats: [
           usersTaggedOnPost.find(

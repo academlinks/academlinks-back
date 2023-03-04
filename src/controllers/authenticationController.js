@@ -31,7 +31,7 @@ exports.registerUser = asyncWrapper(async function (req, res, next) {
   });
 
   if (isExistingUserWithEmail || isExistingUserRegistrationWithEmail)
-    return next(new AppError(403, "user with this email already exists"));
+    return next(new AppError(405, "user with this email already exists"));
 
   const newReg = await Registration.create(req.body);
 
@@ -77,7 +77,7 @@ exports.aproveRegistration = asyncWrapper(async function (req, res, next) {
   const { requestId } = req.params;
 
   if (currUser.role !== "admin")
-    return next(new AppError(403, "you are not authorized for this operation"));
+    return next(new AppError(405, "you are not authorized for this operation"));
 
   const registration = await Registration.findById(requestId);
 
@@ -117,7 +117,7 @@ exports.deleteRegistrationRequest = asyncWrapper(async function (
   const currUser = req.user;
 
   if (currUser.role !== "admin")
-    return next(new AppError(403, "you are not authorized for this operation"));
+    return next(new AppError(405, "you are not authorized for this operation"));
 
   const registration = await Registration.findById(requestId);
 
@@ -248,7 +248,7 @@ exports.changePassword = asyncWrapper(async function (req, res, next) {
   const validPassword = await user.checkPassword(password, user.password);
 
   if (!user || !validPassword)
-    return next(new AppError(403, "incorect password"));
+    return next(new AppError(400, "incorect password"));
 
   user.password = newPassword;
   await user.save({ validateBeforeSave: false });
@@ -349,7 +349,7 @@ exports.createResetPasswordForForgotPassword = asyncWrapper(async function (
   await user.save({ validateBeforeSave: false });
 
   try {
-    if (!email) return next(new AppError(403, "please provide us valid email"));
+    if (!email) return next(new AppError(400, "please provide us valid email"));
 
     await new Email({
       adressat: email,
@@ -371,7 +371,7 @@ exports.createResetPasswordForForgotPassword = asyncWrapper(async function (
 
 exports.updateForgotPassword = asyncWrapper(async function (req, res, next) {
   const { token, password } = req.body;
-  console.log({ token, password });
+
   const hashedPassword = crypto
     .createHash("sha256")
     .update(token)
@@ -444,12 +444,12 @@ exports.refresh = asyncWrapper(async function (req, res, next) {
     return next(new AppError(401, "you are not authorized"));
 
   const decodedUser = await verifyToken(token[1], true);
-  if (!decodedUser) {
-    res.cookie("authorization", "");
-    res.clearCookie("authorization");
-    res.end();
-    return next(new AppError(403, "you are not authorized"));
-  }
+  // if (!decodedUser) {
+  //   res.cookie("authorization", "");
+  //   res.clearCookie("authorization");
+  //   res.end();
+  //   return next(new AppError(401, "you are not authorized"));
+  // }
 
   let user;
 
