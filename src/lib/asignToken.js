@@ -13,7 +13,7 @@ async function signToken(res, user) {
     email: user?.email,
   };
 
-  const accessToken = JWT.sign(payload, SECRET, { expiresIn: "1h" });
+  const accessToken = JWT.sign(payload, SECRET, { expiresIn: '1h' });
 
   const cookieOptions = {
     httpOnly: true,

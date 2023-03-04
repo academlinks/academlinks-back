@@ -465,7 +465,7 @@ exports.getUserFeed = asyncWrapper(async function (req, reqs, next) {
   const { page, limit, hasMore } = req.query;
 
   if (currUser.id !== userId)
-    return next(new AppError(401, "you are not authorized for this operation"));
+    return next(new AppError(403, "you are not authorized for this operation"));
 
   const user = await User.findById(userId);
   if (!user) return next(new AppError(404, "there are no such an user"));
