@@ -1,8 +1,7 @@
 const AppError = require("../lib/AppError.js");
 const asyncWrapper = require("../lib/asyncWrapper.js");
 
-const Post = require("../models/Post.js");
-const Comment = require("../models/Comment.js");
+const { Post, Comment } = require("../models");
 
 const {
   controllAddCommentNotification,

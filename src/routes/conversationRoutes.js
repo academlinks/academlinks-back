@@ -11,10 +11,7 @@ const {
   getUnseenConversationCount,
   markConversationsAsSeen,
 } = require("../controllers/conversationController.js");
-const {
-  checkAuth,
-  restriction,
-} = require("../controllers/authenticationController.js");
+const { checkAuth, restriction } = require("../middlewares");
 
 const router = express.Router();
 

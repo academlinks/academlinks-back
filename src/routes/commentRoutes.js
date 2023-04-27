@@ -10,10 +10,7 @@ const {
   pinCommentReply,
   reactOnCommentReply,
 } = require("../controllers/commentsController.js");
-const {
-  checkAuth,
-  restriction,
-} = require("../controllers/authenticationController.js");
+const { checkAuth, restriction } = require("../middlewares");
 
 const router = express.Router();
 

@@ -1,25 +1,25 @@
 const mongoose = require("mongoose");
 
-const AppError = require("../lib/AppError.js");
-const asyncWrapper = require("../lib/asyncWrapper.js");
+const AppError = require("../../lib/AppError.js");
+const asyncWrapper = require("../../lib/asyncWrapper.js");
 
-const Bookmarks = require("../models/Bookmarks.js");
-const Post = require("../models/Post.js");
-const Comments = require("../models/Comment.js");
-const Notifications = require("../models/Notification.js");
-const Conversation = require("../models/Conversation.js");
-const Messages = require("../models/Message.js");
-const Friendship = require("../models/Friendship.js");
-const User = require("../models/User.js");
+const {
+  Bookmarks,
+  Post,
+  Comment,
+  Notification,
+  Conversation,
+  Message,
+  Friendship,
+  User,
+} = require("../../models");
 
 const {
   deleteExistingImage,
   checkIfIsFriend,
-  checkIfIsFriendOnEach,
-} = require("../utils/userControllerUtils.js");
-const { uploadMedia, editMedia } = require("../lib/multer.js");
-const { getServerHost } = require("../lib/getOrigins.js");
-// const { updateBlackList } = require("../lib/controllBlackList.js");
+} = require("../../utils/userControllerUtils.js");
+const { uploadMedia, editMedia } = require("../../lib/multer.js");
+const { getServerHost } = require("../../lib/getOrigins.js");
 
 exports.resizeAndOptimiseMedia = editMedia({
   multy: false,
@@ -136,14 +136,14 @@ exports.deleteUser = asyncWrapper(async function (req, res, next) {
   await Post.deleteMany({ author: userId });
 
   // =============================================== //
-  // ========== Delete CurrUser Comments ========== //
+  // ========== Delete CurrUser Comment ========== //
   // ============================================= //
 
-  // 3.1 Delete Comments Which Are Binded To CurrUser Posts
-  await Comments.deleteMany({ post: { $in: userPostsId } });
+  // 3.1 Delete Comment Which Are Binded To CurrUser Posts
+  await Comment.deleteMany({ post: { $in: userPostsId } });
 
-  // 3.2 Update CurrUser Comments On Other Users Posts
-  await Comments.updateMany(
+  // 3.2 Update CurrUser Comment On Other Users Posts
+  await Comment.updateMany(
     { author: userId },
     {
       $set: {
@@ -161,12 +161,12 @@ exports.deleteUser = asyncWrapper(async function (req, res, next) {
   );
 
   // ==================================================== //
-  // ========== Delete CurrUser Notifications ========== //
+  // ========== Delete CurrUser Notification ========== //
   // ================================================== //
 
   // 4.0
-  await Notifications.deleteMany({ adressat: userId });
-  await Notifications.updateMany(
+  await Notification.deleteMany({ adressat: userId });
+  await Notification.updateMany(
     { from: userId },
     {
       $set: {
@@ -176,7 +176,7 @@ exports.deleteUser = asyncWrapper(async function (req, res, next) {
   );
 
   // ======================================================== //
-  // ========== Delete Conversations And Messages ========== //
+  // ========== Delete Conversations And Message ========== //
   // ====================================================== //
 
   // 5.1 Find CurrUser Conversations And Extract Ids
@@ -187,7 +187,7 @@ exports.deleteUser = asyncWrapper(async function (req, res, next) {
 
   const conversationIds = conversations.map((conv) => conv._id);
 
-  // 5.2 Mark Conversations And Messages As Deleted By CurrUser
+  // 5.2 Mark Conversations And Message As Deleted By CurrUser
   await Conversation.updateMany(
     { users: userId },
     {
@@ -203,7 +203,7 @@ exports.deleteUser = asyncWrapper(async function (req, res, next) {
     { arrayFilters: [{ "x.deletedBy": userId }] }
   );
 
-  await Messages.updateMany(
+  await Message.updateMany(
     {
       conversation: { $in: conversationIds },
       "deletion.deletedBy": { $ne: currUser.id },
@@ -217,13 +217,13 @@ exports.deleteUser = asyncWrapper(async function (req, res, next) {
     deletion: { $elemMatch: { deleted: true, deletedBy: { $ne: userId } } },
   }).select("_id");
 
-  // 5.4 Delete Convesations And Messages Permanently Which Are Marked As Deleted By CurrUser And Adressat
+  // 5.4 Delete Convesations And Message Permanently Which Are Marked As Deleted By CurrUser And Adressat
   const conversationToDeletePermanentlyIds =
     conversationToDeletePermanently.map((conv) => conv._id);
   await Conversation.deleteMany({
     _id: { $in: conversationToDeletePermanentlyIds },
   });
-  await Messages.deleteMany({
+  await Message.deleteMany({
     conversation: { $in: conversationToDeletePermanentlyIds },
   });
 
@@ -339,218 +339,6 @@ exports.getBadges = asyncWrapper(async function (req, res, next) {
     });
 });
 
-exports.getProfilePosts = asyncWrapper(async function (req, res, next) {
-  const currUser = req.user;
-  const { userId } = req.params;
-  const { page, limit, hasMore } = req.query;
-
-  const skip = page * limit - limit;
-
-  const postQuery = {
-    type: "post",
-    $and: [
-      {
-        $or: [
-          { author: userId, hidden: false },
-          { "tags.user": userId, "tags.hidden": false },
-        ],
-      },
-    ],
-  };
-
-  const user = await User.findById(userId);
-
-  if (!user) return next(new AppError(404, "user does not exists"));
-
-  const userFriendShip = await Friendship.findOne({ user: currUser.id });
-
-  const { isFriend, isCurrUser } = checkIfIsFriend({
-    currUser,
-    userId,
-    userFriendShip,
-  });
-
-  if (!isCurrUser) {
-    if (isFriend) postQuery.audience = { $in: ["friends", "public"] };
-    else postQuery.audience = "public";
-  }
-
-  let postsLength;
-  if (hasMore && !JSON.parse(hasMore))
-    postsLength = await Post.find(postQuery).countDocuments();
-
-  const posts = await Post.find(postQuery)
-    .skip(skip)
-    .limit(limit)
-    .sort("-createdAt")
-    .populate({
-      path: "author tags.user",
-      select: "userName profileImg",
-    })
-    .populate({
-      path: "authentic",
-      select: "-shared -__v",
-      transform: (doc, docId) =>
-        checkIfIsFriendOnEach({ currUser, doc, docId, userFriendShip }),
-      populate: { path: "author tags.user", select: "userName profileImg" },
-    });
-
-  res.status(200).json({ data: posts, results: postsLength });
-});
-
-exports.getPendingPosts = asyncWrapper(async function (req, res, next) {
-  const currUser = req.user;
-  const { userId } = req.params;
-
-  if (userId !== currUser.id)
-    return next(new AppError(403, "you are not authorised for this operation"));
-
-  const userFriendShip = await Friendship.findOne({ user: currUser.id });
-
-  const pendingPosts = await Post.find({
-    "tags.user": userId,
-    "tags.hidden": true,
-    "tags.review": false,
-    audience: { $ne: "private" },
-    type: { $ne: "blogPost" },
-  })
-    .populate({
-      path: "author tags.user",
-      select: "userName profileImg",
-    })
-    .populate({
-      path: "authentic",
-      select: "-reactions -shared -__v",
-      transform: (doc, docId) =>
-        checkIfIsFriendOnEach({ currUser, doc, docId, userFriendShip }),
-      populate: { path: "author tags.user", select: "userName profileImg" },
-    })
-    .sort("-createdAt");
-
-  res.status(200).json(pendingPosts);
-});
-
-exports.getHiddenPosts = asyncWrapper(async function (req, res, next) {
-  const currUser = req.user;
-  const { userId } = req.params;
-
-  if (userId !== currUser.id)
-    return next(new AppError(403, "you are not authorised"));
-
-  const userFriendShip = await Friendship.findOne({ user: currUser.id });
-
-  const hiddenPosts = await Post.find({
-    $or: [
-      { author: userId, hidden: true },
-      { "tags.user": userId, "tags.review": true, "tags.hidden": true },
-    ],
-    audience: { $ne: "private" },
-  })
-    .populate({ path: "author tags.user", select: "userName profileImg" })
-    .populate({
-      path: "authentic",
-      select: "-reactions -shared -__v",
-      transform: (doc, docId) =>
-        checkIfIsFriendOnEach({ currUser, doc, docId, userFriendShip }),
-      populate: { path: "author tags.user", select: "userName profileImg" },
-    })
-    .sort("-createdAt");
-
-  res.status(200).json(hiddenPosts);
-});
-
-exports.getUserFeed = asyncWrapper(async function (req, reqs, next) {
-  const currUser = req.user;
-  const { userId } = req.params;
-  const { page, limit, hasMore } = req.query;
-
-  if (currUser.id !== userId)
-    return next(new AppError(403, "you are not authorized for this operation"));
-
-  const user = await User.findById(userId);
-  if (!user) return next(new AppError(404, "there are no such an user"));
-
-  const userFriendShip = await Friendship.findOne({ user: currUser.id });
-  const userFriendsIds = userFriendShip.friends.map((friend) => friend.friend);
-
-  const skip = page * limit - limit;
-
-  const postQuery = {
-    $or: [
-      { author: userId },
-      { author: userFriendsIds },
-      { "tags.user": userFriendsIds },
-    ],
-    type: "post",
-    audience: { $in: ["public", "friends"] },
-  };
-
-  let postsLength;
-  if (hasMore && !JSON.parse(hasMore))
-    postsLength = await Post.find(postQuery).countDocuments();
-
-  const feedPosts = await Post.find(postQuery)
-    .skip(skip)
-    .limit(limit)
-    .sort("-createdAt")
-    .populate({
-      path: "author tags.user",
-      select: "userName profileImg",
-    })
-    .populate({
-      path: "authentic",
-      select: "-__v -shared",
-      transform: (doc, docId) =>
-        checkIfIsFriendOnEach({ currUser, doc, docId, userFriendShip }),
-      populate: { path: "author tags.user", select: "userName profileImg" },
-    });
-
-  reqs.status(200).json({ data: feedPosts, results: postsLength });
-});
-
-exports.getBookmarks = asyncWrapper(async function (req, res, next) {
-  const currUser = req.user;
-  const { userId } = req.params;
-  const { page, limit, hasMore } = req.query;
-
-  const skip = page * limit - limit;
-
-  if (userId !== currUser.id)
-    return next(new AppError(403, "you are not authorizd for this operation"));
-
-  let postsLength;
-  if (hasMore && !JSON.parse(hasMore))
-    postsLength = await Bookmarks.find({ author: userId }).countDocuments();
-
-  const userFriendShip = await Friendship.findOne({ user: currUser.id });
-
-  const savedPosts = await Bookmarks.find({ author: currUser.id })
-    .skip(skip)
-    .limit(limit)
-    .sort("-createdAt")
-    .populate({
-      path: "post",
-      select: "-__v",
-      transform: (doc, docId) =>
-        checkIfIsFriendOnEach({ currUser, doc, docId, userFriendShip }),
-      populate: [
-        { path: "author tags.user", select: "userName profileImg" },
-        {
-          path: "authentic",
-          select: "-__v",
-          transform: (doc, docId) =>
-            checkIfIsFriendOnEach({ currUser, doc, docId, userFriendShip }),
-          populate: {
-            path: "tags.user author",
-            select: "userName profileImg",
-          },
-        },
-      ],
-    });
-
-  res.status(200).json({ data: savedPosts, results: postsLength });
-});
-
 exports.isFriend = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
   const { userId } = req.params;
@@ -565,47 +353,3 @@ exports.isFriend = asyncWrapper(async function (req, res, next) {
 
   res.status(200).json(info);
 });
-
-/////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////
-exports.getUser = asyncWrapper(async function (req, res, next) {
-  const currUser = req.user;
-
-  const user = await User.findById(currUser.id);
-  const userFriendShip = await Friendship.findOne({
-    user: currUser.id,
-  }).populate("sentRequests.adressat pendingRequests.adressat friends.friend");
-
-  res.status(200).json();
-});
-
-exports.getAllUsers = asyncWrapper(async function (req, res, next) {
-  const users = await User.find({ userName: { $regex: key } });
-
-  res.status(200).json();
-});
-
-async function updater(req, res, next) {
-  await User.create({
-    gender: "female",
-    email: "test2@io.com",
-    firstName: "john",
-    lastName: "russ",
-    birthDate: "02-02-1996",
-    currentLivingPlace: {
-      country: "georgia",
-      city: "ozurgeti",
-    },
-    from: {
-      country: "georgia",
-      city: "ozurgeti",
-    },
-    currentWorkplace: {
-      institution: "tsu",
-      position: "researcher",
-      description: "one two",
-    },
-  });
-}
-
-// updater();

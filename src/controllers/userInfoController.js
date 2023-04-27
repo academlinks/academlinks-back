@@ -1,6 +1,7 @@
 const AppError = require("../lib/AppError.js");
-const  asyncWrapper  = require("../lib/asyncWrapper.js");
-const User = require("../models/User.js");
+const asyncWrapper = require("../lib/asyncWrapper.js");
+
+const { User } = require("../models");
 
 exports.getUserInfo = asyncWrapper(async function (req, res, next) {
   const { userId } = req.params;
@@ -50,11 +51,7 @@ exports.addUserInfo = asyncWrapper(async function (req, res, next) {
   res.status(200).json(user[dataToAdd]);
 });
 
-exports.updateUserNestedInfo = asyncWrapper(async function (
-  req,
-  res,
-  next
-) {
+exports.updateUserNestedInfo = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
   const { userId, field, docId } = req.params;
 
@@ -105,11 +102,7 @@ exports.deleteUserInfo = asyncWrapper(async function (req, res, next) {
   res.status(204).json({ deleted: true });
 });
 
-exports.deleteNestedUserInfo = asyncWrapper(async function (
-  req,
-  res,
-  next
-) {
+exports.deleteNestedUserInfo = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
   const { userId, field, docId } = req.params;
 

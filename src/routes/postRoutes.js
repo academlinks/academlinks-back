@@ -9,6 +9,7 @@ const {
   sharePost,
   getPostComments,
   getPost,
+  getBlogPost,
   isUserPost,
   savePost,
   getBlogPosts,
@@ -20,11 +21,9 @@ const {
   reviewTaggedPosts,
   addPostToProfile,
   hidePostFromProfile,
-} = require("../controllers/postController.js");
-const {
-  checkAuth,
-  restriction,
-} = require("../controllers/authenticationController.js");
+} = require("../controllers/Posts");
+const { checkAuth, restriction, isAuthenticated } = require("../middlewares");
+
 const { addComment } = require("../controllers/commentsController.js");
 
 const router = express.Router();
@@ -39,8 +38,9 @@ router
 
 router
   .route("/:postId/comments")
-  .get(checkAuth, restriction("user", "admin"), getPostComments)
+  .get(getPostComments)
   .post(checkAuth, addComment);
+// .get(checkAuth, restriction("user", "admin"), getPostComments)
 
 router
   .route("/:postId/options")
@@ -78,9 +78,10 @@ router
   .route("/blogPosts/topRatedPublishers")
   .get(checkAuth, getTopRatedPublishers);
 
-router
-  .route("/blogPosts/relatedPosts/:postId")
-  .get(checkAuth, restriction("user", "admin"), getRelatedPosts);
+router.route("/blogPosts/:postId").get(isAuthenticated, getBlogPost);
+
+router.route("/blogPosts/relatedPosts/:postId").get(getRelatedPosts);
+// .get(checkAuth, restriction("user", "admin"), getRelatedPosts);
 
 router
   .route("/:postId")

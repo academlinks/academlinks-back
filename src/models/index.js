@@ -1,0 +1,15 @@
+module.exports = {
+  Admin: require("./Admin"),
+  AdminNotification: require("./AdminNotification"),
+  Bookmarks: require("./Bookmarks"),
+  Comment: require("./Comment"),
+  Commercials: require("./Commercials"),
+  Conversation: require("./Conversation"),
+  Friendship: require("./Friendship"),
+  Message: require("./Message"),
+  Notification: require("./Notification"),
+  OnLineUsers: require("./OnLineUsers"),
+  Post: require("./Post"),
+  Registration: require("./Registration"),
+  User: require("./User"),
+};

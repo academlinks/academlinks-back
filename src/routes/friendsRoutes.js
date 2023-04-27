@@ -10,11 +10,8 @@ const {
   getUserSentRequest,
   getPendingRequestsCount,
   markPendingRequestsAsSeen,
-} = require("../controllers/friendsController.js");
-const {
-  checkAuth,
-  restriction,
-} = require("../controllers/authenticationController.js");
+} = require("../controllers/Friends");
+const { checkAuth, restriction } = require("../middlewares");
 
 const router = express.Router();
 

@@ -2,10 +2,8 @@ const express = require("express");
 
 const { getCommercials } = require("../controllers/commercialController.js");
 
-const { checkAuth } = require("../controllers/authenticationController.js");
-
 const router = express.Router();
 
-router.route("/").get(checkAuth, getCommercials);
+router.route("/").get(getCommercials);
 
 module.exports = router;

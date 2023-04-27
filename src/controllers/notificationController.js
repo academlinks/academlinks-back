@@ -1,13 +1,10 @@
 const mongoose = require("mongoose");
 const AppError = require("../lib/AppError.js");
-const  asyncWrapper  = require("../lib/asyncWrapper.js");
-const Notification = require("../models/Notification.js");
+const asyncWrapper = require("../lib/asyncWrapper.js");
 
-exports.getAllNotifications = asyncWrapper(async function (
-  req,
-  res,
-  next
-) {
+const { Notification } = require("../models");
+
+exports.getAllNotifications = asyncWrapper(async function (req, res, next) {
   const { userId } = req.params;
   const currUser = req.user;
   const { ObjectId } = mongoose.Types;
@@ -73,11 +70,7 @@ exports.deleteAllUserNotification = asyncWrapper(async function (
   res.status(204).json({ deleted: true });
 });
 
-exports.deleteUserNotification = asyncWrapper(async function (
-  req,
-  res,
-  next
-) {
+exports.deleteUserNotification = asyncWrapper(async function (req, res, next) {
   const { notifyId } = req.params;
   const currUser = req.user;
 
@@ -111,11 +104,7 @@ exports.getUnseenNotificationsCount = asyncWrapper(async function (
   res.status(200).json(unreadNotifications);
 });
 
-exports.markNotificationAsSeen = asyncWrapper(async function (
-  req,
-  res,
-  next
-) {
+exports.markNotificationAsSeen = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
   const { userId } = req.params;
 
@@ -129,8 +118,3 @@ exports.markNotificationAsSeen = asyncWrapper(async function (
 
   res.status(200).json({ isMarked: true });
 });
-
-async function editor() {
-  await Notification.deleteMany();
-}
-// editor();

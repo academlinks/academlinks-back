@@ -28,9 +28,14 @@ const { getOrigins } = require("./src/lib/getOrigins");
 
 const App = express();
 
-process.env.NODE_MODE === "DEV" && App.use(morgan("dev"));
+// App.set("view engine", "pug");
+// App.set("views", path.join(__dirname, "src/views"));
 
+App.use(express.json());
+App.use(express.urlencoded({ extended: true }));
 App.use(express.static(path.join(__dirname, "public/images")));
+
+process.env.NODE_MODE === "DEV" && App.use(morgan("dev"));
 
 App.use(
   helmet({
@@ -38,8 +43,6 @@ App.use(
   })
 );
 
-App.use(express.json());
-App.use(express.urlencoded({ extended: false }));
 App.use(cookieParser());
 
 App.use(mongoSanitize());
@@ -73,6 +76,12 @@ App.use(
     },
   })
 );
+
+// App.get("/view", (req, res) => {
+//   res.status(200).render("emails/wellcome", {
+//     userName: "Russ",
+//   });
+// });
 
 App.use("/api/v1/administration", adminRoutes);
 App.use("/api/v1/authentication", authenticationRoutes);

@@ -1,7 +1,6 @@
 const express = require("express");
 
 const {
-  logIn,
   // media upload
   resizeAndOptimiseMedia,
   uploadCommercialMediaFiles,
@@ -27,19 +26,17 @@ const {
   markNotificationsAsSeen,
   markNotificationAsRead,
   sendEmailToCommercialCustomer,
-} = require("../controllers/adminController");
+} = require("../controllers/Admin");
+const { adminLogIn } = require("../controllers/Auth");
 
 // const limiter = require("../lib/rateLimiter");
 
-const {
-  checkAuth,
-  restriction,
-} = require("../controllers/authenticationController");
+const { checkAuth, restriction } = require("../middlewares");
 
 const router = express.Router();
 
 // limiter("You exceed max ogin request count", 5),
-router.route("/login").post(logIn);
+router.route("/login").post(adminLogIn);
 
 ////////////////////////////
 ////////// Users //////////

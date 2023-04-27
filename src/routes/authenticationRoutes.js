@@ -10,11 +10,11 @@ const {
   confirmRegistration,
   changeEmail,
   changePassword,
-  checkAuth,
-  restriction,
   createResetPasswordForForgotPassword,
   updateForgotPassword,
-} = require("../controllers/authenticationController.js");
+} = require("../controllers/Auth");
+const { checkAuth, restriction } = require("../middlewares");
+
 // const limiter = require("../lib/rateLimiter.js");
 
 const router = express.Router();

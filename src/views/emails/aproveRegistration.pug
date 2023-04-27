@@ -1,0 +1,105 @@
+doctype html
+html
+  head
+    meta(name="viewport" content="width=device-width")
+    meta(http-equiv="Content-Type" content="text/html; charset=UTF-8")
+    meta(http-equiv="X-UA-Compatible" content="IE=edge")
+    link(rel="preconnect" href="https://fonts.googleapis.com")
+    link(rel="preconnect" href="https://fonts.gstatic.com" crossorigin="true")
+    link(href="https://fonts.googleapis.com/css2?family=Courgette&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600&display=swap" rel="stylesheet")
+    title Wellcome
+
+    style.
+      .container{
+        width:100%;
+        background:indigo;
+        background:#fff;
+      }
+
+      .content{
+        min-width:280px;
+        max-width:500px;
+        margin:0 auto;
+        padding:15px 10px;
+        border-radius:10px;
+        border:1px solid gray;
+        box-shadow:0px 0px 10px rgba(0,0,0,0.5);
+      }
+
+      .fig{
+        max-width:250px;
+        margin:0 auto;
+        height:100%;
+        min-height:200px;
+        overflow:hidden;
+      }
+
+      .logo{
+        width:100%;
+        height:100%;
+        object-fit:contain;
+        object-position:center;
+      }
+
+      .feedback{
+        text-align:center;
+      }
+
+      .welcome{
+        font-size:26px;
+      }
+
+      .message{
+        font-size:18px;
+        line-height:1.2;
+        letter-spacing:0.25px;
+      }
+
+      .thanks{
+        font-size: 22px;
+        font-weight:500;
+      }
+
+      .btn{
+        display:inline-block;
+        margin:10px 0;
+        padding:12px 26px;
+        border-radius:10px;
+        background:rgba(31, 56, 100, 1);
+        color:#fff;
+        text-decoration:none;
+        box-shadow:0px 0px 10px rgba(0,0,0,0.5);
+        transition:all;
+      }
+
+      .btn:hover{
+        background:rgba(3, 85, 191, 1);
+      }
+
+  body
+    div.container
+      div.content 
+        figure.fig
+          img.logo(src=`${host}/assets/academlinks-logo.webp`)
+        div.feedback
+          p.welcome
+            strong Welcome to Academlinks. 
+          p.thanks Dear 
+            strong #{userName}
+          p.message
+            span Your request about registration is aproved. 🎉
+          p.thanks 
+            span Thank you 
+              strong #{userName} 
+            span for your patience.
+          p.message Now you can navigate to our website using link below and set your 
+            br
+            strong password.
+            br
+            span Notice that this step is 
+              br
+              strong required !
+          a.btn(href=`${url}` target="_blank") Set Password
+          p.message After that you can login to our website.
+          p.message Wish you good luck !!!
+

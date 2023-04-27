@@ -13,11 +13,8 @@ const {
   getPendingPosts,
   getHiddenPosts,
   deleteUser,
-} = require("../controllers/userController.js");
-const {
-  checkAuth,
-  restriction,
-} = require("../controllers/authenticationController.js");
+} = require("../controllers/User");
+const { checkAuth, restriction } = require("../middlewares");
 
 const router = express.Router();
 

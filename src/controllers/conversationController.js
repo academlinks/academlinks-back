@@ -1,9 +1,6 @@
 const AppError = require("../lib/AppError.js");
 const asyncWrapper = require("../lib/asyncWrapper.js");
 
-const Conversation = require("../models/Conversation.js");
-const Message = require("../models/Message.js");
-const User = require("../models/User.js");
 const { useSocket, socket_name_placeholders } = require("../utils/ioUtils.js");
 
 const {
@@ -11,6 +8,8 @@ const {
   excludeDeletionField,
   deleteConversationPermanently,
 } = require("../utils/controllConversationUtils.js");
+
+const { Conversation, Message, User } = require("../models");
 
 exports.createConvesation = asyncWrapper(async function (req, res, next) {
   const { id: userId } = req.params;
@@ -346,10 +345,3 @@ exports.markConversationsAsSeen = asyncWrapper(async function (req, res, next) {
 
   res.status(200).json({ isMarked: true });
 });
-
-async function del() {
-  await Conversation.deleteMany();
-  await Message.deleteMany();
-}
-
-// del();

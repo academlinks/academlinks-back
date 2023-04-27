@@ -1,10 +1,14 @@
 const nodemailer = require("nodemailer");
+const pug = require("pug");
+const { getServerHost } = require("../lib/getOrigins");
 
 class Email {
   constructor({ adressat, subject, text }) {
-    this.sender = process.env.APP_EMAIL;
-    this.pass = process.env.APP_EMAIL_PASSWORD;
-    this.appName = process.env.APP_NAME;
+    this.user =
+      process.env.NODE_MODE === "PROD"
+        ? process.env.APP_EMAIL_USER
+        : process.env.APP_DEV_EMAIL_USER;
+    this.from = `${process.env.APP_NAME} <${this.user}>`;
 
     this.adressat = adressat;
     this.subject = subject;
@@ -12,56 +16,97 @@ class Email {
   }
 
   transport() {
+    const secure = process.env.NODE_MODE === "PROD" ? true : false;
+    const host =
+      process.env.NODE_MODE === "PROD"
+        ? process.env.APP_EMAIL_HOST
+        : process.env.APP_DEV_EMAIL_HOST;
+    const port =
+      process.env.NODE_MODE === "PROD"
+        ? process.env.APP_EMAIL_PORT
+        : process.env.APP_DEV_EMAIL_PORT;
+    const pass =
+      process.env.NODE_MODE === "PROD"
+        ? process.env.APP_EMAIL_PASSWORD
+        : process.env.APP_DEV_EMAIL_PASSWORD;
+    const service =
+      process.env.NODE_MODE === "PROD"
+        ? process.env.APP_EMAIL_SERVICE
+        : process.env.APP_DEV_EMAIL_SERVICE;
+
     return nodemailer.createTransport({
-      service: "gmail",
-      secure: false,
-      host: "smtp.gmail.com",
+      secure,
+      host,
+      port,
+      service,
       auth: {
-        user: this.sender,
-        pass: this.pass,
+        user: this.user,
+        pass,
       },
     });
   }
 
-  async send({ text, subject, html }) {
+  async send({ text, subject, template, templateParams = null }) {
     const transportConfig = {
-      from: this.appName,
+      from: this.from,
       to: this.adressat,
       subject: subject || this.subject,
-      text: text || this.text,
+      text: text || this.text || "",
     };
 
-    if (html) transportConfig.html = html;
+    if (template) {
+      transportConfig.html = pug.renderFile(
+        `${__dirname}/../views/emails/${template}.pug`,
+        { ...templateParams }
+      );
+    }
 
     await this.transport().sendMail(transportConfig);
   }
 
-  async sendWelcome() {
+  async sendWelcome({ userName }) {
     await this.send({
-      subject: "WellCome",
-      text: "Welcome to Academlinks. Your registration request will be reviewed and we wil Email you in case of affirmation !",
+      subject: "Welcome To Academlinks",
+      template: "wellcome",
+      templateParams: {
+        userName,
+        host: getServerHost(),
+      },
     });
   }
 
-  async sendRegistrationAprovment({ url }) {
+  async sendRegistrationAprovment({ url, userName }) {
     await this.send({
-      subject: "Registration Aprovment",
-      text: "Your request about registration is aproved",
-      html: `<a href="${url}">please click here to confirm registration</a>`,
+      subject: "Academlinks Registration Aprovment",
+      template: "aproveRegistration",
+      templateParams: {
+        url,
+        userName,
+        host: getServerHost(),
+      },
     });
   }
 
-  async sendRegistrationReject() {
+  async sendRegistrationReject({ userName }) {
     await this.send({
-      subject: "Registration Aprovment",
-      text: "Your request about registration is rejected",
+      subject: "Academlinks Registration Rejection",
+      template: "rejectRegistration",
+      templateParams: {
+        userName,
+        host: getServerHost(),
+      },
     });
   }
 
-  async sendPasswordReset(resetToken) {
+  async sendPasswordReset({ resetToken, userName }) {
     await this.send({
-      subject: "Password Reset",
-      text: `Your password reset token (valid for only 10 minutes). Password : ${resetToken}`,
+      subject: "Academlinks Password Reset",
+      template: "passwordReset",
+      templateParams: {
+        resetToken,
+        userName,
+        host: getServerHost(),
+      },
     });
   }
 }
