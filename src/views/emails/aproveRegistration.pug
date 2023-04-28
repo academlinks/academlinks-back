@@ -76,6 +76,10 @@ html
         background:rgba(3, 85, 191, 1);
       }
 
+      .username{
+        text-transform:capitalize;
+      }
+
   body
     div.container
       div.content 
@@ -85,12 +89,12 @@ html
           p.welcome
             strong Welcome to Academlinks. 
           p.thanks Dear 
-            strong #{userName}
+            strong.username #{userName}
           p.message
             span Your request about registration is aproved. 🎉
           p.thanks 
             span Thank you 
-              strong #{userName} 
+              strong.username #{userName} 
             span for your patience.
           p.message Now you can navigate to our website using link below and set your 
             br

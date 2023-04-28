@@ -58,6 +58,10 @@ html
         font-weight:500;
       }
 
+      .username{
+        text-transform:capitalize;
+      }
+
   body
     div.container
       div.content 
@@ -67,11 +71,11 @@ html
           p.welcome
             strong Academlinks
           p.thanks Dear 
-            strong #{userName}
+            strong.username #{userName}
           p.message
             span Your registration request will be reviewed and we wil Email you in case of affirmation !
           p.thanks 
             span Thank you 
-            strong #{userName} 
+            strong.username #{userName} 
             span for your interest in joining our social network and for your patience.
 

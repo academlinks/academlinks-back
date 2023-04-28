@@ -75,6 +75,10 @@ html
         background:rgba(3, 85, 191, 1);
       }
 
+      .username{
+        text-transform:capitalize;
+      }
+
   body
     div.container
       div.content 
@@ -84,7 +88,7 @@ html
           p.welcome
             strong Academlinks
           p.thanks Dear 
-            strong #{userName}
+            strong.username #{userName}
           p.message
             span Thank you for your interest in joining our social network. 
             br 
@@ -99,5 +103,5 @@ html
             span If you have any questions or concerns about our decision, please do not hesitate to contact us.
           p.message Kind regards,
             br
-            span Academlinks team
+            span Academlinks team.
 

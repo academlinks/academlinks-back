@@ -35,7 +35,7 @@ exports.registerUser = asyncWrapper(async function (req, res, next) {
 
     await new Email({
       adressat: email,
-    }).sendWelcome({ userName: user.userName });
+    }).sendWelcome({ userName: user.firstName });
   } catch (error) {
     return next(
       new AppError(
@@ -87,7 +87,7 @@ exports.aproveRegistration = asyncWrapper(async function (req, res, next) {
       url: `${getAppHost()}/confirmRegistration/${
         registration._id
       }/confirm/${registrationPasswordResetToken}`,
-      userName: registration.userName,
+      userName: registration.firstName,
     });
   } catch (error) {
     return next(
@@ -116,18 +116,19 @@ exports.deleteRegistrationRequest = asyncWrapper(async function (
     return next(new AppError(404, "registration request does not exists"));
 
   const adressat = registration.email;
-  await registration.delete();
 
   try {
     await new Email({
       adressat,
-    }).sendRegistrationReject();
+    }).sendRegistrationReject({ userName: registration.firstName });
   } catch (error) {
     return next(
       new AppError("There was an error sending the email. Try again later!"),
       500
     );
   }
+
+  await registration.delete();
 
   res.status(204).json({ deleted: true });
 });
