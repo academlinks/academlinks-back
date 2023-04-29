@@ -78,8 +78,9 @@ App.use(
 );
 
 // App.get("/view", (req, res) => {
-//   res.status(200).render("emails/wellcome", {
+//   res.status(200).render("emails/rejectRegistration", {
 //     userName: "Russ",
+//     termsUrl: "http://localhost:3000/terms-and-policy/terms",
 //   });
 // });
 

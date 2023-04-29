@@ -80,6 +80,11 @@ html
         text-transform:capitalize;
       }
 
+      .link{
+        text-decoration:underline;
+        color:inherit;
+      }
+
   body
     div.container
       div.content 
@@ -98,11 +103,11 @@ html
             span After careful review of your application, we regret to inform you that we are unable to approve your registration at this time. 
             span Unfortunately, we have found that your registration information does not meet our requirements for joining our community. 
             span We encourage you to review our 
-            strong Terms & Conditions 
+            a.link(href=termsUrl target="_blank")
+              strong Terms&Conditions 
             span carefully, especially the part showing who is eligible for registration.
           p.message
             span If you have any questions or concerns about our decision, please do not hesitate to contact us.
           p.message Kind regards,
             br
             span Academlinks team.
-

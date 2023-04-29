@@ -87,13 +87,14 @@ class Email {
     });
   }
 
-  async sendRegistrationReject({ userName }) {
+  async sendRegistrationReject({ userName, termsUrl }) {
     await this.send({
       subject: "Academlinks Registration Rejection",
       template: "rejectRegistration",
       templateParams: {
         userName,
         host: getServerHost(),
+        termsUrl,
       },
     });
   }

@@ -120,7 +120,10 @@ exports.deleteRegistrationRequest = asyncWrapper(async function (
   try {
     await new Email({
       adressat,
-    }).sendRegistrationReject({ userName: registration.firstName });
+    }).sendRegistrationReject({
+      userName: registration.firstName,
+      termsUrl: `${getAppHost()}/terms-and-policy/terms`,
+    });
   } catch (error) {
     return next(
       new AppError("There was an error sending the email. Try again later!"),
