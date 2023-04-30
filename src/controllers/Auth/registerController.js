@@ -207,26 +207,3 @@ async function createAdmin() {
 
   await admin.save();
 }
-
-async function testEmail() {
-  //await new Email({
-  //   adressat: "russ@io.com",
-  // }).sendWelcome({ userName: "Russ" });
-
-  await new Email({
-    adressat: "russ@io.com",
-  }).sendPasswordReset({
-    userName: "Russ",
-    resetToken: "dsfsdfdsfsdfsdfsdfsdfds",
-  });
-
-  // await new Email({
-  //   adressat: "russ@io.com",
-  // }).sendRegistrationAprovment({ userName: "Russ" });
-
-  // await new Email({
-  //   adressat: "russ@io.com",
-  // }).sendRegistrationReject({ userName: "Russ" });
-}
-
-// testEmail();
