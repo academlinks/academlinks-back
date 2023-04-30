@@ -2,19 +2,17 @@ require("dotenv").config();
 
 const App = require("./app");
 const mongoose = require("mongoose");
+
 // const Redis = require("ioredis");
 const http = require("http");
 const { Server } = require("socket.io");
+
 const { getOrigins } = require("./src/lib/getOrigins");
 const getAppConnection = require("./src/lib/getAppConnection");
 
 const { createServer } = http;
 
 const PORT = process.env.PORT;
-
-// const redisURL = "redis://127.0.0.1:6379";
-// const redis = Redis.createClient(redisURL);
-// redis.set = utils.promisify(redis.set);
 
 const SERVER = createServer(App);
 
@@ -27,7 +25,6 @@ exports.io = io;
 require("./io.js");
 
 App.set("socket", io);
-// App.set("redis", redis);
 
 process.on("uncaughtException", (err) => {
   console.log("uncaughtException ! process is exited", err);
