@@ -4,6 +4,9 @@ const asyncWrapper = require("../../lib/asyncWrapper.js");
 const AppError = require("../../lib/AppError.js");
 const Email = require("../../lib/sendEmail.js");
 const { getAppHost } = require("../../lib/getOrigins.js");
+const {
+  CONFIRM_REGISTRATION_PASSWORD_RESET_LINK,
+} = require("../../config/config");
 
 const { User, Friendship, Registration, Admin } = require("../../models");
 
@@ -77,24 +80,27 @@ exports.aproveRegistration = asyncWrapper(async function (req, res, next) {
   const registrationPasswordResetToken =
     registration.createPasswordResetToken();
 
-  registration.aproved = true;
-  await registration.save({ validateBeforeSave: false });
-
   try {
     await new Email({
       adressat: registration.email,
     }).sendRegistrationAprovment({
-      url: `${getAppHost()}/confirmRegistration/${
-        registration._id
-      }/confirm/${registrationPasswordResetToken}`,
       userName: registration.firstName,
+      url: CONFIRM_REGISTRATION_PASSWORD_RESET_LINK({
+        registrationId: registration._id,
+        resetToken: registrationPasswordResetToken,
+      }),
     });
+
+    registration.confirmationEmailSentAt = new Date();
   } catch (error) {
     return next(
       new AppError("There was an error sending the email. Try again later!"),
       500
     );
   }
+
+  registration.aproved = true;
+  await registration.save({ validateBeforeSave: false });
 
   res.status(200).json({ isAproved: true });
 });

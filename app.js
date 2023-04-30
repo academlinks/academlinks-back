@@ -1,17 +1,12 @@
 const express = require("express");
-
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
-const helmet = require("helmet");
-const mongoSanitize = require("express-mongo-sanitize");
-const xss = require("xss-clean");
 const hpp = require("hpp");
-const morgan = require("morgan");
-
+const helmet = require("helmet");
+const xss = require("xss-clean");
+const mongoSanitize = require("express-mongo-sanitize");
 const path = require("path");
-
-const errorController = require("./src/lib/errorController");
-const AppError = require("./src/lib/AppError");
+const morgan = require("morgan");
 
 const authenticationRoutes = require("./src/routes/authenticationRoutes");
 const postRoutes = require("./src/routes/postRoutes");
@@ -24,7 +19,11 @@ const conversationRoutes = require("./src/routes/conversationRoutes");
 const adminRoutes = require("./src/routes/adminRoutes");
 const commercialRoutes = require("./src/routes/commercialRoutes");
 
+const AppError = require("./src/lib/AppError");
 const { getOrigins } = require("./src/lib/getOrigins");
+const errorController = require("./src/lib/errorController");
+
+const Jobs = require("./src/jobs/Jobs");
 
 const App = express();
 
@@ -76,6 +75,8 @@ App.use(
     },
   })
 );
+
+new Jobs().sendConfirmationRenewalEmail();
 
 // App.get("/view", (req, res) => {
 //   res.status(200).render("emails/rejectRegistration", {

@@ -108,6 +108,10 @@ const RegistrationSchema = new Schema(
       type: String,
       select: false,
     },
+
+    confirmationEmailSentAt: {
+      type: Date,
+    },
   },
   { timestamps: true }
 );
