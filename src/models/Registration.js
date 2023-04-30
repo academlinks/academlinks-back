@@ -90,6 +90,15 @@ const RegistrationSchema = new Schema(
       },
     },
 
+    terms: {
+      type: String,
+      enum: ["on"],
+      required: [
+        true,
+        "Please accept to all the terms and conditions before sending registration request.",
+      ],
+    },
+
     aproved: {
       type: Boolean,
       default: false,
