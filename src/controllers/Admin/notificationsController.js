@@ -1,11 +1,9 @@
-const asyncWrapper = require("../../lib/asyncWrapper.js");
-const AppError = require("../../lib/AppError.js");
-
 const {
   Registration,
   Commercials,
   AdminNotification,
 } = require("../../models");
+const { asyncWrapper, AppError } = require("../../lib");
 
 exports.getBadges = asyncWrapper(async function (req, res, next) {
   const regCounts = await Registration.find({

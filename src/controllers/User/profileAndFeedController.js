@@ -1,12 +1,9 @@
-const AppError = require("../../lib/AppError.js");
-const asyncWrapper = require("../../lib/asyncWrapper.js");
-
+const { AppError, asyncWrapper } = require("../../lib");
+const { User, Friendship, Post, Bookmarks } = require("../../models");
 const {
   checkIfIsFriend,
   checkIfIsFriendOnEach,
 } = require("../../utils/userControllerUtils.js");
-
-const { User, Friendship, Post, Bookmarks } = require("../../models");
 
 exports.getProfilePosts = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;

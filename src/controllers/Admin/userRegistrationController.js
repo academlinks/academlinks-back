@@ -1,6 +1,4 @@
-const asyncWrapper = require("../../lib/asyncWrapper.js");
-const AppError = require("../../lib/AppError.js");
-
+const { asyncWrapper, AppError } = require("../../lib");
 const { Registration } = require("../../models");
 
 exports.getRegistrationLabels = asyncWrapper(async function (req, res, next) {

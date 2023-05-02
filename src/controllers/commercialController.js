@@ -1,6 +1,4 @@
-const AppError = require("../lib/AppError.js");
-const asyncWrapper = require("../lib/asyncWrapper.js");
-
+const { asyncWrapper } = require("../lib");
 const { Commercials } = require("../models");
 
 exports.getCommercials = asyncWrapper(async function (req, res, next) {

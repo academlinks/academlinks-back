@@ -1,11 +1,7 @@
 const mongoose = require("mongoose");
-
-const asyncWrapper = require("../../lib/asyncWrapper.js");
-const AppError = require("../../lib/AppError.js");
-
-const { controllShowOnProfile } = require("../../utils/postControllerUtils.js");
-
 const { Post } = require("../../models");
+const { asyncWrapper, AppError } = require("../../lib");
+const { PostUtils } = require("../../utils/posts");
 
 exports.reviewTaggedPosts = asyncWrapper(async function (req, res, next) {
   const { postId } = req.params;
@@ -65,7 +61,7 @@ exports.addPostToProfile = asyncWrapper(async function (req, res, next) {
 
   if (!post) return next(new AppError(404, "post does not exists"));
 
-  await controllShowOnProfile({ currUser, post, task: "add" });
+  PostUtils.manageShowOnProfile({ currUser, post, task: "add" });
 
   await post.save();
 
@@ -94,7 +90,7 @@ exports.hidePostFromProfile = asyncWrapper(async function (req, res, next) {
 
   if (!post) return next(new AppError(404, "post does not exists"));
 
-  await controllShowOnProfile({ currUser, post, task: "hide" });
+  PostUtils.manageShowOnProfile({ currUser, post, task: "hide" });
 
   await post.save();
 

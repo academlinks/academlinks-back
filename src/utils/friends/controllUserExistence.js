@@ -1,5 +1,5 @@
-const AppError = require("../lib/AppError.js");
-const User = require("../models/User.js");
+const { AppError } = require("../../lib");
+const { User } = require("../../models");
 
 async function controllUserExistence({ req, next }) {
   const currUser = req.user;

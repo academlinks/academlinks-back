@@ -1,9 +1,6 @@
 const mongoose = require("mongoose");
-
-const AppError = require("../../lib/AppError.js");
-const asyncWrapper = require("../../lib/asyncWrapper.js");
-
 const { Post } = require("../../models");
+const { AppError, asyncWrapper } = require("../../lib");
 
 exports.getBlogPost = asyncWrapper(async function (req, res, next) {
   const isAuthenticated = req.isAuthenticated;

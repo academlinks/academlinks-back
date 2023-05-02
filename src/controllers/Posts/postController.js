@@ -1,60 +1,34 @@
-const { uploadMedia, editMedia } = require("../../lib/multer.js");
-
-const AppError = require("../../lib/AppError.js");
-const asyncWrapper = require("../../lib/asyncWrapper.js");
-
+const { OnPostNotification } = require("../../utils/notifications");
+const { PostUtils } = require("../../utils/posts");
+const { AppError, asyncWrapper, Upload } = require("../../lib");
 const { Post, Comment, Bookmarks, Friendship } = require("../../models");
-
-const {
-  contollAudience,
-  controllPostCreation,
-  controllPostMediaDeletion,
-  controllPostUpdateBody,
-  controllPostMediaOnUpdate,
-  controllPostReaction,
-} = require("../../utils/postControllerUtils.js");
-
-const {
-  controllCreatePostNotification,
-  controllSharePostNotification,
-} = require("../../utils/notificationControllerUtils.js");
-
 const { checkIfIsFriendOnEach } = require("../../utils/userControllerUtils.js");
 
-const { getServerHost } = require("../../lib/getOrigins.js");
-
-exports.resizeAndOptimiseMedia = editMedia({
-  multy: true,
-  resize: false,
+const upload = new Upload({
+  storage: "memoryStorage",
 });
 
 exports.uploadPostMediaFiles = (imageName) =>
-  uploadMedia({
-    storage: "memoryStorage",
-    upload: "any",
+  upload.uploadMedia({
     filename: imageName,
   });
 
+exports.resizeAndOptimiseMedia = upload.editMedia();
+
 exports.createPost = asyncWrapper(async function (req, res, next) {
-  const { newPost, tags } = await controllPostCreation(req);
+  const { body, tags } = PostUtils.managePostCreation(req);
 
-  if (req.files) {
-    // If multer storage is diskStorage use this
-    // req?.files?.map((file) => file.filename);
-    newPost.media = req.xOriginal.map(
-      (fileName) => `${getServerHost()}/uploads/${fileName}`
-    );
-  }
+  const post = new Post(body);
 
-  newPost.populate({
+  post.populate({
     path: "author tags.user",
     select: "userName profileImg",
   });
 
-  await newPost.save();
+  await post.save();
 
   if (tags && JSON.parse(tags)[0])
-    await controllCreatePostNotification({
+    await OnPostNotification.sendNotificationOnPostCreate({
       req,
       post: newPost,
       tags: JSON.parse(tags),
@@ -78,7 +52,7 @@ exports.deletePost = asyncWrapper(async function (req, res, next) {
   const postMedia = postToDelete.media;
 
   if (!postToDelete.shared && postMedia?.[0])
-    await controllPostMediaDeletion(postMedia, next);
+    await PostUtils.managePostMediaDeletion({ media: postMedia, next });
 
   await postToDelete.delete();
 
@@ -104,13 +78,11 @@ exports.updatePost = asyncWrapper(async function (req, res, next) {
   else if (post.author.toString() !== currUser.id)
     return next(new AppError(404, "you are not authorised for this operation"));
 
-  const { body, newTags } = await controllPostUpdateBody({
+  const { body, newTags } = await PostUtils.managePostBodyOnUpdate({
     req,
-    postType: post.type,
-    existingTags: post.tags,
+    next,
+    post,
   });
-
-  await controllPostMediaOnUpdate({ req, next, post });
 
   Object.keys(body).forEach((key) => (post[key] = body[key]));
 
@@ -127,8 +99,12 @@ exports.updatePost = asyncWrapper(async function (req, res, next) {
     populate: { path: "author tags", select: "userName profileImg" },
   });
 
-  if (newTags && newTags[0])
-    await controllCreatePostNotification({ req, post: post, tags: newTags });
+  if (Array.isArray(newTags) && newTags[0])
+    await OnPostNotification.sendNotificationOnPostCreate({
+      req,
+      post: post,
+      tags: newTags,
+    });
 
   res.status(201).json(post);
 });
@@ -176,7 +152,7 @@ exports.sharePost = asyncWrapper(async function (req, res, next) {
     description: description,
   };
 
-  contollAudience(body, audience, "post");
+  PostUtils.manageAudience({ post: body, audience, postType: "post" });
 
   if (tags && JSON.parse(tags))
     body.tags = JSON.parse(tags).map((tag) => ({ user: tag }));
@@ -194,7 +170,7 @@ exports.sharePost = asyncWrapper(async function (req, res, next) {
     populate: { path: "author tags.user", select: "userName profileImg" },
   });
 
-  await controllSharePostNotification({ req, post: newPost, tags });
+  await sendNotificationOnPostShare({ req, post: newPost, tags });
 
   res.status(201).json(newPost);
 });
@@ -234,7 +210,7 @@ exports.changePostAudience = asyncWrapper(async function (req, res, next) {
   if (post.author.toString() !== currUser.id)
     return next(new AppError(403, "yoy are not authorized for this operation"));
 
-  contollAudience(post, audience, post.type);
+  PostUtils.manageAudience({ post, audience, postType: post.type });
 
   await post.save();
 
@@ -250,7 +226,11 @@ exports.reactOnPost = asyncWrapper(async function (req, res, next) {
 
   if (!post) return next(new AppError(404, "post does not exists"));
 
-  await controllPostReaction({ post, currUserId: currUser.id, reaction });
+  PostUtils.managePostReaction({
+    post,
+    reaction,
+    currUserId: currUser.id,
+  });
 
   await post.save();
 

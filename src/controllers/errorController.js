@@ -1,4 +1,4 @@
-const AppError = require("./AppError.js");
+const { AppError } = require("../lib");
 
 const errorController = (err, req, res, next) => {
   let error = destructureError(err);

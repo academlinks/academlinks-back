@@ -1,6 +1,6 @@
-const nodemailer = require("nodemailer");
 const pug = require("pug");
-const { getServerHost } = require("../lib/getOrigins");
+const nodemailer = require("nodemailer");
+const { SERVER_HOST } = require("../config");
 
 class Email {
   constructor({ adressat, subject, text }) {
@@ -70,7 +70,7 @@ class Email {
       template: "wellcome",
       templateParams: {
         userName,
-        host: getServerHost(),
+        host: SERVER_HOST,
       },
     });
   }
@@ -82,7 +82,7 @@ class Email {
       templateParams: {
         url,
         userName,
-        host: getServerHost(),
+        host: SERVER_HOST,
       },
     });
   }
@@ -93,7 +93,7 @@ class Email {
       template: "rejectRegistration",
       templateParams: {
         userName,
-        host: getServerHost(),
+        host: SERVER_HOST,
         termsUrl,
       },
     });
@@ -106,7 +106,7 @@ class Email {
       templateParams: {
         resetToken,
         userName,
-        host: getServerHost(),
+        host: SERVER_HOST,
       },
     });
   }

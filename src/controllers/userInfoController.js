@@ -1,7 +1,5 @@
-const AppError = require("../lib/AppError.js");
-const asyncWrapper = require("../lib/asyncWrapper.js");
-
 const { User } = require("../models");
+const { AppError, asyncWrapper } = require("../lib");
 
 exports.getUserInfo = asyncWrapper(async function (req, res, next) {
   const { userId } = req.params;

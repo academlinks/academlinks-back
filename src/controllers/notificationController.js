@@ -1,8 +1,6 @@
 const mongoose = require("mongoose");
-const AppError = require("../lib/AppError.js");
-const asyncWrapper = require("../lib/asyncWrapper.js");
-
 const { Notification } = require("../models");
+const { AppError, asyncWrapper } = require("../lib");
 
 exports.getAllNotifications = asyncWrapper(async function (req, res, next) {
   const { userId } = req.params;

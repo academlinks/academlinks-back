@@ -1,8 +1,8 @@
+const { Email } = require("../lib");
 const { Registration } = require("../models");
-const Email = require("../lib/sendEmail");
 const {
-  CONFIRM_REGISTRATION_PASSWORD_RESET_LINK,
-} = require("../config/config");
+  GENERATE_CONFIRM_REGISTRATION_PASSWORD_RESET_LINK,
+} = require("../config");
 
 class SendConfirmationRenewalEmail {
   constructor(schedule) {
@@ -29,7 +29,7 @@ class SendConfirmationRenewalEmail {
         users.forEach(async (user) => {
           await new Email({ adressat: user.email }).sendRegistrationAprovment({
             userName: user.firstName,
-            url: CONFIRM_REGISTRATION_PASSWORD_RESET_LINK({
+            url: GENERATE_CONFIRM_REGISTRATION_PASSWORD_RESET_LINK({
               registrationId: user.id,
               resetToken: user.passwordResetToken,
             }),

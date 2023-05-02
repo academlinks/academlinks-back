@@ -8,22 +8,23 @@ const mongoSanitize = require("express-mongo-sanitize");
 const path = require("path");
 const morgan = require("morgan");
 
-const authenticationRoutes = require("./src/routes/authenticationRoutes");
-const postRoutes = require("./src/routes/postRoutes");
-const commentRoutes = require("./src/routes/commentRoutes");
-const userRoutes = require("./src/routes/userRoutes");
-const friendsRoutes = require("./src/routes/friendsRoutes");
-const userInfoRoutes = require("./src/routes/userInfoRoutes");
-const notificationRoutes = require("./src/routes/notificationRoutes");
-const conversationRoutes = require("./src/routes/conversationRoutes");
-const adminRoutes = require("./src/routes/adminRoutes");
-const commercialRoutes = require("./src/routes/commercialRoutes");
+const {
+  authenticationRoutes,
+  postRoutes,
+  commentRoutes,
+  userRoutes,
+  friendsRoutes,
+  userInfoRoutes,
+  notificationRoutes,
+  conversationRoutes,
+  adminRoutes,
+  commercialRoutes,
+} = require("./src/routes");
 
-const AppError = require("./src/lib/AppError");
-const { getOrigins } = require("./src/lib/getOrigins");
-const errorController = require("./src/lib/errorController");
-
-const Jobs = require("./src/jobs/Jobs");
+const { AppError } = require("./src/lib");
+const { APP_ORIGINS } = require("./src/config");
+const errorController = require("./src/controllers/errorController");
+const { Jobs } = require("./src/jobs");
 
 const App = express();
 
@@ -66,7 +67,7 @@ App.use(
     origin: function (origin, callback) {
       if (!origin) return callback(null, true);
 
-      if (!getOrigins().includes(origin)) {
+      if (!APP_ORIGINS.includes(origin)) {
         const msg = `This site ${origin} does not have an access. Only specific domains are allowed to access it.`;
         return callback(new Error(msg), false);
       }

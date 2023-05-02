@@ -1,20 +1,20 @@
 const { io } = require("./index");
-const OnlineUsers = require("./src/models/OnLineUsers");
-const { socket_name_placeholders } = require("./src/utils/ioUtils");
+const { OnLineUsers } = require("./src/models");
+const { IO_PLACEHOLDERS } = require("./src/config");
 
 async function addOnlineUser(onlineUser) {
   try {
     const onlineUserId = onlineUser.userId;
-    const isAlreadyActive = await OnlineUsers.findOne({ userId: onlineUserId });
+    const isAlreadyActive = await OnLineUsers.findOne({ userId: onlineUserId });
 
     if (isAlreadyActive) {
-      await OnlineUsers.findOneAndUpdate(
+      await OnLineUsers.findOneAndUpdate(
         { userId: onlineUserId },
         { socketId: onlineUser.socketId },
         { new: true }
       );
     } else {
-      await OnlineUsers.create(onlineUser);
+      await OnLineUsers.create(onlineUser);
     }
   } catch (error) {
     console.log(error);
@@ -23,14 +23,14 @@ async function addOnlineUser(onlineUser) {
 
 async function removeOnlineUser(socketId) {
   try {
-    await OnlineUsers.findOneAndDelete({ socketId });
+    await OnLineUsers.findOneAndDelete({ socketId });
   } catch (error) {
     console.log(error);
   }
 }
 
-io.on(socket_name_placeholders.connection, (socket) => {
-  socket.on(socket_name_placeholders.userConnection, async (data) => {
+io.on(IO_PLACEHOLDERS.connection, (socket) => {
+  socket.on(IO_PLACEHOLDERS.userConnection, async (data) => {
     await addOnlineUser({
       userId: data._id,
       socketId: socket.id,
@@ -40,11 +40,11 @@ io.on(socket_name_placeholders.connection, (socket) => {
     });
   });
 
-  socket.on(socket_name_placeholders.userDisconnection, async () => {
+  socket.on(IO_PLACEHOLDERS.userDisconnection, async () => {
     await removeOnlineUser(socket.id);
   });
 
-  socket.on(socket_name_placeholders.disconnect, async () => {
+  socket.on(IO_PLACEHOLDERS.disconnect, async () => {
     await removeOnlineUser(socket.id);
   });
 });

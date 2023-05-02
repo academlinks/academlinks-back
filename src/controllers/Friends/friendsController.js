@@ -1,10 +1,7 @@
 const mongoose = require("mongoose");
-const AppError = require("../../lib/AppError.js");
-const asyncWrapper = require("../../lib/asyncWrapper.js");
-
-const controllUserExistence = require("../../utils/friendsControllerUtils.js");
-
 const { Friendship } = require("../../models");
+const { AppError, asyncWrapper } = require("../../lib");
+const { controllUserExistence } = require("../../utils/friends");
 
 exports.deleteFriend = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;

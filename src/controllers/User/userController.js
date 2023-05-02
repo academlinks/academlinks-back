@@ -1,8 +1,6 @@
 const mongoose = require("mongoose");
-
-const AppError = require("../../lib/AppError.js");
-const asyncWrapper = require("../../lib/asyncWrapper.js");
-
+const { CLIENT_STATIC_URL_ROOT } = require("../../config");
+const { AppError, asyncWrapper, Upload } = require("../../lib");
 const {
   Bookmarks,
   Post,
@@ -13,25 +11,23 @@ const {
   Friendship,
   User,
 } = require("../../models");
-
 const {
   deleteExistingImage,
   checkIfIsFriend,
 } = require("../../utils/userControllerUtils.js");
-const { uploadMedia, editMedia } = require("../../lib/multer.js");
-const { getServerHost } = require("../../lib/getOrigins.js");
 
-exports.resizeAndOptimiseMedia = editMedia({
+const upload = new Upload({
   multy: false,
-  resize: false,
+  storage: "memoryStorage",
+  upload: "single",
 });
 
 exports.uploadUserProfileFile = (imageName) =>
-  uploadMedia({
-    storage: "memoryStorage",
-    upload: "single",
+  upload.uploadMedia({
     filename: imageName,
   });
+
+exports.resizeAndOptimiseMedia = upload.editMedia();
 
 exports.updateProfileImage = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
@@ -49,7 +45,7 @@ exports.updateProfileImage = asyncWrapper(async function (req, res, next) {
     )
       await deleteExistingImage(originalFileNameFragments);
 
-    mediaUrl = `${getServerHost()}/uploads/${req.xOriginal}`;
+    mediaUrl = `${CLIENT_STATIC_URL_ROOT}/${req.xOriginal}`;
   } catch (error) {
     return next(
       new AppError(
@@ -82,7 +78,7 @@ exports.updateCoverImage = asyncWrapper(async function (req, res, next) {
     )
       await deleteExistingImage(originalFileNameFragments);
 
-    mediaUrl = `${getServerHost()}/uploads/${req.xOriginal}`;
+    mediaUrl = `${CLIENT_STATIC_URL_ROOT}/${req.xOriginal}`;
   } catch (error) {
     return next(
       new AppError(

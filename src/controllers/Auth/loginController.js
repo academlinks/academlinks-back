@@ -1,8 +1,4 @@
-const asyncWrapper = require("../../lib/asyncWrapper.js");
-const AppError = require("../../lib/AppError.js");
-const asignToken = require("../../lib/asignToken.js");
-const verifyToken = require("../../lib/verifyToken.js");
-
+const { asyncWrapper, AppError, JWT } = require("../../lib");
 const { User, Admin } = require("../../models");
 
 exports.loginUser = asyncWrapper(async function (req, res, next) {
@@ -22,7 +18,7 @@ exports.loginUser = asyncWrapper(async function (req, res, next) {
 
   candidateUser.password = undefined;
 
-  const { accessToken } = await asignToken(res, candidateUser);
+  const { accessToken } = await JWT.asignToken({ user: candidateUser, res });
 
   res.status(200).json({ ...candidateUser._doc, accessToken });
 });
@@ -39,7 +35,10 @@ exports.refresh = asyncWrapper(async function (req, res, next) {
   if (!authorization || token[0] !== "Bearer" || !token[1])
     return next(new AppError(401, "you are not authorized"));
 
-  const decodedUser = await verifyToken(token[1], true);
+  const decodedUser = await JWT.verifyToken({
+    token: token[1],
+    refreshToken: true,
+  });
 
   let user;
 
@@ -49,11 +48,14 @@ exports.refresh = asyncWrapper(async function (req, res, next) {
 
   if (!user) return next(new AppError(404, "user does not exists"));
 
-  const { accessToken } = await asignToken(res, {
-    _id: user._id,
-    role: user.role,
-    userName: user.userName,
-    email: user?.email,
+  const { accessToken } = await JWT.asignToken({
+    res,
+    user: {
+      _id: user._id,
+      role: user.role,
+      userName: user.userName,
+      email: user?.email,
+    },
   });
 
   res.status(200).json({ accessToken });
@@ -71,7 +73,7 @@ exports.adminLogIn = asyncWrapper(async function (req, res, next) {
 
   admin.password = undefined;
 
-  const { accessToken } = await asignToken(res, admin);
+  const { accessToken } = await JWT.asignToken({ res, user: admin });
 
   res.status(200).json({ accessToken, adminId: admin._id });
 });

@@ -1,8 +1,4 @@
-const asyncWrapper = require("../../lib/asyncWrapper.js");
-const AppError = require("../../lib/AppError.js");
-
-const API_Features = require("../../lib/API_Features.js");
-
+const { asyncWrapper, AppError, API_Features } = require("../../lib");
 const { User } = require("../../models");
 
 exports.getUserLabels = asyncWrapper(async function (req, res, next) {

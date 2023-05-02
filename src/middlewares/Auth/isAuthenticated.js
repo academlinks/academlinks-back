@@ -1,4 +1,4 @@
-const asyncWrapper = require("../../lib/asyncWrapper");
+const { asyncWrapper } = require("../../lib");
 
 const isAuthenticated = asyncWrapper(async function (req, res, next) {
   const { authorization } = req.headers;
