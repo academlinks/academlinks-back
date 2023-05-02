@@ -1,9 +1,6 @@
 const { AppError, asyncWrapper } = require("../../lib");
 const { User, Friendship, Post, Bookmarks } = require("../../models");
-const {
-  checkIfIsFriend,
-  checkIfIsFriendOnEach,
-} = require("../../utils/userControllerUtils.js");
+const { UserUtils } = require("../../utils/user");
 
 exports.getProfilePosts = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
@@ -30,7 +27,7 @@ exports.getProfilePosts = asyncWrapper(async function (req, res, next) {
 
   const userFriendShip = await Friendship.findOne({ user: currUser.id });
 
-  const { isFriend, isCurrUser } = checkIfIsFriend({
+  const { isFriend, isCurrUser } = UserUtils.checkIfIsFriend({
     currUser,
     userId,
     userFriendShip,
@@ -57,7 +54,12 @@ exports.getProfilePosts = asyncWrapper(async function (req, res, next) {
       path: "authentic",
       select: "-shared -__v",
       transform: (doc, docId) =>
-        checkIfIsFriendOnEach({ currUser, doc, docId, userFriendShip }),
+        UserUtils.checkIfIsFriendOnEach({
+          currUser,
+          doc,
+          docId,
+          userFriendShip,
+        }),
       populate: { path: "author tags.user", select: "userName profileImg" },
     });
 
@@ -88,7 +90,12 @@ exports.getPendingPosts = asyncWrapper(async function (req, res, next) {
       path: "authentic",
       select: "-reactions -shared -__v",
       transform: (doc, docId) =>
-        checkIfIsFriendOnEach({ currUser, doc, docId, userFriendShip }),
+        UserUtils.checkIfIsFriendOnEach({
+          currUser,
+          doc,
+          docId,
+          userFriendShip,
+        }),
       populate: { path: "author tags.user", select: "userName profileImg" },
     })
     .sort("-createdAt");
@@ -117,7 +124,12 @@ exports.getHiddenPosts = asyncWrapper(async function (req, res, next) {
       path: "authentic",
       select: "-reactions -shared -__v",
       transform: (doc, docId) =>
-        checkIfIsFriendOnEach({ currUser, doc, docId, userFriendShip }),
+        UserUtils.checkIfIsFriendOnEach({
+          currUser,
+          doc,
+          docId,
+          userFriendShip,
+        }),
       populate: { path: "author tags.user", select: "userName profileImg" },
     })
     .sort("-createdAt");
@@ -167,7 +179,12 @@ exports.getUserFeed = asyncWrapper(async function (req, reqs, next) {
       path: "authentic",
       select: "-__v -shared",
       transform: (doc, docId) =>
-        checkIfIsFriendOnEach({ currUser, doc, docId, userFriendShip }),
+        UserUtils.checkIfIsFriendOnEach({
+          currUser,
+          doc,
+          docId,
+          userFriendShip,
+        }),
       populate: { path: "author tags.user", select: "userName profileImg" },
     });
 
@@ -198,14 +215,24 @@ exports.getBookmarks = asyncWrapper(async function (req, res, next) {
       path: "post",
       select: "-__v",
       transform: (doc, docId) =>
-        checkIfIsFriendOnEach({ currUser, doc, docId, userFriendShip }),
+        UserUtils.checkIfIsFriendOnEach({
+          currUser,
+          doc,
+          docId,
+          userFriendShip,
+        }),
       populate: [
         { path: "author tags.user", select: "userName profileImg" },
         {
           path: "authentic",
           select: "-__v",
           transform: (doc, docId) =>
-            checkIfIsFriendOnEach({ currUser, doc, docId, userFriendShip }),
+            UserUtils.checkIfIsFriendOnEach({
+              currUser,
+              doc,
+              docId,
+              userFriendShip,
+            }),
           populate: {
             path: "tags.user author",
             select: "userName profileImg",

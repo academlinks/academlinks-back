@@ -1,7 +1,7 @@
-const { OnCommentNotification } = require("../utils/notifications");
 const { Post, Comment } = require("../models");
 const { AppError, asyncWrapper } = require("../lib");
 const { CommentUtils } = require("../utils/comments");
+const { OnCommentNotification } = require("../utils/notifications");
 
 exports.addComment = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
@@ -104,7 +104,12 @@ exports.updateComment = asyncWrapper(async function (req, res, next) {
   };
 
   if (newTags[0])
-    await sendNotificationOnUpdateComment({ req, post, comment, newTags });
+    await OnCommentNotification.sendNotificationOnUpdateComment({
+      req,
+      post,
+      comment,
+      newTags,
+    });
 
   res.status(200).json(updatedComment);
 });
@@ -145,7 +150,7 @@ exports.updateCommentReply = asyncWrapper(async function (req, res, next) {
   };
 
   if (newTags[0])
-    await sendNotificationOnUpdateComment({
+    await OnCommentNotification.sendNotificationOnUpdateComment({
       req,
       post,
       comment: commentReply,

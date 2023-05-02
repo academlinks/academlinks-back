@@ -54,10 +54,15 @@ const IO_PLACEHOLDERS = {
 };
 
 // UPLOADS AND STATIC DESTINATIONS
-const CLIENT_UPLOAD_DESTINATION = "public/images/uploads";
-const CLIENT_STATIC_URL_ROOT = `${SERVER_HOST}/uploads`;
-const COMMERCIAL_UPLOAD_DESTINATION = "public/images/commercials";
-const COMMERCIAL_STATIC_URL_ROOT = `${SERVER_HOST}/commercials`;
+const CLIENT_UPLOAD_DESTINATION = "public/images/uploads/";
+const CLIENT_STATIC_URL_ROOT = `${SERVER_HOST}/uploads/`;
+const COMMERCIAL_UPLOAD_DESTINATION = "public/images/commercials/";
+const COMMERCIAL_STATIC_URL_ROOT = `${SERVER_HOST}/commercials/`;
+const CONSTANT_ASSETS = [
+  "avatar-female.webp",
+  "avatar-male.webp",
+  "cover-default.webp",
+];
 
 // CLIENT URLS
 const GENERATE_CONFIRM_REGISTRATION_PASSWORD_RESET_LINK = ({
@@ -103,6 +108,7 @@ module.exports = {
   APP_ORIGINS,
   IO_PLACEHOLDERS,
   CLIENT_TERMS_URL,
+  CONSTANT_ASSETS,
   NOTIFICATION_PLACEHOLDERS,
   CLIENT_UPLOAD_DESTINATION,
   CLIENT_STATIC_URL_ROOT,

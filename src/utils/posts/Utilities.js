@@ -1,11 +1,9 @@
-const fs = require("fs");
-const { promisify } = require("util");
+const Utils = require("../Utils");
 const { AppError } = require("../../lib");
-const { CLIENT_UPLOAD_DESTINATION, SERVER_HOST } = require("../../config");
 
-class Utilities {
+class Utilities extends Utils {
   constructor() {
-    this.unlink = promisify(fs.unlink);
+    super();
     this.availableBlogPostAudience = ["public", "users"];
     this.availablePostAudience = ["public", "friends", "private"];
     this.typeForPost = "post";
@@ -19,8 +17,6 @@ class Utilities {
       "title",
       "audience",
     ];
-    this.CLIENT_UPLOAD_DESTINATION = CLIENT_UPLOAD_DESTINATION;
-    this.SERVER_HOST = SERVER_HOST;
   }
 
   // GENERATORS
@@ -108,7 +104,7 @@ class Utilities {
         });
 
         const newFiles = req.xOriginal.map(
-          (fileName) => `${this.SERVER_HOST}/uploads/${fileName}`
+          (fileName) => `${this.CLIENT_STATIC_URL_ROOT}${fileName}`
         );
 
         const modifiedExistingFiles = filteredMedia[0] ? filteredMedia : [];
@@ -131,11 +127,11 @@ class Utilities {
 
       if (Array.isArray(existingMedia) && existingMedia[0])
         await Promise.all(
-          existingMedia.map(async (file) => {
+          existingMedia.map(async (media) => {
             try {
-              if (!newMedia?.includes(file)) {
-                await this.unlinkFile({ media: file });
-              } else filteredMedia.push(file);
+              if (!newMedia?.includes(media)) {
+                await this.unlinkFile({ media });
+              } else filteredMedia.push(media);
             } catch (error) {
               throw error;
             }
@@ -143,18 +139,6 @@ class Utilities {
         );
 
       return filteredMedia;
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  async unlinkFile({ media, destination = this.CLIENT_UPLOAD_DESTINATION }) {
-    try {
-      const originalFileName = media.split("/")?.slice(4)[0];
-      const path = `${destination}/${originalFileName}`;
-
-      const exists = fs.existsSync(path);
-      if (exists) await this.unlink(path);
     } catch (error) {
       throw error;
     }

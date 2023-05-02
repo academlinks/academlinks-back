@@ -2,7 +2,7 @@ const { OnPostNotification } = require("../../utils/notifications");
 const { PostUtils } = require("../../utils/posts");
 const { AppError, asyncWrapper, Upload } = require("../../lib");
 const { Post, Comment, Bookmarks, Friendship } = require("../../models");
-const { checkIfIsFriendOnEach } = require("../../utils/userControllerUtils.js");
+const { UserUtils } = require("../../utils/user");
 
 const upload = new Upload({
   storage: "memoryStorage",
@@ -27,14 +27,14 @@ exports.createPost = asyncWrapper(async function (req, res, next) {
 
   await post.save();
 
-  if (tags && JSON.parse(tags)[0])
+  if (tags && tags[0])
     await OnPostNotification.sendNotificationOnPostCreate({
       req,
-      post: newPost,
-      tags: JSON.parse(tags),
+      tags,
+      post,
     });
 
-  res.status(201).json(newPost);
+  res.status(201).json(post);
 });
 
 exports.deletePost = asyncWrapper(async function (req, res, next) {
@@ -125,7 +125,12 @@ exports.getPost = asyncWrapper(async function (req, res, next) {
       path: "authentic",
       select: "-reactions -shared -__v",
       transform: (doc, docId) => {
-        checkIfIsFriendOnEach({ currUser, doc, docId, userFriendShip });
+        UserUtils.checkIfIsFriendOnEach({
+          currUser,
+          doc,
+          docId,
+          userFriendShip,
+        });
       },
       populate: { path: "author tags.user", select: "userName profileImg" },
     });
@@ -170,7 +175,11 @@ exports.sharePost = asyncWrapper(async function (req, res, next) {
     populate: { path: "author tags.user", select: "userName profileImg" },
   });
 
-  await sendNotificationOnPostShare({ req, post: newPost, tags });
+  await OnPostNotification.sendNotificationOnPostShare({
+    req,
+    post: newPost,
+    tags,
+  });
 
   res.status(201).json(newPost);
 });

@@ -1,11 +1,10 @@
-const fs = require("fs");
-const { promisify } = require("util");
-
-const { Commercials } = require("../../models");
 const {
   COMMERCIAL_UPLOAD_DESTINATION,
   COMMERCIAL_STATIC_URL_ROOT,
-} = require("../../config/");
+} = require("../../config");
+const fs = require("fs");
+const { promisify } = require("util");
+const { Commercials } = require("../../models");
 const { AppError, asyncWrapper, Email, Upload } = require("../../lib");
 
 const upload = new Upload({
@@ -59,7 +58,7 @@ exports.addCommercial = asyncWrapper(async function (req, res, next) {
   };
 
   if (req.file) {
-    newCommercial.media = `${COMMERCIAL_STATIC_URL_ROOT}/${req.xOriginal}`;
+    newCommercial.media = `${COMMERCIAL_STATIC_URL_ROOT}${req.xOriginal}`;
   }
 
   await Commercials.create(newCommercial);
@@ -80,7 +79,7 @@ exports.deleteCommercial = asyncWrapper(async function (req, res, next) {
   if (commercialMedia) {
     try {
       const originalFileName = commercialMedia.split("/")?.slice(4)[0];
-      await deletion(`${COMMERCIAL_UPLOAD_DESTINATION}/${originalFileName}`);
+      await deletion(`${COMMERCIAL_UPLOAD_DESTINATION}${originalFileName}`);
     } catch (error) {
       return next(
         new AppError(
@@ -110,8 +109,8 @@ exports.updateCommercial = asyncWrapper(async function (req, res, next) {
   if (req.file && req.xOriginal) {
     try {
       const originalFileName = media.split("/")?.slice(4)[0];
-      await deletion(`${COMMERCIAL_UPLOAD_DESTINATION}/${originalFileName}`);
-      body.media = `${COMMERCIAL_STATIC_URL_ROOT}/${req.xOriginal}`;
+      await deletion(`${COMMERCIAL_UPLOAD_DESTINATION}${originalFileName}`);
+      body.media = `${COMMERCIAL_STATIC_URL_ROOT}${req.xOriginal}`;
     } catch (error) {
       return next(
         new AppError(

@@ -16,8 +16,10 @@ class PostUtils extends Utilities {
           ? JSON.parse(reqBody.tags)
           : [];
 
+      const type = reqBody.type;
+
       const body = {
-        type: reqBody.type,
+        type,
         author: currUser.id,
         tags: tags.map((tag) => ({ user: tag })),
       };
@@ -33,7 +35,7 @@ class PostUtils extends Utilities {
 
       if (req.files)
         body.media = req.xOriginal.map(
-          (fileName) => `${this.SERVER_HOST}/uploads/${fileName}`
+          (fileName) => `${this.CLIENT_STATIC_URL_ROOT}${fileName}`
         );
 
       this.setAudience({

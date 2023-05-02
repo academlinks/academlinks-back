@@ -1,6 +1,3 @@
-const mongoose = require("mongoose");
-const { CLIENT_STATIC_URL_ROOT } = require("../../config");
-const { AppError, asyncWrapper, Upload } = require("../../lib");
 const {
   Bookmarks,
   Post,
@@ -11,10 +8,10 @@ const {
   Friendship,
   User,
 } = require("../../models");
-const {
-  deleteExistingImage,
-  checkIfIsFriend,
-} = require("../../utils/userControllerUtils.js");
+const mongoose = require("mongoose");
+const { UserUtils } = require("../../utils/user");
+const { CLIENT_STATIC_URL_ROOT } = require("../../config");
+const { AppError, asyncWrapper, Upload } = require("../../lib");
 
 const upload = new Upload({
   multy: false,
@@ -34,18 +31,10 @@ exports.updateProfileImage = asyncWrapper(async function (req, res, next) {
 
   const user = await User.findById(currUser.id);
 
-  const existingProfileImg = user.profileImg;
-  const originalFileNameFragments = existingProfileImg.split("/")?.slice(4);
-
   let mediaUrl;
   try {
-    if (
-      originalFileNameFragments[0] &&
-      !originalFileNameFragments[0].startsWith("avatar-")
-    )
-      await deleteExistingImage(originalFileNameFragments);
-
-    mediaUrl = `${CLIENT_STATIC_URL_ROOT}/${req.xOriginal}`;
+    await UserUtils.deleteExistingImage({ media: user.profileImg });
+    mediaUrl = `${CLIENT_STATIC_URL_ROOT}${req.xOriginal}`;
   } catch (error) {
     return next(
       new AppError(
@@ -67,18 +56,10 @@ exports.updateCoverImage = asyncWrapper(async function (req, res, next) {
 
   const user = await User.findById(currUser.id);
 
-  const existingProfileImg = user.coverImg;
-  const originalFileNameFragments = existingProfileImg.split("/")?.slice(4);
-
   let mediaUrl;
   try {
-    if (
-      originalFileNameFragments[0] &&
-      originalFileNameFragments[0] !== "cover-default.webp"
-    )
-      await deleteExistingImage(originalFileNameFragments);
-
-    mediaUrl = `${CLIENT_STATIC_URL_ROOT}/${req.xOriginal}`;
+    await UserUtils.deleteExistingImage({ media: user.coverImg });
+    mediaUrl = `${CLIENT_STATIC_URL_ROOT}${req.xOriginal}`;
   } catch (error) {
     return next(
       new AppError(
@@ -244,15 +225,10 @@ exports.deleteUser = asyncWrapper(async function (req, res, next) {
   // ================================ //
 
   // 7.1 Delete User Profile And Cover Images
-  const existingProfileImg = user.profileImg;
-  const profileFragments = existingProfileImg.split("/")?.slice(3);
-
-  const existingCoverImg = user.profileImg;
-  const coverFragments = existingCoverImg.split("/")?.slice(3);
-
   await Promise.allSettled(
-    [profileFragments, coverFragments].map(
-      async (fr) => await deleteExistingImage(fr)
+    [user.profileImg, user.coverImg].map(
+      async (originalFileName) =>
+        await UserUtils.deleteExistingImage({ originalFileName })
     )
   );
 
@@ -314,16 +290,16 @@ exports.getBadges = asyncWrapper(async function (req, res, next) {
   if (currUser.id !== userId)
     return next(new AppError(403, "you are not authorized for this operation"));
 
-  const count = await Conversation.find({
-    users: currUser.id,
-    "lastMessage.author": { $ne: currUser.id },
-    seen: false,
-  }).select("_id");
+  // const count = await Conversation.find({
+  //   users: currUser.id,
+  //   "lastMessage.author": { $ne: currUser.id },
+  //   seen: false,
+  // }).select("_id");
 
-  const unreadNotifications = await Notification.find({
-    adressat: currUser.id,
-    seen: false,
-  }).select("_id read");
+  // const unreadNotifications = await Notification.find({
+  //   adressat: currUser.id,
+  //   seen: false,
+  // }).select("_id read");
 
   Friendship.findOne({ user: currUser.id })
     .select("pendingRequests._id pendingRequests.seen")
@@ -345,7 +321,11 @@ exports.isFriend = asyncWrapper(async function (req, res, next) {
 
   const userFriendShip = await Friendship.findOne({ user: currUser.id });
 
-  const { info } = checkIfIsFriend({ currUser, userId, userFriendShip });
+  const { info } = UserUtils.checkIfIsFriend({
+    currUser,
+    userId,
+    userFriendShip,
+  });
 
   res.status(200).json(info);
 });

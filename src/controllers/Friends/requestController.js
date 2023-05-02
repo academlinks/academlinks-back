@@ -3,13 +3,14 @@ const mongoose = require("mongoose");
 const { Friendship } = require("../../models");
 const { IO } = require("../../utils/io");
 const { asyncWrapper, AppError } = require("../../lib");
-const { controllUserExistence } = require("../../utils/friends");
+const { FriendRequestsUtils } = require("../../utils/friendRequests");
 const io = new IO();
 
 exports.sendFriendRequest = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
 
-  const { user, adressatUser } = await controllUserExistence({ req, next });
+  const { user, adressatUser } =
+    await FriendRequestsUtils.controllUserExistence({ req, next });
 
   await Friendship.findOneAndUpdate(
     { user: currUser.id },
@@ -40,7 +41,10 @@ exports.sendFriendRequest = asyncWrapper(async function (req, res, next) {
 exports.cancelFriendRequest = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
 
-  const { user, adressatUser } = await controllUserExistence({ req, next });
+  const { adressatUser } = await FriendRequestsUtils.controllUserExistence({
+    req,
+    next,
+  });
 
   await Friendship.findOneAndUpdate(
     { user: currUser.id },
@@ -66,7 +70,10 @@ exports.cancelFriendRequest = asyncWrapper(async function (req, res, next) {
 exports.deleteFriendRequest = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
 
-  const { user, adressatUser } = await controllUserExistence({ req, next });
+  const { adressatUser } = await FriendRequestsUtils.controllUserExistence({
+    req,
+    next,
+  });
 
   await Friendship.findOneAndUpdate(
     { user: currUser.id },
@@ -94,7 +101,8 @@ exports.deleteFriendRequest = asyncWrapper(async function (req, res, next) {
 exports.confirmFriendRequest = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
 
-  const { user, adressatUser } = await controllUserExistence({ req, next });
+  const { user, adressatUser } =
+    await FriendRequestsUtils.controllUserExistence({ req, next });
 
   await Friendship.findOneAndUpdate(
     { user: currUser.id },

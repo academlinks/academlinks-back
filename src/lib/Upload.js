@@ -76,8 +76,11 @@ class Media {
 
       const isArray = Array.isArray(media);
 
+      const currentDate = Date.now();
+
       if (!isArray) {
         const { fileName, editedFileName } = this.generateFileName({
+          currentDate,
           userId: req.user.id,
         });
 
@@ -88,7 +91,8 @@ class Media {
         });
 
         if (this.resize) req.x500 = editedFileName;
-        req.xOriginal = nameForOrigin;
+
+        req.xOriginal = fileName;
       } else if (isArray) {
         const x500 = [];
         const xOriginal = [];
@@ -96,8 +100,9 @@ class Media {
         await Promise.all(
           media.map(async (file, index) => {
             const { fileName, editedFileName } = this.generateFileName({
-              userId: req.user.id,
+              currentDate,
               sufix: index + 1,
+              userId: req.user.id,
             });
 
             await this.writeOnDisk({
@@ -124,7 +129,7 @@ class Media {
     await sharp(file)
       .toFormat(this.format)
       .webp({ quality: this.quality })
-      .toFile(`${this.destination}/${fileName}`);
+      .toFile(`${this.destination}${fileName}`);
 
     if (this.resize) this.edit({ file, fileName: editedFileName });
   }
@@ -134,11 +139,10 @@ class Media {
       .resize(this.width, this.height)
       .toFormat(this.format)
       .webp({ quality: this.quality })
-      .toFile(`${this.destination}/${fileName}`);
+      .toFile(`${this.destination}${fileName}`);
   }
 
-  generateFileName({ userId, sufix = 1 }) {
-    const currentDate = Date.now();
+  generateFileName({ userId, sufix = 1, currentDate }) {
     const prefix = `user-${userId}-${currentDate}`;
 
     const widthStr = !this.resize ? "" : this.width;

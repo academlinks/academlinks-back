@@ -1,12 +1,14 @@
-const crypto = require("crypto");
-
 const {
   CLIENT_TERMS_URL,
   GENERATE_CONFIRM_REGISTRATION_PASSWORD_RESET_LINK,
 } = require("../../config");
-const { IO } = require("../../utils/io");
 const { asyncWrapper, AppError, Email } = require("../../lib");
+
 const { User, Friendship, Registration, Admin } = require("../../models");
+
+const crypto = require("crypto");
+
+const { IO } = require("../../utils/io");
 const io = new IO();
 
 exports.registerUser = asyncWrapper(async function (req, res, next) {

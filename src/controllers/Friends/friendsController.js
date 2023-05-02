@@ -1,12 +1,15 @@
 const mongoose = require("mongoose");
 const { Friendship } = require("../../models");
-const { AppError, asyncWrapper } = require("../../lib");
-const { controllUserExistence } = require("../../utils/friends");
+const { asyncWrapper } = require("../../lib");
+const { FriendRequestsUtils } = require("../../utils/friendRequests");
 
 exports.deleteFriend = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
 
-  const { user, adressatUser } = await controllUserExistence({ req, next });
+  const { adressatUser } = await FriendRequestsUtils.controllUserExistence({
+    req,
+    next,
+  });
 
   await Friendship.findOneAndUpdate(
     { user: currUser.id },

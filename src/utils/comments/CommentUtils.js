@@ -33,13 +33,7 @@ class CommentUtils {
 
       const post = await Post.findById(comment.post);
 
-      if (!post)
-        return next(
-          new AppError(
-            400,
-            "post which one this comment belongs to does not exists"
-          )
-        );
+      if (!post) return next(new AppError(400, "post does not exists"));
 
       const credentials = { post, comment, text, tags };
 
