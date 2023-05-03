@@ -1,11 +1,8 @@
-const {
-  COMMERCIAL_UPLOAD_DESTINATION,
-  COMMERCIAL_STATIC_URL_ROOT,
-} = require("../../config");
-const fs = require("fs");
-const { promisify } = require("util");
 const { Commercials } = require("../../models");
-const { AppError, asyncWrapper, Email, Upload } = require("../../lib");
+const AdminUtils = require("../../utils/admin/AdminUtils");
+const EmailUtils = require("../../utils/email/EmailUtils");
+const { AppError, asyncWrapper, Upload } = require("../../lib");
+const { COMMERCIAL_UPLOAD_DESTINATION } = require("../../config");
 
 const upload = new Upload({
   multy: false,
@@ -58,7 +55,9 @@ exports.addCommercial = asyncWrapper(async function (req, res, next) {
   };
 
   if (req.file) {
-    newCommercial.media = `${COMMERCIAL_STATIC_URL_ROOT}${req.xOriginal}`;
+    newCommercial.media = AdminUtils.generateFileName({
+      fileName: req.xOriginal,
+    });
   }
 
   await Commercials.create(newCommercial);
@@ -72,23 +71,10 @@ exports.deleteCommercial = asyncWrapper(async function (req, res, next) {
   const commercial = await Commercials.findById(commercialId);
   if (!commercial) return next(new AppError(404, "commercial does not exists"));
 
-  const commercialMedia = commercial.media;
-
-  const deletion = promisify(fs.unlink);
-
-  if (commercialMedia) {
-    try {
-      const originalFileName = commercialMedia.split("/")?.slice(4)[0];
-      await deletion(`${COMMERCIAL_UPLOAD_DESTINATION}${originalFileName}`);
-    } catch (error) {
-      return next(
-        new AppError(
-          403,
-          "something went wrong, cant't find and delete removed commercial media files which are attached to the commercial. Please report the problem or try again later"
-        )
-      );
-    }
-  }
+  await AdminUtils.unlinkFile({
+    media: commercial.media,
+    location: "commercials",
+  });
 
   await commercial.delete();
 
@@ -99,31 +85,17 @@ exports.updateCommercial = asyncWrapper(async function (req, res, next) {
   const { commercialId } = req.params;
   const body = req.body;
 
-  const comerc = await Commercials.findById(commercialId);
-  if (!comerc) return next(new AppError(404, "commercial does not exists"));
+  const comercial = await Commercials.findById(commercialId);
+  if (!comercial) return next(new AppError(404, "commercial does not exists"));
 
-  const media = body.media;
+  const { newMediaAdress } = await AdminUtils.manageCommercialMediaOnUpdate({
+    req,
+  });
+  if (newMediaAdress) body.media = newMediaAdress;
 
-  const deletion = promisify(fs.unlink);
+  Object.keys(body).forEach((key) => (comercial[key] = body[key]));
 
-  if (req.file && req.xOriginal) {
-    try {
-      const originalFileName = media.split("/")?.slice(4)[0];
-      await deletion(`${COMMERCIAL_UPLOAD_DESTINATION}${originalFileName}`);
-      body.media = `${COMMERCIAL_STATIC_URL_ROOT}${req.xOriginal}`;
-    } catch (error) {
-      return next(
-        new AppError(
-          403,
-          "something went wrong, cant't find and delete removed commercial media files which are attached to the commercial. Please report the problem or try again later"
-        )
-      );
-    }
-  }
-
-  Object.keys(body).forEach((key) => (comerc[key] = body[key]));
-
-  await comerc.save();
+  await comercial.save();
 
   res.status(201).json({ updated: true });
 });
@@ -142,20 +114,7 @@ exports.sendEmailToCommercialCustomer = asyncWrapper(async function (
   if (!customer)
     return next(new AppError(404, "customer with this email does not exists"));
 
-  try {
-    await new Email({
-      adressat: email,
-      subject,
-      text,
-    }).send({});
-  } catch (error) {
-    return next(
-      new AppError(
-        500,
-        "There was an error sending the email. Try again later!"
-      )
-    );
-  }
+  await EmailUtils.sendManualEmail({ adressat: email, subject, text });
 
   res.status(201).json({ emailIsSent: true });
 });

@@ -1,9 +1,10 @@
-const { OnRequestNotification } = require("../../utils/notifications");
 const mongoose = require("mongoose");
 const { Friendship } = require("../../models");
-const { IO } = require("../../utils/io");
 const { asyncWrapper, AppError } = require("../../lib");
+const { OnRequestNotification } = require("../../utils/notifications");
 const { FriendRequestsUtils } = require("../../utils/friendRequests");
+
+const { IO } = require("../../utils/io");
 const io = new IO();
 
 exports.sendFriendRequest = asyncWrapper(async function (req, res, next) {

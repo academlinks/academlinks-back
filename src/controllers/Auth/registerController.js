@@ -1,12 +1,7 @@
-const {
-  CLIENT_TERMS_URL,
-  GENERATE_CONFIRM_REGISTRATION_PASSWORD_RESET_LINK,
-} = require("../../config");
-const { asyncWrapper, AppError, Email } = require("../../lib");
-
-const { User, Friendship, Registration, Admin } = require("../../models");
-
 const crypto = require("crypto");
+const { asyncWrapper, AppError } = require("../../lib");
+const EmailUtils = require("../../utils/email/EmailUtils");
+const { User, Friendship, Registration, Admin } = require("../../models");
 
 const { IO } = require("../../utils/io");
 const io = new IO();
@@ -27,22 +22,13 @@ exports.registerUser = asyncWrapper(async function (req, res, next) {
   //////////////////////////////////////////
   /////////// Send Email To User //////////
   ////////////////////////////////////////
+  if (!email)
+    return next(new AppError(403, "please provide us valid information"));
 
-  try {
-    if (!email)
-      return next(new AppError(403, "please provide us valid information"));
-
-    await new Email({
-      adressat: email,
-    }).sendWelcome({ userName: user.firstName });
-  } catch (error) {
-    return next(
-      new AppError(
-        500,
-        "There was an error sending the email. Try again later!"
-      )
-    );
-  }
+  await EmailUtils.sendWelcomeEmail({
+    adressat: email,
+    userName: user.firstName,
+  });
 
   //////////////////////////////////////////////////
   /////////// Send Notification To Admin //////////
@@ -73,27 +59,16 @@ exports.aproveRegistration = asyncWrapper(async function (req, res, next) {
   if (!registration)
     return next(new AppError(404, "registration request does not exists"));
 
-  const registrationPasswordResetToken =
-    registration.createPasswordResetToken();
+  const resetToken = registration.createPasswordResetToken();
 
-  try {
-    await new Email({
-      adressat: registration.email,
-    }).sendRegistrationAprovment({
-      userName: registration.firstName,
-      url: GENERATE_CONFIRM_REGISTRATION_PASSWORD_RESET_LINK({
-        registrationId: registration._id,
-        resetToken: registrationPasswordResetToken,
-      }),
-    });
+  await EmailUtils.sendAproveRegistrationEmail({
+    resetToken,
+    adressat: registration.email,
+    userName: registration.firstName,
+    registrationId: registration._id,
+  });
 
-    registration.confirmationEmailSentAt = new Date();
-  } catch (error) {
-    return next(
-      new AppError("There was an error sending the email. Try again later!"),
-      500
-    );
-  }
+  registration.confirmationEmailSentAt = new Date();
 
   registration.aproved = true;
   await registration.save({ validateBeforeSave: false });
@@ -119,19 +94,10 @@ exports.deleteRegistrationRequest = asyncWrapper(async function (
 
   const adressat = registration.email;
 
-  try {
-    await new Email({
-      adressat,
-    }).sendRegistrationReject({
-      userName: registration.firstName,
-      termsUrl: CLIENT_TERMS_URL,
-    });
-  } catch (error) {
-    return next(
-      new AppError("There was an error sending the email. Try again later!"),
-      500
-    );
-  }
+  await EmailUtils.sendRejectRegistrationEmail({
+    adressat,
+    userName: registration.firstName,
+  });
 
   await registration.delete();
 
@@ -172,9 +138,7 @@ exports.confirmRegistration = asyncWrapper(async function (req, res, next) {
   if (!registration)
     return next(new AppError(400, "Token is invalid or has expired"));
 
-  const newUserBody = {
-    password,
-  };
+  const newUserBody = { password };
 
   Object.keys(registration._doc)
     .filter(
@@ -192,9 +156,7 @@ exports.confirmRegistration = asyncWrapper(async function (req, res, next) {
 
   const newUser = await new User(newUserBody).save();
 
-  await Friendship.create({
-    user: newUser._id,
-  });
+  await Friendship.create({ user: newUser._id });
 
   await registration.delete();
 

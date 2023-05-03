@@ -5,8 +5,10 @@ const {
   AdminNotification,
 } = require("../../models");
 const crypto = require("crypto");
+const EmailUtils = require("../../utils/email/EmailUtils");
+const { asyncWrapper, AppError, JWT } = require("../../lib");
+
 const { IO } = require("../../utils/io");
-const { asyncWrapper, AppError, JWT, Email } = require("../../lib");
 const io = new IO();
 
 exports.changeEmail = asyncWrapper(async function (req, res, next) {
@@ -100,7 +102,6 @@ exports.changePassword = asyncWrapper(async function (req, res, next) {
   user.password = newPassword;
   await user.save({ validateBeforeSave: false });
 
-  // await updateBlackList(req, userId);
   const { accessToken } = await JWT.asignToken({ res, user });
 
   res.status(200).json({ accessToken });
@@ -118,27 +119,17 @@ exports.createResetPasswordForForgotPassword = asyncWrapper(async function (
   if (!user)
     return next(new AppError(404, "user with this email does not exists"));
 
-  const passwordReset = user.createPasswordResetToken();
+  const resetToken = user.createPasswordResetToken();
 
   await user.save({ validateBeforeSave: false });
 
-  try {
-    if (!email) return next(new AppError(400, "please provide us valid email"));
+  if (!email) return next(new AppError(400, "please provide us valid email"));
 
-    await new Email({
-      adressat: email,
-    }).sendPasswordReset({
-      resetToken: passwordReset,
-      userName: user.userName,
-    });
-  } catch (error) {
-    return next(
-      new AppError(
-        500,
-        "There was an error sending the email. Try again later!"
-      )
-    );
-  }
+  await EmailUtils.sendPasswordResetEmail({
+    resetToken,
+    adressat: email,
+    userName: user.userName,
+  });
 
   res.status(201).json({
     success: true,

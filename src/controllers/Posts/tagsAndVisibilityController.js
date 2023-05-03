@@ -12,9 +12,12 @@ exports.reviewTaggedPosts = asyncWrapper(async function (req, res, next) {
 
   if (!post) return next(new AppError(404, "there are no such a post"));
 
-  const i = post.tags.findIndex((tag) => tag.user.toString() === currUser.id);
-  post.tags[i].review = true;
-  post.tags[i].hidden = !show;
+  const currUserTagIndex = post.tags.findIndex(
+    (tag) => tag.user.toString() === currUser.id
+  );
+  
+  post.tags[currUserTagIndex].review = true;
+  post.tags[currUserTagIndex].hidden = !show;
 
   await post.save();
 

@@ -2,52 +2,52 @@ const Utilities = require("./Utilities");
 const { AppError } = require("../../lib");
 
 class PostUtils extends Utilities {
+  calcMonthAgo() {
+    return new Date(new Date().setMonth(new Date().getMonth() - 1));
+  }
+
   manageAudience({ post, audience, postType }) {
     this.setAudience({ post, audience, postType });
   }
 
   managePostCreation(req) {
-    try {
-      const reqBody = req.body;
-      const currUser = req.user;
+    const reqBody = req.body;
+    const currUser = req.user;
 
-      const tags =
-        reqBody.tags && Array.isArray(JSON.parse(reqBody.tags))
-          ? JSON.parse(reqBody.tags)
-          : [];
+    const tags =
+      reqBody.tags && Array.isArray(JSON.parse(reqBody.tags))
+        ? JSON.parse(reqBody.tags)
+        : [];
 
-      const type = reqBody.type;
+    const type = reqBody.type;
 
-      const body = {
-        type,
-        author: currUser.id,
-        tags: tags.map((tag) => ({ user: tag })),
-      };
+    const body = {
+      type,
+      author: currUser.id,
+      tags: tags.map((tag) => ({ user: tag })),
+    };
 
-      if (type === this.typeForPost) {
-        body.description = reqBody.description;
-      } else if (type === this.typeForBlogPost) {
-        body.article = reqBody.article;
-        body.labels = reqBody.labels && JSON.parse(reqBody.labels);
-        body.category = reqBody.category;
-        body.title = reqBody.title;
-      }
-
-      if (req.files)
-        body.media = req.xOriginal.map(
-          (fileName) => `${this.CLIENT_STATIC_URL_ROOT}${fileName}`
-        );
-
-      this.setAudience({
-        post: body,
-        audience: reqBody.audience,
-        postType: reqBody.type,
-      });
-
-      return { body, tags };
-    } catch (error) {
-      throw error;
+    if (type === this.typeForPost) {
+      body.description = reqBody.description;
+    } else if (type === this.typeForBlogPost) {
+      body.article = reqBody.article;
+      body.labels = reqBody.labels && JSON.parse(reqBody.labels);
+      body.category = reqBody.category;
+      body.title = reqBody.title;
     }
+
+    if (req.files)
+      body.media = req.xOriginal.map((fileName) =>
+        this.generateFileName({ fileName })
+      );
+
+    this.setAudience({
+      post: body,
+      audience: reqBody.audience,
+      postType: reqBody.type,
+    });
+
+    return { body, tags };
   }
 
   async managePostBodyOnUpdate({ req, next, post }) {
@@ -110,14 +110,14 @@ class PostUtils extends Utilities {
   }
 
   manageShowOnProfile({ currUser, post, task }) {
-    const { isAuthor, isTagged } = this.watchUserRelationToPost({
+    const { belongsToUser, isTagged } = this.watchUserRelationToPost({
       post,
       currUser,
     });
 
     const show = task === "add" ? false : task === "hide" ? true : undefined;
 
-    if (isAuthor) post.hidden = show;
+    if (belongsToUser) post.hidden = show;
     else if (isTagged) {
       const currUserTagIndex = post.tags.findIndex(
         (tag) => tag.user.toString() === currUser.id

@@ -1,8 +1,8 @@
-const { OnPostNotification } = require("../../utils/notifications");
-const { PostUtils } = require("../../utils/posts");
-const { AppError, asyncWrapper, Upload } = require("../../lib");
-const { Post, Comment, Bookmarks, Friendship } = require("../../models");
 const { UserUtils } = require("../../utils/user");
+const PostUtils = require("../../utils/posts/PostUtils");
+const { AppError, asyncWrapper, Upload } = require("../../lib");
+const { OnPostNotification } = require("../../utils/notifications");
+const { Post, Comment, Bookmarks, Friendship } = require("../../models");
 
 const upload = new Upload({
   storage: "memoryStorage",
@@ -54,11 +54,11 @@ exports.deletePost = asyncWrapper(async function (req, res, next) {
   if (!postToDelete.shared && postMedia?.[0])
     await PostUtils.managePostMediaDeletion({ media: postMedia, next });
 
-  await postToDelete.delete();
-
   await Comment.deleteMany({ post: postToDelete._id });
 
   await Bookmarks.updateMany({ post: postId }, { $set: { deleted: true } });
+
+  await postToDelete.delete();
 
   await Post.updateMany(
     { shared: true, authentic: postId },
@@ -263,7 +263,6 @@ exports.getPostComments = asyncWrapper(async function (req, res, next) {
       select: "userName profileImg",
     })
     .sort({ createdAt: -1 });
-  // .select('-reactions -replies.reactions');
 
   res.status(200).json(comments);
 });
@@ -282,19 +281,7 @@ exports.isUserPost = asyncWrapper(async function (req, res, next) {
   if (!post && !bookmark)
     return next(new AppError(404, "post does not exists"));
 
-  const info = {
-    belongsToUser: post ? post.author.toString() === currUser.id : false,
-    isBookmarked: (bookmark && true) || false,
-    isTagged: post
-      ? post.tags.map((tag) => tag.user.toString()).includes(currUser.id)
-      : false,
-  };
-
-  if (info.isTagged)
-    info.isTaggedAndIsVisible = !post.tags.find(
-      (tag) => tag.user.toString() === currUser.id
-    ).hidden;
-  else if (info.belongsToUser) info.belongsToUserAndIsVisible = !post.hidden;
+  const info = PostUtils.watchUserRelationToPost({ post, bookmark, currUser });
 
   res.status(200).json(info);
 });
