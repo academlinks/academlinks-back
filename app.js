@@ -80,7 +80,7 @@ App.use(
 new Jobs().sendConfirmationRenewalEmail();
 
 // App.get("/view", (req, res) => {
-//   res.status(200).render("emails/rejectRegistration", {
+//   res.status(200).render("emails/wellcome", {
 //     userName: "Russ",
 //     termsUrl: "http://localhost:3000/terms-and-policy/terms",
 //   });

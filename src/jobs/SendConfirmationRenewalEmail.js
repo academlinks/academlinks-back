@@ -8,7 +8,7 @@ class SendConfirmationRenewalEmail {
   constructor(schedule) {
     this.schedule = schedule;
     this.interval = {
-      cron: "0 0 * * *",
+      cron: "0 12 * * *",
       ms: 1000 * 60 * 60 * 24,
     };
   }
@@ -20,9 +20,16 @@ class SendConfirmationRenewalEmail {
     this.schedule.scheduleJob(this.interval.cron, async () => {
       const users = await Registration.find({
         aproved: true,
-        confirmationEmailSentAt: {
-          $lt: new Date(Date.now() - this.interval.ms),
-        },
+        $or: [
+          {
+            confirmationEmailSentAt: {
+              $lt: new Date(Date.now() - this.interval.ms),
+            },
+          },
+          {
+            confirmationEmailSentAt: { $exists: false },
+          },
+        ],
       });
 
       if (users[0])

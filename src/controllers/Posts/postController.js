@@ -125,7 +125,7 @@ exports.getPost = asyncWrapper(async function (req, res, next) {
       path: "authentic",
       select: "-reactions -shared -__v",
       transform: (doc, docId) => {
-        UserUtils.checkIfIsFriendOnEach({
+        return UserUtils.checkIfIsFriendOnEach({
           currUser,
           doc,
           docId,
