@@ -12,36 +12,40 @@ class OnRequestNotification extends Notification {
     send,
     confirm,
   }) {
-    const io = await this.useLazySocket(req);
+    try {
+      const io = await this.useLazySocket(req);
 
-    const operations = [];
+      const operations = [];
 
-    const taskBody = {
-      from: currUser,
-      adressats: [adressat],
-      targetType: "user",
-    };
+      const taskBody = {
+        from: currUser,
+        adressats: [adressat],
+        targetType: "user",
+      };
 
-    if (send)
-      operations.push(
-        this.generateTaskBody({
-          ...taskBody,
-          message: this.NOTIFICATION_PLACEHOLDERS.sendRequest,
-          location: adressat,
-          options: { isRequested: true },
-        })
-      );
-    else if (confirm)
-      operations.push(
-        this.generateTaskBody({
-          ...taskBody,
-          message: this.NOTIFICATION_PLACEHOLDERS.confirmRequest,
-          location: currUser,
-          options: { isConfirmed: true },
-        })
-      );
+      if (send)
+        operations.push(
+          this.generateTaskBody({
+            ...taskBody,
+            message: this.NOTIFICATION_PLACEHOLDERS.sendRequest,
+            location: adressat,
+            options: { isRequested: true },
+          })
+        );
+      else if (confirm)
+        operations.push(
+          this.generateTaskBody({
+            ...taskBody,
+            message: this.NOTIFICATION_PLACEHOLDERS.confirmRequest,
+            location: currUser,
+            options: { isConfirmed: true },
+          })
+        );
 
-    if (operations[0]) await this.generateNotifications({ operations, io });
+      if (operations[0]) await this.generateNotifications({ operations, io });
+    } catch (error) {
+      throw error;
+    }
   }
 }
 

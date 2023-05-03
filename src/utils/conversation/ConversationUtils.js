@@ -2,18 +2,26 @@ const { Message } = require("../../models");
 
 class ConversationUtils {
   async createMessage({ conversation, author, message }) {
-    const newMessage = await Message.create({
-      conversation,
-      author,
-      message,
-    });
+    try {
+      const newMessage = await Message.create({
+        conversation,
+        author,
+        message,
+      });
 
-    return newMessage;
+      return newMessage;
+    } catch (error) {
+      throw error;
+    }
   }
 
   async deleteConversationPermanently({ conversation }) {
-    await Message.deleteMany({ conversation: conversation._id });
-    await conversation.delete();
+    try {
+      await Message.deleteMany({ conversation: conversation._id });
+      await conversation.delete();
+    } catch (error) {
+      throw error;
+    }
   }
 
   excludeDeletionField(doc) {

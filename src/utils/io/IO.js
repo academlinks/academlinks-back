@@ -7,9 +7,27 @@ class IO {
   }
 
   async useLazySocket(req) {
-    const io = await req.app.get("socket");
+    try {
+      const io = await req.app.get("socket");
 
-    return async function sender({ adressatId, operationName, data }) {
+      return async function sender({ adressatId, operationName, data }) {
+        const isOnlineAdressat = await OnLineUsers.findOne({
+          userId: adressatId,
+        });
+
+        if (!isOnlineAdressat) return;
+
+        io.to(isOnlineAdressat.socketId).emit(`${operationName}`, data);
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async useSocket(req, { adressatId, operationName, data }) {
+    try {
+      const io = await req.app.get("socket");
+
       const isOnlineAdressat = await OnLineUsers.findOne({
         userId: adressatId,
       });
@@ -17,17 +35,9 @@ class IO {
       if (!isOnlineAdressat) return;
 
       io.to(isOnlineAdressat.socketId).emit(`${operationName}`, data);
-    };
-  }
-
-  async useSocket(req, { adressatId, operationName, data }) {
-    const io = await req.app.get("socket");
-
-    const isOnlineAdressat = await OnLineUsers.findOne({ userId: adressatId });
-
-    if (!isOnlineAdressat) return;
-
-    io.to(isOnlineAdressat.socketId).emit(`${operationName}`, data);
+    } catch (error) {
+      throw error;
+    }
   }
 }
 

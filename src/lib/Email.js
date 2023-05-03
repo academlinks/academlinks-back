@@ -47,68 +47,88 @@ class Email {
   }
 
   async send({ text, subject, template, templateParams = null }) {
-    const transportConfig = {
-      from: this.from,
-      to: this.adressat,
-      subject: subject || this.subject,
-      text: text || this.text || "",
-    };
+    try {
+      const transportConfig = {
+        from: this.from,
+        to: this.adressat,
+        subject: subject || this.subject,
+        text: text || this.text || "",
+      };
 
-    if (template) {
-      transportConfig.html = pug.renderFile(
-        `${__dirname}/../views/emails/${template}.pug`,
-        { ...templateParams }
-      );
+      if (template) {
+        transportConfig.html = pug.renderFile(
+          `${__dirname}/../views/emails/${template}.pug`,
+          { ...templateParams }
+        );
+      }
+
+      await this.transport().sendMail(transportConfig);
+    } catch (error) {
+      throw error;
     }
-
-    await this.transport().sendMail(transportConfig);
   }
 
   async sendWelcome({ userName }) {
-    await this.send({
-      subject: "Welcome To Academlinks",
-      template: "wellcome",
-      templateParams: {
-        userName,
-        host: SERVER_HOST,
-      },
-    });
+    try {
+      await this.send({
+        subject: "Welcome To Academlinks",
+        template: "wellcome",
+        templateParams: {
+          userName,
+          host: SERVER_HOST,
+        },
+      });
+    } catch (error) {
+      throw error;
+    }
   }
 
   async sendRegistrationAprovment({ url, userName }) {
-    await this.send({
-      subject: "Academlinks Registration Aprovment",
-      template: "aproveRegistration",
-      templateParams: {
-        url,
-        userName,
-        host: SERVER_HOST,
-      },
-    });
+    try {
+      await this.send({
+        subject: "Academlinks Registration Aprovment",
+        template: "aproveRegistration",
+        templateParams: {
+          url,
+          userName,
+          host: SERVER_HOST,
+        },
+      });
+    } catch (error) {
+      throw error;
+    }
   }
 
   async sendRegistrationReject({ userName, termsUrl }) {
-    await this.send({
-      subject: "Academlinks Registration Rejection",
-      template: "rejectRegistration",
-      templateParams: {
-        userName,
-        host: SERVER_HOST,
-        termsUrl,
-      },
-    });
+    try {
+      await this.send({
+        subject: "Academlinks Registration Rejection",
+        template: "rejectRegistration",
+        templateParams: {
+          userName,
+          host: SERVER_HOST,
+          termsUrl,
+        },
+      });
+    } catch (error) {
+      throw error;
+    }
   }
 
   async sendPasswordReset({ resetToken, userName }) {
-    await this.send({
-      subject: "Academlinks Password Reset",
-      template: "passwordReset",
-      templateParams: {
-        resetToken,
-        userName,
-        host: SERVER_HOST,
-      },
-    });
+    try {
+      await this.send({
+        subject: "Academlinks Password Reset",
+        template: "passwordReset",
+        templateParams: {
+          resetToken,
+          userName,
+          host: SERVER_HOST,
+        },
+      });
+    } catch (error) {
+      throw error;
+    }
   }
 }
 

@@ -104,9 +104,13 @@ class API_Features {
   }
 
   async execute() {
-    const data = await this.doc;
-    const docCount = this.countDoc(data);
-    return { docCount, data };
+    try {
+      const data = await this.doc;
+      const docCount = this.countDoc(data);
+      return { docCount, data };
+    } catch (error) {
+      throw error;
+    }
   }
 }
 
