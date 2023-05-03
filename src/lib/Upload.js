@@ -126,20 +126,28 @@ class Media {
   }
 
   async writeOnDisk({ file, fileName, editedFileName }) {
-    await sharp(file)
-      .toFormat(this.format)
-      .webp({ quality: this.quality })
-      .toFile(`${this.destination}${fileName}`);
+    try {
+      await sharp(file)
+        .toFormat(this.format)
+        .webp({ quality: this.quality })
+        .toFile(`${this.destination}${fileName}`);
 
-    if (this.resize) this.edit({ file, fileName: editedFileName });
+      if (this.resize) this.edit({ file, fileName: editedFileName });
+    } catch (error) {
+      throw error;
+    }
   }
 
   async edit({ file, fileName }) {
-    await sharp(file)
-      .resize(this.width, this.height)
-      .toFormat(this.format)
-      .webp({ quality: this.quality })
-      .toFile(`${this.destination}${fileName}`);
+    try {
+      await sharp(file)
+        .resize(this.width, this.height)
+        .toFormat(this.format)
+        .webp({ quality: this.quality })
+        .toFile(`${this.destination}${fileName}`);
+    } catch (error) {
+      throw error;
+    }
   }
 
   generateFileName({ userId, sufix = 1, currentDate }) {

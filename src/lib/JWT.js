@@ -11,40 +11,48 @@ class JWT {
   }
 
   async verifyToken({ token, refreshToken = false }) {
-    const validator = promisify(jsonwebtoken.verify);
-    return await validator(
-      token,
-      refreshToken ? this.JWT_REFRESH_SECRET : this.JWT_SECRET
-    );
+    try {
+      const validator = promisify(jsonwebtoken.verify);
+      return await validator(
+        token,
+        refreshToken ? this.JWT_REFRESH_SECRET : this.JWT_SECRET
+      );
+    } catch (error) {
+      throw error;
+    }
   }
 
   async asignToken({ user, res }) {
-    const payload = {
-      id: user._id,
-      role: user.role,
-      userName: user.userName,
-      email: user?.email,
-    };
+    try {
+      const payload = {
+        id: user._id,
+        role: user.role,
+        userName: user.userName,
+        email: user?.email,
+      };
 
-    const accessToken = jsonwebtoken.sign(payload, this.JWT_SECRET, {
-      expiresIn: this.JWT_EXPIRES,
-    });
+      const accessToken = jsonwebtoken.sign(payload, this.JWT_SECRET, {
+        expiresIn: this.JWT_EXPIRES,
+      });
 
-    const cookieOptions = {
-      httpOnly: true,
-      origin: APP_ORIGINS,
-      secure: false,
-    };
+      const cookieOptions = {
+        httpOnly: true,
+        origin: APP_ORIGINS,
+        secure: false,
+      };
 
-    if (this.NODE_MODE !== "DEV") {
-      cookieOptions.secure = true;
-      cookieOptions.sameSite = "none";
+      if (this.NODE_MODE !== "DEV") {
+        cookieOptions.secure = true;
+        cookieOptions.sameSite = "none";
+      }
+
+      const refreshToken = jsonwebtoken.sign(payload, this.JWT_REFRESH_SECRET);
+      res.cookie("authorization", `Bearer ${refreshToken}`, cookieOptions);
+
+      return { accessToken };
+    } catch (error) {
+      throw error;
     }
-
-    const refreshToken = jsonwebtoken.sign(payload, this.JWT_REFRESH_SECRET);
-    res.cookie("authorization", `Bearer ${refreshToken}`, cookieOptions);
-
-    return { accessToken };
   }
 }
 
