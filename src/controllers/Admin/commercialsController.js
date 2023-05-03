@@ -1,27 +1,25 @@
+const {
+  COMMERCIAL_UPLOAD_DESTINATION,
+  COMMERCIAL_STATIC_URL_ROOT,
+} = require("../../config");
 const fs = require("fs");
 const { promisify } = require("util");
-
-const asyncWrapper = require("../../lib/asyncWrapper.js");
-const AppError = require("../../lib/AppError.js");
-const { getServerHost } = require("../../lib/getOrigins.js");
-const Email = require("../../lib/sendEmail.js");
-const { uploadMedia, editMedia } = require("../../lib/multer.js");
-
 const { Commercials } = require("../../models");
+const { AppError, asyncWrapper, Email, Upload } = require("../../lib");
 
-exports.resizeAndOptimiseMedia = editMedia({
+const upload = new Upload({
   multy: false,
-  resize: false,
-  destination: "public/images/commercials",
+  upload: "single",
+  storage: "memoryStorage",
+  destination: COMMERCIAL_UPLOAD_DESTINATION,
 });
 
 exports.uploadCommercialMediaFiles = (imageName) =>
-  uploadMedia({
-    storage: "memoryStorage",
-    destination: "public/images/commercials",
-    upload: "single",
+  upload.uploadMedia({
     filename: imageName,
   });
+
+exports.resizeAndOptimiseMedia = upload.editMedia();
 
 exports.getCommercials = asyncWrapper(async function (req, res, next) {
   const { all, outdated, active } = req.query;
@@ -60,7 +58,7 @@ exports.addCommercial = asyncWrapper(async function (req, res, next) {
   };
 
   if (req.file) {
-    newCommercial.media = `${getServerHost()}/commercials/${req.xOriginal}`;
+    newCommercial.media = `${COMMERCIAL_STATIC_URL_ROOT}${req.xOriginal}`;
   }
 
   await Commercials.create(newCommercial);
@@ -81,7 +79,7 @@ exports.deleteCommercial = asyncWrapper(async function (req, res, next) {
   if (commercialMedia) {
     try {
       const originalFileName = commercialMedia.split("/")?.slice(4)[0];
-      await deletion(`public/images/commercials/${originalFileName}`);
+      await deletion(`${COMMERCIAL_UPLOAD_DESTINATION}${originalFileName}`);
     } catch (error) {
       return next(
         new AppError(
@@ -111,8 +109,8 @@ exports.updateCommercial = asyncWrapper(async function (req, res, next) {
   if (req.file && req.xOriginal) {
     try {
       const originalFileName = media.split("/")?.slice(4)[0];
-      await deletion(`public/images/commercials/${originalFileName}`);
-      body.media = `${getServerHost()}/commercials/${req.xOriginal}`;
+      await deletion(`${COMMERCIAL_UPLOAD_DESTINATION}${originalFileName}`);
+      body.media = `${COMMERCIAL_STATIC_URL_ROOT}${req.xOriginal}`;
     } catch (error) {
       return next(
         new AppError(

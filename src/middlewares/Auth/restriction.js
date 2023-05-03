@@ -1,5 +1,4 @@
-const AppError = require("../../lib/AppError");
-const asyncWrapper = require("../../lib/asyncWrapper");
+const { AppError, asyncWrapper } = require("../../lib");
 
 const restriction = (...roles) =>
   asyncWrapper(async function (req, res, next) {

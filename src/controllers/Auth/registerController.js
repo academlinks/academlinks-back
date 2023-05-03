@@ -1,19 +1,15 @@
-const crypto = require("crypto");
-
-const asyncWrapper = require("../../lib/asyncWrapper.js");
-const AppError = require("../../lib/AppError.js");
-const Email = require("../../lib/sendEmail.js");
-const { getAppHost } = require("../../lib/getOrigins.js");
 const {
-  CONFIRM_REGISTRATION_PASSWORD_RESET_LINK,
-} = require("../../config/config");
+  CLIENT_TERMS_URL,
+  GENERATE_CONFIRM_REGISTRATION_PASSWORD_RESET_LINK,
+} = require("../../config");
+const { asyncWrapper, AppError, Email } = require("../../lib");
 
 const { User, Friendship, Registration, Admin } = require("../../models");
 
-const {
-  useSocket,
-  socket_name_placeholders,
-} = require("../../utils/ioUtils.js");
+const crypto = require("crypto");
+
+const { IO } = require("../../utils/io");
+const io = new IO();
 
 exports.registerUser = asyncWrapper(async function (req, res, next) {
   const { email } = req.body;
@@ -54,10 +50,10 @@ exports.registerUser = asyncWrapper(async function (req, res, next) {
 
   const admin = await Admin.findOne({ role: "admin" });
 
-  await useSocket(req, {
-    adressatId: admin._id,
-    operationName: socket_name_placeholders.newUserIsRegistered,
+  await io.useSocket(req, {
     data: user,
+    adressatId: admin._id,
+    operationName: io.IO_PLACEHOLDERS.newUserIsRegistered,
   });
 
   res.status(200).json({
@@ -85,7 +81,7 @@ exports.aproveRegistration = asyncWrapper(async function (req, res, next) {
       adressat: registration.email,
     }).sendRegistrationAprovment({
       userName: registration.firstName,
-      url: CONFIRM_REGISTRATION_PASSWORD_RESET_LINK({
+      url: GENERATE_CONFIRM_REGISTRATION_PASSWORD_RESET_LINK({
         registrationId: registration._id,
         resetToken: registrationPasswordResetToken,
       }),
@@ -128,7 +124,7 @@ exports.deleteRegistrationRequest = asyncWrapper(async function (
       adressat,
     }).sendRegistrationReject({
       userName: registration.firstName,
-      termsUrl: `${getAppHost()}/terms-and-policy/terms`,
+      termsUrl: CLIENT_TERMS_URL,
     });
   } catch (error) {
     return next(

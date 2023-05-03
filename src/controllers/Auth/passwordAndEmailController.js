@@ -1,21 +1,13 @@
-const crypto = require("crypto");
-
-const asyncWrapper = require("../../lib/asyncWrapper.js");
-const AppError = require("../../lib/AppError.js");
-const asignToken = require("../../lib/asignToken.js");
-const Email = require("../../lib/sendEmail.js");
-
-const {
-  useSocket,
-  socket_name_placeholders,
-} = require("../../utils/ioUtils.js");
-
 const {
   User,
   Registration,
   Admin,
   AdminNotification,
 } = require("../../models");
+const crypto = require("crypto");
+const { IO } = require("../../utils/io");
+const { asyncWrapper, AppError, JWT, Email } = require("../../lib");
+const io = new IO();
 
 exports.changeEmail = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
@@ -73,10 +65,10 @@ exports.changeEmail = asyncWrapper(async function (req, res, next) {
     select: "userName profileImg email _id",
   });
 
-  await useSocket(req, {
-    adressatId: admin._id,
-    operationName: socket_name_placeholders.userChangeEmail,
+  await io.useSocket(req, {
     data: adminNotify,
+    adressatId: admin._id,
+    operationName: io.IO_PLACEHOLDERS.userChangeEmail,
   });
 
   ///////////////////////////////////////////////
@@ -85,7 +77,7 @@ exports.changeEmail = asyncWrapper(async function (req, res, next) {
 
   // await updateBlackList(req, userId);
 
-  const { accessToken } = await asignToken(res, user);
+  const { accessToken } = await JWT.asignToken({ res, user });
 
   res.status(201).json({ accessToken, email: user.email });
 });
@@ -109,7 +101,7 @@ exports.changePassword = asyncWrapper(async function (req, res, next) {
   await user.save({ validateBeforeSave: false });
 
   // await updateBlackList(req, userId);
-  const { accessToken } = await asignToken(res, user);
+  const { accessToken } = await JWT.asignToken({ res, user });
 
   res.status(200).json({ accessToken });
 });

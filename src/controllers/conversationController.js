@@ -1,15 +1,8 @@
-const AppError = require("../lib/AppError.js");
-const asyncWrapper = require("../lib/asyncWrapper.js");
-
-const { useSocket, socket_name_placeholders } = require("../utils/ioUtils.js");
-
-const {
-  createMessage,
-  excludeDeletionField,
-  deleteConversationPermanently,
-} = require("../utils/controllConversationUtils.js");
-
+const { ConversationUtils } = require("../utils/conversation");
+const { IO } = require("../utils/io");
+const { AppError, asyncWrapper } = require("../lib");
 const { Conversation, Message, User } = require("../models");
+const io = new IO();
 
 exports.createConvesation = asyncWrapper(async function (req, res, next) {
   const { id: userId } = req.params;
@@ -88,25 +81,25 @@ exports.sendMessage = asyncWrapper(async function (req, res, next) {
   }
 
   existingConversation.lastMessage = {
+    message,
     isRead: false,
     author: currUser.id,
     createdAt: new Date(),
-    message,
   };
 
-  const newMessage = await createMessage({
-    conversation: existingConversation._id,
-    author: currUser.id,
+  const newMessage = await ConversationUtils.createMessage({
     message,
+    author: currUser.id,
+    conversation: existingConversation._id,
   });
 
   await existingConversation.save();
 
-  const doc = excludeDeletionField(newMessage._doc);
+  const doc = ConversationUtils.excludeDeletionField(newMessage._doc);
 
-  await useSocket(req, {
+  await io.useSocket(req, {
     adressatId: adressat._id,
-    operationName: socket_name_placeholders.receiveNewMessage,
+    operationName: io.IO_PLACEHOLDERS.receiveNewMessage,
     data: { lastMessage: existingConversation.lastMessage, message: doc },
   });
 
@@ -217,7 +210,7 @@ exports.deleteConversation = asyncWrapper(async function (req, res, next) {
 
   // 1.1) if conversation is brand new and does not have messages, then delete conversation permanently
   if (conversationMessages.length === 0) {
-    deleteConversationPermanently({ conversation });
+    ConversationUtils.deleteConversationPermanently({ conversation });
     return res.status(204).json({ deleted: true });
   }
 
@@ -239,7 +232,7 @@ exports.deleteConversation = asyncWrapper(async function (req, res, next) {
       .map((deletion) => deletion.deleted)
       .every((deletion) => deletion === true)
   ) {
-    deleteConversationPermanently({ conversation });
+    ConversationUtils.deleteConversationPermanently({ conversation });
     return res.status(204).json({ deleted: true });
   }
 
@@ -297,10 +290,10 @@ exports.markAsRead = asyncWrapper(async function (req, res, next) {
     body: updatedConversation.lastMessage,
   };
 
-  await useSocket(req, {
-    operationName: socket_name_placeholders.messageIsRead,
-    adressatId,
+  await io.useSocket(req, {
     data: body,
+    adressatId,
+    operationName: io.IO_PLACEHOLDERS.messageIsRead,
   });
 
   res.status(200).json(body);

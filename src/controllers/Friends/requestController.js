@@ -1,23 +1,16 @@
+const { OnRequestNotification } = require("../../utils/notifications");
 const mongoose = require("mongoose");
-
-const asyncWrapper = require("../../lib/asyncWrapper.js");
-const AppError = require("../../lib/AppError.js");
-
-const {
-  useSocket,
-  socket_name_placeholders,
-} = require("../../utils/ioUtils.js");
-const {
-  controllFriendRequestNotification,
-} = require("../../utils/notificationControllerUtils.js");
-const controllUserExistence = require("../../utils/friendsControllerUtils.js");
-
 const { Friendship } = require("../../models");
+const { IO } = require("../../utils/io");
+const { asyncWrapper, AppError } = require("../../lib");
+const { FriendRequestsUtils } = require("../../utils/friendRequests");
+const io = new IO();
 
 exports.sendFriendRequest = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
 
-  const { user, adressatUser } = await controllUserExistence({ req, next });
+  const { user, adressatUser } =
+    await FriendRequestsUtils.controllUserExistence({ req, next });
 
   await Friendship.findOneAndUpdate(
     { user: currUser.id },
@@ -29,17 +22,17 @@ exports.sendFriendRequest = asyncWrapper(async function (req, res, next) {
     { $push: { pendingRequests: { adressat: currUser.id } } }
   );
 
-  await controllFriendRequestNotification({
+  await OnRequestNotification.sendNotificationOnFriendRequest({
     req,
     currUser: user._id.toString(),
     adressat: adressatUser._id.toString(),
     send: true,
   });
 
-  await useSocket(req, {
-    adressatId: adressatUser._id,
-    operationName: socket_name_placeholders.receiveNewFriendRequest,
+  await io.useSocket(req, {
     data: 1,
+    adressatId: adressatUser._id,
+    operationName: io.IO_PLACEHOLDERS.receiveNewFriendRequest,
   });
 
   res.status(200).json({ sent: true });
@@ -48,7 +41,10 @@ exports.sendFriendRequest = asyncWrapper(async function (req, res, next) {
 exports.cancelFriendRequest = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
 
-  const { user, adressatUser } = await controllUserExistence({ req, next });
+  const { adressatUser } = await FriendRequestsUtils.controllUserExistence({
+    req,
+    next,
+  });
 
   await Friendship.findOneAndUpdate(
     { user: currUser.id },
@@ -74,7 +70,10 @@ exports.cancelFriendRequest = asyncWrapper(async function (req, res, next) {
 exports.deleteFriendRequest = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
 
-  const { user, adressatUser } = await controllUserExistence({ req, next });
+  const { adressatUser } = await FriendRequestsUtils.controllUserExistence({
+    req,
+    next,
+  });
 
   await Friendship.findOneAndUpdate(
     { user: currUser.id },
@@ -102,7 +101,8 @@ exports.deleteFriendRequest = asyncWrapper(async function (req, res, next) {
 exports.confirmFriendRequest = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
 
-  const { user, adressatUser } = await controllUserExistence({ req, next });
+  const { user, adressatUser } =
+    await FriendRequestsUtils.controllUserExistence({ req, next });
 
   await Friendship.findOneAndUpdate(
     { user: currUser.id },
@@ -128,7 +128,7 @@ exports.confirmFriendRequest = asyncWrapper(async function (req, res, next) {
     }
   );
 
-  await controllFriendRequestNotification({
+  await OnRequestNotification.sendNotificationOnFriendRequest({
     req,
     currUser: user._id.toString(),
     adressat: adressatUser._id.toString(),

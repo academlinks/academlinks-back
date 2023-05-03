@@ -7,18 +7,15 @@ const mongoose = require("mongoose");
 const http = require("http");
 const { Server } = require("socket.io");
 
-const { getOrigins } = require("./src/lib/getOrigins");
-const getAppConnection = require("./src/lib/getAppConnection");
+const { APP_ORIGINS, APP_CONNECTION, PORT } = require("./src/config/config");
 
 const { createServer } = http;
-
-const PORT = process.env.PORT;
 
 const SERVER = createServer(App);
 
 const io = new Server(SERVER, {
   allowEIO3: true,
-  cors: { origin: getOrigins(), credentials: true },
+  cors: { origin: APP_ORIGINS, credentials: true },
 });
 
 exports.io = io;
@@ -33,7 +30,7 @@ process.on("uncaughtException", (err) => {
 
 mongoose.set("strictQuery", false);
 mongoose
-  .connect(getAppConnection())
+  .connect(APP_CONNECTION)
   .then(() => {
     console.log(`DB Is Connected Successfully`);
     SERVER.listen(PORT, () => {

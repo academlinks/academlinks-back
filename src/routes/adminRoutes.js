@@ -28,10 +28,9 @@ const {
   sendEmailToCommercialCustomer,
 } = require("../controllers/Admin");
 const { adminLogIn } = require("../controllers/Auth");
+const { checkAuth, restriction } = require("../middlewares");
 
 // const limiter = require("../lib/rateLimiter");
-
-const { checkAuth, restriction } = require("../middlewares");
 
 const router = express.Router();
 

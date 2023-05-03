@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
-const { getServerHost } = require("../lib/getOrigins");
+const { SERVER_HOST } = require("../config/config");
 
 const { Schema, model } = mongoose;
 
@@ -163,12 +163,12 @@ UserSchema.pre("save", function (next) {
   const femaleAvatar = "/avatars/avatar-female.webp";
 
   if (this.gender === "male") {
-    this.profileImg = getServerHost().concat(maleAvatar);
+    this.profileImg = SERVER_HOST.concat(maleAvatar);
   } else if (this.gender === "female") {
-    this.profileImg = getServerHost().concat(femaleAvatar);
+    this.profileImg = SERVER_HOST.concat(femaleAvatar);
   }
 
-  this.coverImg = getServerHost().concat("/avatars/cover-default.webp");
+  this.coverImg = SERVER_HOST.concat("/avatars/cover-default.webp");
 
   next();
 });

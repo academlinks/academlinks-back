@@ -1,9 +1,5 @@
-const asyncWrapper = require("../../lib/asyncWrapper");
-const AppError = require("../../lib/AppError");
-const verifyToken = require("../../lib/verifyToken");
-
-const User = require("../../models/User");
-const Admin = require("../../models/Admin");
+const { User, Admin } = require("../../models");
+const { asyncWrapper, AppError, JWT } = require("../../lib");
 
 const checkAuth = asyncWrapper(async function (req, res, next) {
   const { authorization } = req.headers;
@@ -12,7 +8,7 @@ const checkAuth = asyncWrapper(async function (req, res, next) {
   if (!authorization || token?.[0] !== "Bearer" || !token?.[1])
     return next(new AppError(401, "you are not authorized"));
 
-  const decodedUser = await verifyToken(token?.[1]);
+  const decodedUser = await JWT.verifyToken({ token: token?.[1] });
   if (!decodedUser) return next(new AppError(401, "you are not authorized"));
 
   // const blacklisted = await getBlackList(req, decodedUser.id);
