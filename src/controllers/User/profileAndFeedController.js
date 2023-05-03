@@ -7,7 +7,7 @@ exports.getProfilePosts = asyncWrapper(async function (req, res, next) {
   const { userId } = req.params;
   const { page, limit, hasMore } = req.query;
 
-  const skip = page * limit - limit;
+  const skip = UserUtils.calcSkip({ page, limit });
 
   const postQuery = {
     type: "post",
@@ -38,10 +38,6 @@ exports.getProfilePosts = asyncWrapper(async function (req, res, next) {
     else postQuery.audience = "public";
   }
 
-  let postsLength;
-  if (hasMore && !JSON.parse(hasMore))
-    postsLength = await Post.find(postQuery).countDocuments();
-
   const posts = await Post.find(postQuery)
     .skip(skip)
     .limit(limit)
@@ -62,6 +58,9 @@ exports.getProfilePosts = asyncWrapper(async function (req, res, next) {
         }),
       populate: { path: "author tags.user", select: "userName profileImg" },
     });
+
+  let postsLength;
+  if (hasMore && !JSON.parse(hasMore)) postsLength = posts.length;
 
   res.status(200).json({ data: posts, results: postsLength });
 });
@@ -146,12 +145,13 @@ exports.getUserFeed = asyncWrapper(async function (req, reqs, next) {
     return next(new AppError(403, "you are not authorized for this operation"));
 
   const user = await User.findById(userId);
+
   if (!user) return next(new AppError(404, "there are no such an user"));
 
   const userFriendShip = await Friendship.findOne({ user: currUser.id });
   const userFriendsIds = userFriendShip.friends.map((friend) => friend.friend);
 
-  const skip = page * limit - limit;
+  const skip = UserUtils.calcSkip({ page, limit });
 
   const postQuery = {
     $or: [
@@ -162,10 +162,6 @@ exports.getUserFeed = asyncWrapper(async function (req, reqs, next) {
     type: "post",
     audience: { $in: ["public", "friends"] },
   };
-
-  let postsLength;
-  if (hasMore && !JSON.parse(hasMore))
-    postsLength = await Post.find(postQuery).countDocuments();
 
   const feedPosts = await Post.find(postQuery)
     .skip(skip)
@@ -188,6 +184,9 @@ exports.getUserFeed = asyncWrapper(async function (req, reqs, next) {
       populate: { path: "author tags.user", select: "userName profileImg" },
     });
 
+  let postsLength;
+  if (hasMore && !JSON.parse(hasMore)) postsLength = feedPosts.length;
+
   reqs.status(200).json({ data: feedPosts, results: postsLength });
 });
 
@@ -196,14 +195,10 @@ exports.getBookmarks = asyncWrapper(async function (req, res, next) {
   const { userId } = req.params;
   const { page, limit, hasMore } = req.query;
 
-  const skip = page * limit - limit;
+  const skip = UserUtils.calcSkip({ page, limit });
 
   if (userId !== currUser.id)
     return next(new AppError(403, "you are not authorizd for this operation"));
-
-  let postsLength;
-  if (hasMore && !JSON.parse(hasMore))
-    postsLength = await Bookmarks.find({ author: userId }).countDocuments();
 
   const userFriendShip = await Friendship.findOne({ user: currUser.id });
 
@@ -240,6 +235,9 @@ exports.getBookmarks = asyncWrapper(async function (req, res, next) {
         },
       ],
     });
+
+  let postsLength;
+  if (hasMore && !JSON.parse(hasMore)) postsLength = savedPosts.length;
 
   res.status(200).json({ data: savedPosts, results: postsLength });
 });

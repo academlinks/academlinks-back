@@ -9,8 +9,7 @@ const {
   User,
 } = require("../../models");
 const mongoose = require("mongoose");
-const { UserUtils } = require("../../utils/user");
-const { CLIENT_STATIC_URL_ROOT } = require("../../config");
+const UserUtils = require("../../utils/user/UserUtils");
 const { AppError, asyncWrapper, Upload } = require("../../lib");
 
 const upload = new Upload({
@@ -31,18 +30,11 @@ exports.updateProfileImage = asyncWrapper(async function (req, res, next) {
 
   const user = await User.findById(currUser.id);
 
-  let mediaUrl;
-  try {
-    await UserUtils.deleteExistingImage({ media: user.profileImg });
-    mediaUrl = `${CLIENT_STATIC_URL_ROOT}${req.xOriginal}`;
-  } catch (error) {
-    return next(
-      new AppError(
-        406,
-        "something went wrong, cant't find and delete your existing profile images. please report the problem or try later"
-      )
-    );
-  }
+  const { mediaUrl } = await UserUtils.manageUserProfileMedia({
+    next,
+    media: user.profileImg,
+    fileName: req.xOriginal,
+  });
 
   user.profileImg = mediaUrl;
 
@@ -56,18 +48,11 @@ exports.updateCoverImage = asyncWrapper(async function (req, res, next) {
 
   const user = await User.findById(currUser.id);
 
-  let mediaUrl;
-  try {
-    await UserUtils.deleteExistingImage({ media: user.coverImg });
-    mediaUrl = `${CLIENT_STATIC_URL_ROOT}${req.xOriginal}`;
-  } catch (error) {
-    return next(
-      new AppError(
-        406,
-        "something went wrong, cant't find and delete your existing cover images. please report the problem or try later"
-      )
-    );
-  }
+  const { mediaUrl } = await UserUtils.manageUserProfileMedia({
+    next,
+    media: user.coverImg,
+    fileName: req.xOriginal,
+  });
 
   user.coverImg = mediaUrl;
 
@@ -227,8 +212,7 @@ exports.deleteUser = asyncWrapper(async function (req, res, next) {
   // 7.1 Delete User Profile And Cover Images
   await Promise.allSettled(
     [user.profileImg, user.coverImg].map(
-      async (originalFileName) =>
-        await UserUtils.deleteExistingImage({ originalFileName })
+      async (media) => await UserUtils.manageUserProfileMedia({ media, next })
     )
   );
 
@@ -260,7 +244,6 @@ exports.searchUsers = asyncWrapper(async function (req, res, next) {
 
 exports.getUserProfile = asyncWrapper(async function (req, res, next) {
   const { userId } = req.params;
-  // const currUser = req.user;
 
   const user = await User.findById(userId).select("-education -workplace");
 

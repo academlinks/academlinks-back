@@ -1,14 +1,7 @@
 const Utils = require("../Utils");
+const { AppError } = require("../../lib");
 
 class UserUtils extends Utils {
-  async deleteExistingImage({ media }) {
-    try {
-      this.unlinkFile({ media });
-    } catch (error) {
-      throw new Error(error.message);
-    }
-  }
-
   checkIfIsFriend({ userId, userFriendShip, currUser }) {
     const isCurrUser = userId === currUser.id;
 
@@ -26,16 +19,16 @@ class UserUtils extends Utils {
       isForeign: false,
     };
 
+    const isRequest = (requests) =>
+      requests.some((request) => request.adressat.toString() === userId);
+
     if (!isFriend && !isCurrUser) {
-      const isPendingRequest = userFriendShip.pendingRequests.some(
-        (request) => request.adressat.toString() === userId
-      );
+      const isPendingRequest = isRequest(userFriendShip.pendingRequests);
 
       if (isPendingRequest) info.isPendingRequest = true;
       else if (!isPendingRequest) {
-        const isSentRequest = userFriendShip.sentRequests.some(
-          (request) => request.adressat.toString() === userId
-        );
+        const isSentRequest = isRequest(userFriendShip.sentRequests);
+
         if (isSentRequest) info.isSentRequest = true;
         else if (!isSentRequest) info.isForeign = true;
       }
@@ -51,16 +44,32 @@ class UserUtils extends Utils {
 
     const { isFriend, isCurrUser } = this.checkIfIsFriend({
       userId,
-      userFriendShip,
       currUser,
+      userFriendShip,
     });
 
-    if (!isCurrUser && doc.audience === "private") {
+    if (!isCurrUser && doc.audience === "private")
       return { restricted: true, _id: docId };
-    } else if (!isCurrUser && !isFriend && doc.audience === "friends") {
+    else if (!isCurrUser && !isFriend && doc.audience === "friends")
       return { restricted: true, _id: docId };
-    } else {
-      return doc;
+    else return doc;
+  }
+
+  async manageUserProfileMedia({ media, fileName, next }) {
+    try {
+      let mediaUrl;
+
+      await this.unlinkFile({ media });
+      if (fileName) mediaUrl = this.generateFileName({ fileName });
+
+      return { mediaUrl };
+    } catch (error) {
+      return next(
+        new AppError(
+          406,
+          "There was an error during deleting image. Try again later!"
+        )
+      );
     }
   }
 }
