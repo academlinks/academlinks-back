@@ -24,7 +24,7 @@ class ConversationUtils {
    * then update deletion reference back to false,
    * until there is a chance to restore the conversation between these two users
    */
-  updateConversationDeletionReference({ conversation }) {
+  updateConversationDeletionReference({ conversation, currUser }) {
     const isDeletedConversation = conversation.deletion.some(
       (deletion) => deletion.deleted === true
     );
@@ -40,7 +40,7 @@ class ConversationUtils {
     );
 
     conversation.deletion[deletionIndex] = {
-      ...conversation.deletion[deletionIndex],
+      deletedBy: conversation.deletion[deletionIndex].deletedBy,
       deleted: false,
     };
 

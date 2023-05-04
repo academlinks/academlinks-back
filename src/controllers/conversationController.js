@@ -20,7 +20,10 @@ exports.createConvesation = asyncWrapper(async function (req, res, next) {
 
   if (conversation) {
     const { isDeletedByCurrUser } =
-      ConversationUtils.updateConversationDeletionReference({ conversation });
+      ConversationUtils.updateConversationDeletionReference({
+        currUser,
+        conversation,
+      });
 
     if (!isDeletedByCurrUser) isNew = false;
 
@@ -52,7 +55,10 @@ exports.sendMessage = asyncWrapper(async function (req, res, next) {
   if (!conversation)
     return next(new AppError(404, "Conversation doesn't exists"));
 
-  ConversationUtils.updateConversationDeletionReference({ conversation });
+  ConversationUtils.updateConversationDeletionReference({
+    currUser,
+    conversation,
+  });
 
   conversation.lastMessage = {
     message,
