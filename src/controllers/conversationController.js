@@ -17,7 +17,7 @@ exports.createConvesation = asyncWrapper(async function (req, res, next) {
   });
 
   let isNew = true;
-  console.log("runs create conversation");
+
   if (conversation) {
     const { isDeletedByCurrUser } =
       ConversationUtils.updateConversationDeletionReference({
@@ -26,7 +26,7 @@ exports.createConvesation = asyncWrapper(async function (req, res, next) {
       });
 
     if (!isDeletedByCurrUser) isNew = false;
-    console.log({ conversationDeletion: conversation.deletion });
+
     await conversation.save();
 
     return res.status(200).json({ conversationId: conversation._id, isNew });

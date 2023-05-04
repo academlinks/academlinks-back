@@ -4,16 +4,15 @@ const { AppError } = require("../../lib");
 class ConversationUtils {
   async isAvailableConversation({ currUser, adressatId, next }) {
     try {
-      console.log({ adressatId });
       if (currUser.id === adressatId)
         return next(
           new AppError(404, `invalid operation. You can't message yourself`)
         );
-      console.log({ currUser });
+
       const adressat = await User.findById(adressatId);
 
       if (!adressat) return next(new AppError(404, "user does not exists"));
-      console.log({ adressat });
+
       return { adressat };
     } catch (error) {
       throw error;
