@@ -1,5 +1,5 @@
-const { asyncWrapper, AppError, API_Features } = require("../../lib");
 const { User } = require("../../models");
+const { asyncWrapper, AppError, API_Features } = require("../../lib");
 
 exports.getUserLabels = asyncWrapper(async function (req, res, next) {
   const docQuery = new API_Features(User.find(), req.query)

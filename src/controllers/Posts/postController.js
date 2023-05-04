@@ -1,5 +1,5 @@
 const { UserUtils } = require("../../utils/user");
-const PostUtils = require("../../utils/posts/PostUtils");
+const { PostUtils } = require("../../utils/posts");
 const { AppError, asyncWrapper, Upload } = require("../../lib");
 const { OnPostNotification } = require("../../utils/notifications");
 const { Post, Comment, Bookmarks, Friendship } = require("../../models");

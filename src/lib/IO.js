@@ -1,5 +1,5 @@
-const { OnLineUsers } = require("../../models");
-const { IO_PLACEHOLDERS } = require("../../config");
+const { OnLineUsers } = require("../models");
+const { IO_PLACEHOLDERS } = require("../config");
 
 class IO {
   constructor() {
@@ -39,6 +39,35 @@ class IO {
       throw error;
     }
   }
+
+  async addOnlineUser(onlineUser) {
+    try {
+      const onlineUserId = onlineUser.userId;
+      const isAlreadyActive = await OnLineUsers.findOne({
+        userId: onlineUserId,
+      });
+
+      if (isAlreadyActive) {
+        await OnLineUsers.findOneAndUpdate(
+          { userId: onlineUserId },
+          { socketId: onlineUser.socketId },
+          { new: true }
+        );
+      } else {
+        await OnLineUsers.create(onlineUser);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async removeOnlineUser(socketId) {
+    try {
+      await OnLineUsers.findOneAndDelete({ socketId });
+    } catch (error) {
+      console.log(error);
+    }
+  }
 }
 
-module.exports = IO;
+module.exports = new IO();

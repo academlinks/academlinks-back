@@ -41,16 +41,16 @@ const IO_PLACEHOLDERS = {
   // FOR BOTH
   connection: "connection",
   disconnect: "disconnect",
-  userConnection: "user_connection",
-  userDisconnection: "user_disconnection",
+  user_connection: "user_connection",
+  user_disconnection: "user_disconnection",
   // FOR ADMIN
-  newUserIsRegistered: "new_user_is_registered",
-  userChangeEmail: "admin_change_email_notify",
+  new_user_is_registered: "new_user_is_registered",
+  user_change_email: "admin_change_email_notify",
   // FOR USERS
-  receiveNewFriendRequest: "receive_new_friend_request",
-  receiveNewNotification: "receive_new_notification",
-  receiveNewMessage: "receive_new_message",
-  messageIsRead: "receive_message_isRead",
+  receive_new_friend_request: "receive_new_friend_request",
+  receive_new_notification: "receive_new_notification",
+  receive_new_message: "receive_new_message",
+  message_is_read: "receive_message_isRead",
 };
 
 // UPLOADS AND STATIC DESTINATIONS

@@ -5,4 +5,5 @@ module.exports = {
   Email: require("./Email"),
   JWT: require("./JWT"),
   Upload: require("./Upload"),
+  IO: require("./IO"),
 };

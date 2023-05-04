@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const { Post } = require("../../models");
-const { asyncWrapper, AppError } = require("../../lib");
 const { PostUtils } = require("../../utils/posts");
+const { asyncWrapper, AppError } = require("../../lib");
 
 exports.reviewTaggedPosts = asyncWrapper(async function (req, res, next) {
   const { postId } = req.params;

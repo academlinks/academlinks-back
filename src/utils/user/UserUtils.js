@@ -72,6 +72,18 @@ class UserUtils extends Utils {
       );
     }
   }
+
+  async deleteAllUserProfileMedia({ media, next }) {
+    try {
+      await Promise.allSettled(
+        media.map(
+          async (media) => await this.manageUserProfileMedia({ media, next })
+        )
+      );
+    } catch (error) {
+      throw error;
+    }
+  }
 }
 
 module.exports = new UserUtils();

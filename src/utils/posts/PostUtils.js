@@ -75,21 +75,6 @@ class PostUtils extends Utilities {
     }
   }
 
-  async managePostMediaDeletion({ media, next }) {
-    try {
-      await Promise.all(
-        media.map(async (media) => await this.unlinkFile({ media }))
-      );
-    } catch (error) {
-      return next(
-        new AppError(
-          406,
-          "something went wrong, please report the problem or try again later"
-        )
-      );
-    }
-  }
-
   managePostReaction({ post, currUserId, reaction }) {
     const existingReaction = post.reactions.find(
       (reaction) => reaction.author.toString() === currUserId
@@ -123,6 +108,34 @@ class PostUtils extends Utilities {
         (tag) => tag.user.toString() === currUser.id
       );
       post.tags[currUserTagIndex].hidden = show;
+    }
+  }
+
+  async managePostMediaDeletion({ media, next }) {
+    try {
+      await Promise.allSettled(
+        media.map(async (media) => await this.unlinkFile({ media }))
+      );
+    } catch (error) {
+      return next(
+        new AppError(
+          406,
+          "something went wrong, please report the problem or try again later"
+        )
+      );
+    }
+  }
+
+  async managePostMediaDeletionOnEachPost({ posts, next }) {
+    try {
+      await Promise.all(
+        posts.map(
+          async (post) =>
+            await this.managePostMediaDeletion({ media: post.media, next })
+        )
+      );
+    } catch (error) {
+      throw error;
     }
   }
 }

@@ -1,11 +1,12 @@
-const { IO } = require("../io");
+const { IO } = require("../../lib");
 const { Notification: NotificationModel } = require("../../models");
 const { NOTIFICATION_PLACEHOLDERS } = require("../../config");
 
-class Notification extends IO {
+class Notification {
   constructor() {
-    super();
     this.NOTIFICATION_PLACEHOLDERS = NOTIFICATION_PLACEHOLDERS;
+    this.IO_PLACEHOLDERS = IO.IO_PLACEHOLDERS;
+    this.useLazySocket = IO.useLazySocket;
   }
 
   async createNotification(body) {
@@ -33,7 +34,7 @@ class Notification extends IO {
               await io({
                 data: 1,
                 adressatId: adressat,
-                operationName: this.IO_PLACEHOLDERS.receiveNewNotification,
+                operationName: this.IO_PLACEHOLDERS.receive_new_notification,
               });
             })
           );

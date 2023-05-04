@@ -1,10 +1,7 @@
 const crypto = require("crypto");
-const { asyncWrapper, AppError } = require("../../lib");
-const EmailUtils = require("../../utils/email/EmailUtils");
+const { EmailUtils } = require("../../utils/email");
+const { asyncWrapper, AppError, IO } = require("../../lib");
 const { User, Friendship, Registration, Admin } = require("../../models");
-
-const { IO } = require("../../utils/io");
-const io = new IO();
 
 exports.registerUser = asyncWrapper(async function (req, res, next) {
   const { email } = req.body;
@@ -36,10 +33,10 @@ exports.registerUser = asyncWrapper(async function (req, res, next) {
 
   const admin = await Admin.findOne({ role: "admin" });
 
-  await io.useSocket(req, {
+  await IO.useSocket(req, {
     data: user,
     adressatId: admin._id,
-    operationName: io.IO_PLACEHOLDERS.newUserIsRegistered,
+    operationName: IO.IO_PLACEHOLDERS.new_user_is_registered,
   });
 
   res.status(200).json({

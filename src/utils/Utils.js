@@ -1,5 +1,5 @@
-const config = require("../config");
 const fs = require("fs");
+const config = require("../config");
 const { promisify } = require("util");
 
 class Utils {

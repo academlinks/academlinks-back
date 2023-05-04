@@ -3,14 +3,15 @@ const { Notification } = require("../models");
 const { AppError, asyncWrapper } = require("../lib");
 
 exports.getAllNotifications = asyncWrapper(async function (req, res, next) {
-  const { userId } = req.params;
   const currUser = req.user;
-  const { ObjectId } = mongoose.Types;
+  const { userId } = req.params;
 
   if (userId !== currUser.id)
     return next(new AppError(403, "you are not authorized for this operation"));
 
-  const notifies = await Notification.find({ adressat: ObjectId(userId) })
+  const notifies = await Notification.find({
+    adressat: mongoose.Types.ObjectId(userId),
+  })
     .populate({
       path: "from adressat",
       select: "userName profileImg",
@@ -69,8 +70,8 @@ exports.deleteAllUserNotification = asyncWrapper(async function (
 });
 
 exports.deleteUserNotification = asyncWrapper(async function (req, res, next) {
-  const { notifyId } = req.params;
   const currUser = req.user;
+  const { notifyId } = req.params;
 
   const notify = await Notification.findById(notifyId);
 

@@ -1,6 +1,6 @@
 const { Commercials } = require("../../models");
-const AdminUtils = require("../../utils/admin/AdminUtils");
-const EmailUtils = require("../../utils/email/EmailUtils");
+const { AdminUtils } = require("../../utils/admin");
+const { EmailUtils } = require("../../utils/email");
 const { AppError, asyncWrapper, Upload } = require("../../lib");
 const { COMMERCIAL_UPLOAD_DESTINATION } = require("../../config");
 

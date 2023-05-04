@@ -5,11 +5,8 @@ const {
   AdminNotification,
 } = require("../../models");
 const crypto = require("crypto");
-const EmailUtils = require("../../utils/email/EmailUtils");
-const { asyncWrapper, AppError, JWT } = require("../../lib");
-
-const { IO } = require("../../utils/io");
-const io = new IO();
+const { EmailUtils } = require("../../utils/email");
+const { asyncWrapper, AppError, JWT, IO } = require("../../lib");
 
 exports.changeEmail = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
@@ -67,10 +64,10 @@ exports.changeEmail = asyncWrapper(async function (req, res, next) {
     select: "userName profileImg email _id",
   });
 
-  await io.useSocket(req, {
+  await IO.useSocket(req, {
     data: adminNotify,
     adressatId: admin._id,
-    operationName: io.IO_PLACEHOLDERS.userChangeEmail,
+    operationName: IO.IO_PLACEHOLDERS.userChangeEmail,
   });
 
   ///////////////////////////////////////////////

@@ -1,5 +1,5 @@
+const { UserUtils } = require("../../utils/user");
 const { AppError, asyncWrapper } = require("../../lib");
-const UserUtils = require("../../utils/user/UserUtils");
 const { User, Friendship, Post, Bookmarks } = require("../../models");
 
 exports.getProfilePosts = asyncWrapper(async function (req, res, next) {
