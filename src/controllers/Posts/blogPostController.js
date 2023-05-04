@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const { Post } = require("../../models");
+const { PostUtils } = require("../../utils/posts");
 const { AppError, asyncWrapper } = require("../../lib");
 
 exports.getBlogPost = asyncWrapper(async function (req, res, next) {
@@ -25,7 +26,7 @@ exports.getBlogPost = asyncWrapper(async function (req, res, next) {
 exports.getBlogPosts = asyncWrapper(async function (req, res, next) {
   const { page, limit, hasMore, author, category } = req.query;
 
-  const skip = page * limit - limit;
+  const skip = PostUtils.calcSkip({ page, limit });
 
   const postQuery = {
     type: "blogPost",
@@ -53,7 +54,7 @@ exports.getBlogPosts = asyncWrapper(async function (req, res, next) {
 
 exports.getTopRatedBlogPosts = asyncWrapper(async function (req, res, next) {
   const { limit } = req.query;
-  const monthAgo = new Date(new Date().setMonth(new Date().getMonth() - 1));
+  const monthAgo = PostUtils.calcMonthAgo();
 
   const posts = await Post.find({
     type: "blogPost",

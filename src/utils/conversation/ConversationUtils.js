@@ -1,36 +1,53 @@
-const { Message } = require("../../models");
+const { User } = require("../../models");
+const { AppError } = require("../../lib");
 
 class ConversationUtils {
-  async createMessage({ conversation, author, message }) {
+  async isAvailableConversation({ currUser, adressatId, next }) {
     try {
-      const newMessage = await Message.create({
-        conversation,
-        author,
-        message,
-      });
+      if (currUser.id === adressatId)
+        return next(
+          new AppError(404, `invalid operation. You can't message yourself`)
+        );
 
-      return newMessage;
+      const adressat = await User.findById(adressatId);
+
+      if (!adressat) return next(new AppError(404, "user does not exists"));
+
+      return { adressat };
     } catch (error) {
       throw error;
     }
   }
 
-  async deleteConversationPermanently({ conversation }) {
-    try {
-      await Message.deleteMany({ conversation: conversation._id });
-      await conversation.delete();
-    } catch (error) {
-      throw error;
-    }
-  }
+  /**
+   * if existing conversation is deleted by one of the users and not from both of them,
+   * then update deletion reference back to false,
+   * until there is a chance to restore the conversation between these two users
+   */
+  updateConversationDeletionReference({ conversation }) {
+    const isDeletedConversation = conversation.deletion.some(
+      (deletion) => deletion.deleted === true
+    );
 
-  excludeDeletionField(doc) {
-    const excludedDoc = {};
-    Object.keys(doc)
-      .filter((key) => key !== "deletion")
-      .forEach((key) => (excludedDoc[key] = doc[key]));
+    const options = {
+      isDeletedByCurrUser: false,
+    };
 
-    return excludedDoc;
+    if (!isDeletedConversation) return options;
+
+    const deletionIndex = conversation.deletion.findIndex(
+      (deletion) => deletion.deleted === true
+    );
+
+    conversation.deletion[deletionIndex] = {
+      ...conversation.deletion[deletionIndex],
+      deleted: false,
+    };
+
+    options.isDeletedByCurrUser =
+      conversation.deletion[deletionIndex].deletedBy !== currUser.id;
+
+    return options;
   }
 }
 

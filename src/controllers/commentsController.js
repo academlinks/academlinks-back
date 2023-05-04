@@ -6,7 +6,8 @@ const { OnCommentNotification } = require("../utils/notifications");
 exports.addComment = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
   const { postId } = req.params;
-  const { text, tags } = req.body;
+
+  const { text, tags } = CommentUtils.checkCommentBody({ req, next });
 
   const post = await Post.findByIdAndUpdate(postId, {
     $inc: { commentsAmount: 1 },
@@ -38,26 +39,24 @@ exports.addComment = asyncWrapper(async function (req, res, next) {
 exports.addCommentReply = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
 
-  const { post, comment, text, tags } =
-    await CommentUtils.controllCommentAccess({ req, next });
+  const { text, tags } = CommentUtils.checkCommentBody({ req, next });
+
+  const { comment, post } = await CommentUtils.checkPostAndCommentExistance({
+    req,
+    next,
+  });
 
   comment.replies = [...comment.replies, { tags, text, author: currUser.id }];
   comment.repliesAmount += 1;
+  await comment.save();
 
-  await post.populate({
-    path: "author",
-    select: "userName",
-  });
+  post.commentsAmount = post.commentsAmount += 1;
+  await post.save();
 
   await comment.populate({
     path: "replies.author replies.tags",
     select: "userName profileImg",
   });
-
-  await comment.save();
-
-  post.commentsAmount = post.commentsAmount += 1;
-  await post.save();
 
   const commentReply = comment.replies[comment.replies.length - 1];
 
@@ -75,8 +74,12 @@ exports.addCommentReply = asyncWrapper(async function (req, res, next) {
 exports.updateComment = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
 
-  const { comment, post, text, tags } =
-    await CommentUtils.controllCommentAccess({ req, next });
+  const { text, tags } = CommentUtils.checkCommentBody({ req, next });
+
+  const { comment, post } = await CommentUtils.checkPostAndCommentExistance({
+    req,
+    next,
+  });
 
   if (comment.author.toString() !== currUser.id)
     return next(new AppError(404, "you are not authorized for this operation"));
@@ -85,11 +88,6 @@ exports.updateComment = asyncWrapper(async function (req, res, next) {
 
   comment.text = text;
   comment.tags = tags;
-
-  await post.populate({
-    path: "author",
-    select: "userName",
-  });
 
   await comment.populate({
     path: "tags",
@@ -117,12 +115,18 @@ exports.updateComment = asyncWrapper(async function (req, res, next) {
 exports.updateCommentReply = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
 
-  const { post, comment, commentReply, text, tags } =
-    await CommentUtils.controllCommentAccess({
-      req,
-      next,
-      checkReplyAccess: true,
-    });
+  const { text, tags } = CommentUtils.checkCommentBody({ req, next });
+
+  const { comment, post } = await CommentUtils.checkPostAndCommentExistance({
+    req,
+    next,
+  });
+
+  const { commentReply } = CommentUtils.checkCommentReplyExistance({
+    req,
+    next,
+    comment,
+  });
 
   if (commentReply.author.toString() !== currUser.id)
     return next(new AppError(404, "you are not authorized for this operation"));
@@ -132,14 +136,9 @@ exports.updateCommentReply = asyncWrapper(async function (req, res, next) {
   commentReply.text = text;
   commentReply.tags = tags;
 
-  await post.populate({
-    path: "author",
-    select: "userName",
-  });
-
   await comment.populate({
-    path: "replies.tags",
-    select: "userName",
+    path: "replies.author replies.tags",
+    select: "userName profileImg",
   });
 
   await comment.save();
@@ -164,10 +163,9 @@ exports.updateCommentReply = asyncWrapper(async function (req, res, next) {
 exports.deleteComment = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
 
-  const { post, comment } = await CommentUtils.controllCommentAccess({
+  const { comment, post } = await CommentUtils.checkPostAndCommentExistance({
     req,
     next,
-    checkBody: false,
   });
 
   if (
@@ -188,13 +186,16 @@ exports.deleteComment = asyncWrapper(async function (req, res, next) {
 exports.deleteCommentReply = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
 
-  const { post, comment, commentReply } =
-    await CommentUtils.controllCommentAccess({
-      req,
-      next,
-      checkBody: false,
-      checkReplyAccess: true,
-    });
+  const { comment, post } = await CommentUtils.checkPostAndCommentExistance({
+    req,
+    next,
+  });
+
+  const { commentReply } = CommentUtils.checkCommentReplyExistance({
+    req,
+    next,
+    comment,
+  });
 
   if (
     currUser.role !== "admin" &&
@@ -204,7 +205,7 @@ exports.deleteCommentReply = asyncWrapper(async function (req, res, next) {
     return next(new AppError(404, "you are not authorized for this operation"));
 
   comment.replies = comment.replies.filter(
-    (rep) => rep._id.toString() !== commentReply._id.toString()
+    (reply) => reply._id.toString() !== commentReply._id.toString()
   );
 
   comment.repliesAmount = comment.repliesAmount - 1;
@@ -219,25 +220,9 @@ exports.deleteCommentReply = asyncWrapper(async function (req, res, next) {
 exports.reactOnComment = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
 
-  const { comment } = await CommentUtils.controllCommentAccess({
-    req,
-    next,
-    checkBody: false,
-  });
+  const { comment } = await CommentUtils.checkCommentExistance({ req, next });
 
-  const existingReaction = comment.reactions.find(
-    (reaction) => reaction.author.toString() === currUser.id
-  );
-
-  if (existingReaction)
-    comment.reactions = comment.reactions.filter(
-      (reaction) => reaction.author._id !== existingReaction.author._id
-    );
-  else
-    comment.reactions.push({
-      reaction: true,
-      author: currUser.id,
-    });
+  CommentUtils.manageCommentReaction({ currUser, comment });
 
   await comment.save();
 
@@ -249,26 +234,15 @@ exports.reactOnComment = asyncWrapper(async function (req, res, next) {
 exports.reactOnCommentReply = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
 
-  const { comment, commentReply } = await CommentUtils.controllCommentAccess({
+  const { comment } = await CommentUtils.checkCommentExistance({ req, next });
+
+  const { commentReply } = CommentUtils.checkCommentReplyExistance({
     req,
     next,
-    checkBody: false,
-    checkReplyAccess: true,
+    comment,
   });
 
-  const existingReaction = commentReply.reactions.find(
-    (reaction) => reaction.author.toString() === currUser.id
-  );
-
-  if (existingReaction)
-    commentReply.reactions = commentReply.reactions.filter(
-      (reaction) => reaction._id !== existingReaction._id
-    );
-  else
-    commentReply.reactions.push({
-      reaction: true,
-      author: currUser.id,
-    });
+  CommentUtils.manageCommentReaction({ currUser, comment: commentReply });
 
   comment.controllCommentReplyLikes(commentReply._id);
 
@@ -283,17 +257,15 @@ exports.reactOnCommentReply = asyncWrapper(async function (req, res, next) {
 exports.pinComment = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
 
-  const { post, comment } = await CommentUtils.controllCommentAccess({
+  const { comment, post } = await CommentUtils.checkPostAndCommentExistance({
     req,
     next,
-    checkBody: false,
   });
 
-  if (post.author.toString() !== currUser.id)
+  if (post.author._id.toString() !== currUser.id)
     return next(new AppError(400, "you are not authorized for this operation"));
 
   comment.pin = !comment.pin;
-
   await comment.save();
 
   res.status(200).json({ pin: comment.pin });
@@ -302,19 +274,21 @@ exports.pinComment = asyncWrapper(async function (req, res, next) {
 exports.pinCommentReply = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
 
-  const { post, comment, commentReply } =
-    await CommentUtils.controllCommentAccess({
-      req,
-      next,
-      checkBody: false,
-      checkReplyAccess: true,
-    });
+  const { comment, post } = await CommentUtils.checkPostAndCommentExistance({
+    req,
+    next,
+  });
 
-  if (post.author.toString() !== currUser.id)
+  if (post.author._id.toString() !== currUser.id)
     return next(new AppError(404, "you are not authorized for this operation"));
 
-  if (commentReply) commentReply.pin = !commentReply.pin;
+  const { commentReply } = CommentUtils.checkCommentReplyExistance({
+    req,
+    next,
+    comment,
+  });
 
+  commentReply.pin = !commentReply.pin;
   await comment.save();
 
   res.status(200).json({ pin: commentReply.pin });

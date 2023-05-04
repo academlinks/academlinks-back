@@ -2,6 +2,5 @@
 node_modules
 package-lock.json
 ./.readme.md
-/public/images/avatars
 /public/images/commercials
 /public/images/uploads

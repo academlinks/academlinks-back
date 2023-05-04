@@ -1,5 +1,5 @@
-const { asyncWrapper, AppError, JWT } = require("../../lib");
 const { User, Admin } = require("../../models");
+const { asyncWrapper, AppError, JWT } = require("../../lib");
 
 exports.loginUser = asyncWrapper(async function (req, res, next) {
   const { email, password } = req.body;

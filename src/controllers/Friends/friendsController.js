@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
-const { Friendship } = require("../../models");
 const { asyncWrapper } = require("../../lib");
+const { Friendship } = require("../../models");
 const { FriendRequestsUtils } = require("../../utils/friendRequests");
 
 exports.deleteFriend = asyncWrapper(async function (req, res, next) {

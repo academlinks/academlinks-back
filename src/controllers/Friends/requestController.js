@@ -1,10 +1,8 @@
-const { OnRequestNotification } = require("../../utils/notifications");
 const mongoose = require("mongoose");
 const { Friendship } = require("../../models");
-const { IO } = require("../../utils/io");
-const { asyncWrapper, AppError } = require("../../lib");
+const { asyncWrapper, AppError, IO } = require("../../lib");
 const { FriendRequestsUtils } = require("../../utils/friendRequests");
-const io = new IO();
+const { OnRequestNotification } = require("../../utils/notifications");
 
 exports.sendFriendRequest = asyncWrapper(async function (req, res, next) {
   const currUser = req.user;
@@ -29,10 +27,10 @@ exports.sendFriendRequest = asyncWrapper(async function (req, res, next) {
     send: true,
   });
 
-  await io.useSocket(req, {
+  await IO.useSocket(req, {
     data: 1,
     adressatId: adressatUser._id,
-    operationName: io.IO_PLACEHOLDERS.receiveNewFriendRequest,
+    operationName: IO.IO_PLACEHOLDERS.receive_new_friend_request,
   });
 
   res.status(200).json({ sent: true });

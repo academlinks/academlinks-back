@@ -103,8 +103,8 @@ class Utilities extends Utils {
           newMedia: media ? JSON.parse(media) : [],
         });
 
-        const newFiles = req.xOriginal.map(
-          (fileName) => `${this.CLIENT_STATIC_URL_ROOT}${fileName}`
+        const newFiles = req.xOriginal.map((fileName) =>
+          this.generateFileName({ fileName })
         );
 
         const modifiedExistingFiles = filteredMedia[0] ? filteredMedia : [];
@@ -145,13 +145,18 @@ class Utilities extends Utils {
   }
 
   // USER
-  watchUserRelationToPost({ post, currUser }) {
-    const isAuthor = post.author.toString() === currUser.id;
-    const isTagged = post.tags.some(
-      (tag) => tag.user.toString() === currUser.id
-    );
+  watchUserRelationToPost({ post, bookmark, currUser }) {
+    const postAuthor = post.author.toString();
+    const belongsToUser = postAuthor === currUser.id;
+    const tag = post.tags.find((tag) => tag.user.toString() === currUser.id);
 
-    return { isAuthor, isTagged };
+    return {
+      belongsToUser,
+      isTagged: tag ? true : false,
+      isTaggedAndIsVisible: tag ? !tag.hidden : false,
+      belongsToUserAndIsVisible: belongsToUser ? !post.hidden : false,
+      isBookmarked: bookmark !== undefined && bookmark !== null,
+    };
   }
 }
 

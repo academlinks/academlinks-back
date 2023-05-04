@@ -1,5 +1,5 @@
-const { asyncWrapper, AppError } = require("../../lib");
 const { Registration } = require("../../models");
+const { asyncWrapper, AppError } = require("../../lib");
 
 exports.getRegistrationLabels = asyncWrapper(async function (req, res, next) {
   const { filter } = req.query;

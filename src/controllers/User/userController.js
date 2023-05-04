@@ -10,7 +10,7 @@ const {
 } = require("../../models");
 const mongoose = require("mongoose");
 const { UserUtils } = require("../../utils/user");
-const { CLIENT_STATIC_URL_ROOT } = require("../../config");
+const { PostUtils } = require("../../utils/posts");
 const { AppError, asyncWrapper, Upload } = require("../../lib");
 
 const upload = new Upload({
@@ -31,18 +31,11 @@ exports.updateProfileImage = asyncWrapper(async function (req, res, next) {
 
   const user = await User.findById(currUser.id);
 
-  let mediaUrl;
-  try {
-    await UserUtils.deleteExistingImage({ media: user.profileImg });
-    mediaUrl = `${CLIENT_STATIC_URL_ROOT}${req.xOriginal}`;
-  } catch (error) {
-    return next(
-      new AppError(
-        406,
-        "something went wrong, cant't find and delete your existing profile images. please report the problem or try later"
-      )
-    );
-  }
+  const { mediaUrl } = await UserUtils.manageUserProfileMedia({
+    next,
+    media: user.profileImg,
+    fileName: req.xOriginal,
+  });
 
   user.profileImg = mediaUrl;
 
@@ -56,18 +49,11 @@ exports.updateCoverImage = asyncWrapper(async function (req, res, next) {
 
   const user = await User.findById(currUser.id);
 
-  let mediaUrl;
-  try {
-    await UserUtils.deleteExistingImage({ media: user.coverImg });
-    mediaUrl = `${CLIENT_STATIC_URL_ROOT}${req.xOriginal}`;
-  } catch (error) {
-    return next(
-      new AppError(
-        406,
-        "something went wrong, cant't find and delete your existing cover images. please report the problem or try later"
-      )
-    );
-  }
+  const { mediaUrl } = await UserUtils.manageUserProfileMedia({
+    next,
+    media: user.coverImg,
+    fileName: req.xOriginal,
+  });
 
   user.coverImg = mediaUrl;
 
@@ -87,39 +73,53 @@ exports.deleteUser = asyncWrapper(async function (req, res, next) {
   )
     return next(new AppError(403, "you are not authorized for this operation"));
 
-  const user = await User.findById(userId).select("+password");
-
-  if (!user) return next(new AppError(403, "user does not exists"));
-
+  const user = await User.findById(currUser.id).select("+password");
   const validPassword = await user.checkPassword(password, user.password);
-  if (currUser.role !== "admin" && !validPassword)
+
+  if (currUser.role !== "admin" && !user && !validPassword)
     return next(new AppError(403, "you are not authorized for this operation"));
 
   // ================================================ //
   // ========== Delete CurrUser Bookmarks ========== //
   // ============================================== //
-  // 1.0
+
+  // 1.0 Delete CurrUser Bookmarks
   await Bookmarks.deleteMany({ author: userId });
 
   // ============================================ //
   // ========== Delete CurrUser Posts ========== //
   // ========================================== //
 
-  // 2.1 Find And Extract CurrUser Post Ids
-  const posts = await Post.find({ author: userId }).select("_id");
+  // 2.0 Find And Extract CurrUser Post Ids
+  const posts = await Post.find({ author: userId }).select("_id media");
   const userPostsId = posts.map((post) => post._id);
+
+  // 2.1 Delete CurrUser Posts Media Files
+  await PostUtils.managePostMediaDeletionOnEachPost({ posts, next });
 
   // 2.2 Delete CurrUser Posts
   await Post.deleteMany({ author: userId });
 
+  // 2.3 Updated Shared Deleted Posts
+  await Post.updateMany(
+    { shared: true, authentic: userPostsId },
+    { $set: { deleted: true } }
+  );
+
+  // 2.4 Updated Saved Deleted Posts
+  await Bookmarks.updateMany(
+    { post: userPostsId },
+    { $set: { deleted: true } }
+  );
+
   // =============================================== //
-  // ========== Delete CurrUser Comment ========== //
+  // ========== Delete CurrUser Comment =========== //
   // ============================================= //
 
-  // 3.1 Delete Comment Which Are Binded To CurrUser Posts
+  // 3.0 Delete Comment Which Are Binded To CurrUser Posts
   await Comment.deleteMany({ post: { $in: userPostsId } });
 
-  // 3.2 Update CurrUser Comment On Other Users Posts
+  // 3.1 Update CurrUser Comment On Other Users Posts
   await Comment.updateMany(
     { author: userId },
     {
@@ -141,8 +141,10 @@ exports.deleteUser = asyncWrapper(async function (req, res, next) {
   // ========== Delete CurrUser Notification ========== //
   // ================================================== //
 
-  // 4.0
+  // 4.0 Delete User Notifications
   await Notification.deleteMany({ adressat: userId });
+
+  // 4.1 Update Notifications Trigered By CurrUser
   await Notification.updateMany(
     { from: userId },
     {
@@ -156,7 +158,7 @@ exports.deleteUser = asyncWrapper(async function (req, res, next) {
   // ========== Delete Conversations And Message ========== //
   // ====================================================== //
 
-  // 5.1 Find CurrUser Conversations And Extract Ids
+  // 5.0 Find CurrUser Conversations And Extract Ids
   const conversations = await Conversation.find({
     users: userId,
     deletion: { $elemMatch: { deleted: false, deletedBy: userId } },
@@ -164,7 +166,7 @@ exports.deleteUser = asyncWrapper(async function (req, res, next) {
 
   const conversationIds = conversations.map((conv) => conv._id);
 
-  // 5.2 Mark Conversations And Message As Deleted By CurrUser
+  // 5.1 Mark Conversations And Messages As Deleted By CurrUser
   await Conversation.updateMany(
     { users: userId },
     {
@@ -188,13 +190,13 @@ exports.deleteUser = asyncWrapper(async function (req, res, next) {
     { $push: { deletion: { deleted: true, deletedBy: currUser.id } } }
   );
 
-  // 5.3 Find Conversations With CurrUser Which Are Marked As Deleted By Adressat And Extract Ids
+  // 5.2 Find Conversations With CurrUser Which Are Marked As Deleted By Adressat And Extract Ids
   const conversationToDeletePermanently = await Conversation.find({
     users: userId,
     deletion: { $elemMatch: { deleted: true, deletedBy: { $ne: userId } } },
   }).select("_id");
 
-  // 5.4 Delete Convesations And Message Permanently Which Are Marked As Deleted By CurrUser And Adressat
+  // 5.3 Delete Convesations And Messages Permanently Which Are Marked As Deleted By CurrUser And Adressat
   const conversationToDeletePermanentlyIds =
     conversationToDeletePermanently.map((conv) => conv._id);
   await Conversation.deleteMany({
@@ -225,12 +227,10 @@ exports.deleteUser = asyncWrapper(async function (req, res, next) {
   // ================================ //
 
   // 7.1 Delete User Profile And Cover Images
-  await Promise.allSettled(
-    [user.profileImg, user.coverImg].map(
-      async (originalFileName) =>
-        await UserUtils.deleteExistingImage({ originalFileName })
-    )
-  );
+  await UserUtils.deleteAllUserProfileMedia({
+    next,
+    media: [user.profileImg, user.coverImg],
+  });
 
   // 7.2 Delete User
   await User.findByIdAndDelete(userId);
@@ -239,7 +239,7 @@ exports.deleteUser = asyncWrapper(async function (req, res, next) {
   // ========== Clean Up Cookie ========== //
   // ==================================== //
 
-  // 8.0
+  // 8.0 logout user
   if (currUser.role === "user") {
     // await updateBlackList(req, currUser.id);
     res.cookie("authorization", "");
@@ -260,7 +260,6 @@ exports.searchUsers = asyncWrapper(async function (req, res, next) {
 
 exports.getUserProfile = asyncWrapper(async function (req, res, next) {
   const { userId } = req.params;
-  // const currUser = req.user;
 
   const user = await User.findById(userId).select("-education -workplace");
 
