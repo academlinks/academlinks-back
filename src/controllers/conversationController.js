@@ -17,13 +17,16 @@ exports.createConvesation = asyncWrapper(async function (req, res, next) {
   });
 
   let isNew = true;
-
+  console.log("runs create conversation");
   if (conversation) {
     const { isDeletedByCurrUser } =
-      ConversationUtils.updateConversationDeletionReference({ conversation });
+      ConversationUtils.updateConversationDeletionReference({
+        currUser,
+        conversation,
+      });
 
     if (!isDeletedByCurrUser) isNew = false;
-
+    console.log({ conversationDeletion: conversation.deletion });
     await conversation.save();
 
     return res.status(200).json({ conversationId: conversation._id, isNew });
@@ -52,7 +55,10 @@ exports.sendMessage = asyncWrapper(async function (req, res, next) {
   if (!conversation)
     return next(new AppError(404, "Conversation doesn't exists"));
 
-  ConversationUtils.updateConversationDeletionReference({ conversation });
+  ConversationUtils.updateConversationDeletionReference({
+    currUser,
+    conversation,
+  });
 
   conversation.lastMessage = {
     message,

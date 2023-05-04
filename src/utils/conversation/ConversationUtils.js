@@ -4,15 +4,16 @@ const { AppError } = require("../../lib");
 class ConversationUtils {
   async isAvailableConversation({ currUser, adressatId, next }) {
     try {
+      console.log({ adressatId });
       if (currUser.id === adressatId)
         return next(
           new AppError(404, `invalid operation. You can't message yourself`)
         );
-
+      console.log({ currUser });
       const adressat = await User.findById(adressatId);
 
       if (!adressat) return next(new AppError(404, "user does not exists"));
-
+      console.log({ adressat });
       return { adressat };
     } catch (error) {
       throw error;
@@ -24,7 +25,7 @@ class ConversationUtils {
    * then update deletion reference back to false,
    * until there is a chance to restore the conversation between these two users
    */
-  updateConversationDeletionReference({ conversation }) {
+  updateConversationDeletionReference({ conversation, currUser }) {
     const isDeletedConversation = conversation.deletion.some(
       (deletion) => deletion.deleted === true
     );
@@ -40,7 +41,7 @@ class ConversationUtils {
     );
 
     conversation.deletion[deletionIndex] = {
-      ...conversation.deletion[deletionIndex],
+      deletedBy: conversation.deletion[deletionIndex].deletedBy,
       deleted: false,
     };
 
