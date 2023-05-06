@@ -31,7 +31,7 @@ class SendConfirmationRenewalEmail {
               confirmationEmailSentAt: { $exists: false },
             },
           ],
-        });
+        }).select("+passwordResetToken");
 
         if (users[0])
           users.forEach(async (user) => {
