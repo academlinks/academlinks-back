@@ -1,4 +1,5 @@
 const crypto = require("crypto");
+const mongoose = require("mongoose");
 const { EmailUtils } = require("../../utils/email");
 const { asyncWrapper, AppError, IO } = require("../../lib");
 const { User, Friendship, Registration, Admin } = require("../../models");
@@ -108,11 +109,9 @@ exports.checkRegistrationExistance = asyncWrapper(async function (
 ) {
   const { registerId, tokenId } = req.params;
 
-  const hashedToken = crypto.createHash("sha256").update(tokenId).digest("hex");
-
   const register = await Registration.findOne({
-    _id: registerId,
-    passwordResetToken: hashedToken,
+    _id: mongoose.Types.ObjectId(registerId),
+    passwordResetToken: tokenId,
   });
 
   if (!register)
