@@ -8,8 +8,7 @@ class SendConfirmationRenewalEmail {
   constructor(schedule) {
     this.schedule = schedule;
     this.interval = {
-      cron: "* * * * *",
-      // cron: "0 12 * * *",
+      cron: "0 12 * * *",
       ms: 1000 * 60 * 60 * 24,
     };
   }
