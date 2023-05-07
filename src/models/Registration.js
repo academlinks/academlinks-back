@@ -127,7 +127,6 @@ RegistrationSchema.pre("save", function (next) {
 
 RegistrationSchema.methods.createPasswordResetToken = function () {
   const passwordReset = crypto.randomBytes(32).toString("hex");
-
   this.passwordResetToken = crypto
     .createHash("sha256")
     .update(passwordReset)

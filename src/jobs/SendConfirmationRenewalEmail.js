@@ -19,7 +19,7 @@ class SendConfirmationRenewalEmail {
   async send() {
     try {
       this.schedule.scheduleJob(this.interval.cron, async () => {
-        const users = await Registration.find({
+        const registrations = await Registration.find({
           aproved: true,
           $or: [
             {
@@ -33,20 +33,23 @@ class SendConfirmationRenewalEmail {
           ],
         }).select("+passwordResetToken");
 
-        if (users[0])
-          users.forEach(async (user) => {
-            await new Email({ adressat: user.email }).sendRegistrationAprovment(
-              {
-                userName: user.firstName,
-                url: GENERATE_CONFIRM_REGISTRATION_PASSWORD_RESET_LINK({
-                  registrationId: user.id,
-                  resetToken: user.passwordResetToken,
-                }),
-              }
-            );
+        if (registrations[0])
+          registrations.forEach(async (registration) => {
+            const resetToken = registration.createPasswordResetToken();
 
-            user.confirmationEmailSentAt = new Date();
-            await user.save({ validateBeforeSave: false });
+            await new Email({
+              adressat: registration.email,
+            }).sendRegistrationAprovment({
+              userName: registration.firstName,
+              url: GENERATE_CONFIRM_REGISTRATION_PASSWORD_RESET_LINK({
+                resetToken,
+                registrationId: registration.id,
+              }),
+            });
+
+            registration.confirmationEmailSentAt = new Date();
+
+            await registration.save({ validateBeforeSave: false });
           });
       });
     } catch (error) {
