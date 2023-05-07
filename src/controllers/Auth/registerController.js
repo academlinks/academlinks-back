@@ -109,9 +109,11 @@ exports.checkRegistrationExistance = asyncWrapper(async function (
 ) {
   const { registerId, tokenId } = req.params;
 
+  const hashedToken = crypto.createHash("sha256").update(tokenId).digest("hex");
+
   const register = await Registration.findOne({
     _id: mongoose.Types.ObjectId(registerId),
-    passwordResetToken: tokenId,
+    passwordResetToken: hashedToken,
   });
 
   if (!register)
@@ -124,9 +126,11 @@ exports.confirmRegistration = asyncWrapper(async function (req, res, next) {
   const { registerId, tokenId } = req.params;
   const { password } = req.body;
 
+  const hashedToken = crypto.createHash("sha256").update(tokenId).digest("hex");
+
   const registration = await Registration.findOne({
     _id: registerId,
-    passwordResetToken: tokenId,
+    passwordResetToken: hashedToken,
   });
 
   if (!registration)
