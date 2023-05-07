@@ -73,8 +73,11 @@ exports.deleteUser = asyncWrapper(async function (req, res, next) {
   )
     return next(new AppError(403, "you are not authorized for this operation"));
 
-  const user = await User.findById(currUser.id).select("+password");
-  const validPassword = await user.checkPassword(password, user.password);
+  const user = await User.findById(userId).select("+password");
+  const validPassword =
+    user && currUser.role !== "admin"
+      ? await user.checkPassword(password, user.password)
+      : false;
 
   if (currUser.role !== "admin" && !user && !validPassword)
     return next(new AppError(403, "you are not authorized for this operation"));
