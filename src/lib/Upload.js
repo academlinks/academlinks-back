@@ -97,7 +97,7 @@ class Media {
         const x500 = [];
         const xOriginal = [];
 
-        await Promise.all(
+        await Promise.allSettled(
           media.map(async (file, index) => {
             const { fileName, editedFileName } = this.generateFileName({
               currentDate,
@@ -106,8 +106,8 @@ class Media {
             });
 
             await this.writeOnDisk({
-              file: file.buffer,
               fileName,
+              file: file.buffer,
               editedFileName,
             });
 
@@ -132,7 +132,9 @@ class Media {
         .webp({ quality: this.quality })
         .toFile(`${this.destination}${fileName}`);
 
-      if (this.resize) this.edit({ file, fileName: editedFileName });
+      if (this.resize) await this.edit({ file, fileName: editedFileName });
+
+      return fileName;
     } catch (error) {
       throw error;
     }
@@ -152,7 +154,6 @@ class Media {
 
   generateFileName({ userId, sufix = 1, currentDate }) {
     const prefix = `user-${userId}-${currentDate}`;
-
     const widthStr = !this.resize ? "" : this.width;
     const heightStr = !this.resize
       ? ""
@@ -160,7 +161,7 @@ class Media {
       ? `x${this.height}`
       : "xAuto";
 
-    const sufixStr = "original";
+    const sufixStr = `original-${sufix}`;
     const sufixEditedStr = `resized-${sufix}`;
 
     const fileName = (sfx) => `${prefix}--${widthStr}${heightStr}${sfx}.webp`;
