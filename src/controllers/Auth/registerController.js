@@ -124,11 +124,9 @@ exports.confirmRegistration = asyncWrapper(async function (req, res, next) {
   const { registerId, tokenId } = req.params;
   const { password } = req.body;
 
-  const hashedToken = crypto.createHash("sha256").update(tokenId).digest("hex");
-
   const registration = await Registration.findOne({
     _id: registerId,
-    passwordResetToken: hashedToken,
+    passwordResetToken: tokenId,
   });
 
   if (!registration)

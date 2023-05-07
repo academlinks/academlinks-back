@@ -27,6 +27,7 @@ const ConversationSchema = new Schema(
       },
       author: String,
       message: String,
+      createdAt: Date,
     },
 
     seen: {
