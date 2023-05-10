@@ -273,12 +273,20 @@ exports.getUserProfile = asyncWrapper(async function (req, res, next) {
     .populate({
       path: "friends.friend",
       select: "userName profileImg",
-      options: { limit: 9 },
     });
+
+  const friends = userFriends.friends
+    .slice(0, 9)
+    .sort(
+      (friendA, friendB) =>
+        new Date(friendB.createdAt).getTime() -
+        new Date(friendA.createdAt).getTime()
+    )
+    .map((fr) => fr.friend);
 
   const userProfile = {
     ...user._doc,
-    friends: userFriends.friends.slice(0, 9).map((fr) => fr.friend),
+    friends,
     friendsAmount: userFriends.friendsAmount,
   };
 
